@@ -1,0 +1,274 @@
+@import "tailwindcss";
+/* :root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+} */
+
+
+.App {
+  text-align: center;
+
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* App.css */
+
+.main-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(to bottom right, #c084fc, #ec4899, #ef4444); /* from-purple-400 via-pink-500 to-red-500 */
+  color: white;
+}
+
+.navbar {
+  background: linear-gradient(to right, #7e22ce, #ec4899); /* from-purple-600 to-pink-600 */
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.nav-title {
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: white;
+  white-space: nowrap; /* כדי לא לשבור שורה במובייל */
+  gap: 0.5rem; /* Space between logo and text */
+}
+
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  vertical-align: middle;
+  flex-shrink: 0; /* Prevent logo from shrinking */
+}
+
+.desktop-menu {
+  display: none;
+}
+
+.desktop-menu li {
+  display: inline-block;
+  margin-left: 2rem;
+}
+
+.desktop-menu a,
+.mobile-menu a,
+.logout {
+  text-decoration: none;
+  color: white;
+  transition: color 0.3s ease;
+  cursor: pointer;
+}
+
+.desktop-menu a:hover,
+.mobile-menu a:hover,
+.logout:hover {
+  color: #c084fc; /* hover:text-purple-300 */
+}
+
+.logout {
+  font-weight: 600;
+  margin-left: 1rem;
+}
+
+.hamburger {
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  background: none;
+  border: none;
+}
+
+.hamburger:hover {
+  background-color: #6b21a8; /* hover:bg-purple-700 */
+}
+
+.mobile-menu {
+  display: flex;
+  flex-direction: column;
+  background-color: #7e22ce;
+  padding: 1rem;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 1rem;
+  max-width: 90rem;
+  width: 100%;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+}
+
+/* Responsive breakpoint for desktop menu */
+@media (min-width: 768px) {
+  .desktop-menu {
+    display: flex;
+  }
+  .hamburger {
+    display: none;
+  }
+  .mobile-menu {
+    display: none;
+  }
+
+
+  .mobile-menu {
+  display: flex;
+  flex-direction: column;
+  background-color: #7e22ce;
+  padding: 1rem;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  direction: rtl; /* Add this line */
+  text-align: right; /* Optional: also align text to the right */
+}
+
+/* App.css */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #ebf8ff, #ffffff, #faf5ff);
+  padding: 1rem;
+  font-family: sans-serif;
+  direction: rtl;
+}
+
+.profile-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+
+.profile-image-wrapper {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 3px solid white;
+  box-shadow: 0 0 0 2px #ebf4ff;
+  margin-left: 1rem;
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.employee-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2d3748;
+  margin-top: 0.5rem;
+}
+
+}
