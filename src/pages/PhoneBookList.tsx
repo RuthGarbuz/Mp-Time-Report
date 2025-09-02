@@ -1,197 +1,324 @@
-// import React from 'react';
-// import type { Contact } from '../interface/interfaces';
+// import React, { useState } from 'react';
 
+// import { Clock, Plus, ChevronDown, Edit, Trash2 } from 'lucide-react';
 
-// type Props = {
-//   contacts: Contact[];
-// };
+ 
 
-// export const PhonebookGrid: React.FC<Props> = ({ contacts }) => {
-//  return (
-//     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
-//     <div className="bg-white rounded-xl shadow-lg overflow-hidden" >
+// const MeetingsManager = () => {
+
+//   const [activeTab, setActiveTab] = useState('received'); // 'received' or 'sent'
+
+ 
+
+//   // דמי נתונים לפגישות שקיבלתי
+
+//   const receivedMeetings = [
+
+//     {
+
+//       id: 1,
+
+//       title: "מפגש משרד משירד לדוגמה העובד אוידי קשה טלפון 052-4595827",
+
+//       description: "תיאור הפגיעה לא מצליחה לחתוך את השכבות לא יודעת למה זקוקה לעזרה",
+
+//       date: "26.8.2025",
+
+//       time: "13:39 - 13:39",
+
+//       status: "ממתין"
+
+//     },
+
+//     {
+
+//       id: 2,
+
+//       title: "פגישה עם לקוח חשוב",
+
+//       description: "דיון על פרויקט חדש ואפשרויות שיתוף פעולה",
+
+//       date: "27.8.2025",
+
+//       time: "11:05 - 11:05",
+
+//       status: "אושר"
+
+//     }
+
+//   ];
+
+ 
+
+//   // דמי נתונים לפגישות ששלחתי
+
+//   const sentMeetings = [
+
+//     {
+
+//       id: 1,
+
+//       title: "פגישת צוות שבועית",
+
+//       description: "סקירת התקדמות פרויקטים ותכנון השבוע הבא",
+
+//       date: "28.8.2025",
+
+//       time: "09:00 - 10:00",
+
+//       status: "ממתין לאישור"
+
+//     },
+
+//     {
+
+//       id: 2,
+
+//       title: "פגישה עם ספק חדש",
+
+//       description: "הצגת מוצרים ומחירים למחצית השנה",
+
+//       date: "29.8.2025",
+
+//       time: "14:30 - 15:30",
+
+//       status: "נדחה"
+
+//     }
+
+//   ];
+
+ 
+
+//   const getCurrentMeetings = () => {
+
+//     return activeTab === 'received' ? receivedMeetings : sentMeetings;
+
+//   };
+
+ 
+
+//   const getStatusColor = (status:any) => {
+
+//     switch(status) {
+
+//       case 'ממתין': return 'text-yellow-600';
+
+//       case 'ממתין לאישור': return 'text-yellow-600';
+
+//       case 'אושר': return 'text-green-600';
+
+//       case 'נדחה': return 'text-red-600';
+
+//       default: return 'text-gray-600';
+
+//     }
+
+//   };
+
+ 
+
+//   const currentMeetings = getCurrentMeetings();
+
+//   const completedCount = currentMeetings.filter(m => m.status === 'אושר').length;
+
+//   const waitingCount = currentMeetings.filter(m => m.status === 'ממתין' || m.status === 'ממתין לאישור').length;
+
+//   const totalCount = currentMeetings.length;
+
+ 
+
+//   return (
+
+//     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-4" dir="rtl">
+
 //       {/* Header */}
-//       <div className="bg-gradient-to-r from-blue-800 to-purple-500 text-white p-4">
-//         <h3 className="text-xl md:text-2xl font-bold mb-3 text-right">רשימת אנשי קשר</h3>
-//         <div className="grid grid-cols-4 md:grid-cols-6 gap-2 text-base md:text-lg font-semibold">
-//           <div className="text-right">חברה</div>
-//           <div className="text-right">איש קשר</div>
-//           <div className="text-right">נייד</div>
-//           <div className="text-right">אימייל</div>
-//           <div className="text-right hidden md:block">טלפון</div>
-//           <div className="text-right hidden md:block">כתובת</div>
-//         </div>
-//       </div>
 
-//       {/* Content */}
-      
-//       <div className="divide-y divide-gray-100">
-//         {/* {contacts.length === 0 ? (
-//   <div className="p-4 text-gray-500 text-center">לא נמצאו אנשי קשר</div>
-// ) : (
-// <div className="p-4 text-gray-500 text-center"> נמצאו</div>// your grid rows
-// )} */}
-//         {contacts.map((item, index) => (
-//           <div
-//             key={item.id}
-//             className={`text-gray-800 grid grid-cols-4 md:grid-cols-6 gap-2 text-base md:text-lg p-3 md:p-4 transition-colors duration-150
-            
-//             `}
-//           >
-//             <div className="text-right">{item.company}</div>
-//             <div className="text-right">{item.contact}</div>
-//             <div className="text-right">{item.cellPhone}</div>
-//             <div className="text-right">{item.email}</div>
-//             <div className="text-right hidden md:block">{item.phone || '-'}</div>
-//             <div className="text-right hidden md:block">{item.address || '-'}</div>
+//       <div className="bg-purple-600 text-white p-4 rounded-t-lg">
+
+//         <div className="flex justify-between items-center">
+
+//           <div className="flex space-x-6 space-x-reverse">
+
+//             <span>משימות</span>
+
+//             <span>אלכון</span>
+
+//             <span>דיווח נכחות</span>
+
+//             <span>רשימת דיוורים</span>
+
+//             <span>התחבר</span>
+
 //           </div>
-//         ))}
+
+//           <div className="text-xl font-bold">משימות נכחות 📊</div>
+
+//         </div>
+
 //       </div>
-//     </div>
-//       </div>
-//   );
-// };
-import React, { useState, useEffect } from 'react';
-import type { Contact, PhoneBook } from '../interface/interfaces';
-import { getPhoneBookList } from '../services/phoneBookService';
-//import { debounce } from 'lodash';
 
+ 
 
-type Props = {
-  contacts: Contact[];
-};
+//       <div className="max-w-4xl mx-auto mt-6 space-y-6">
 
-const highlightMatch = (text: string, query: string) => {
-  if (!query) return text;
+//         {/* Main Card */}
 
-  const regex = new RegExp(`(${query})`, 'gi');
-  return text.split(regex).map((part, i) =>
-    part.toLowerCase() === query.toLowerCase() ? (
-      <mark key={i} className="bg-yellow-200 font-bold">{part}</mark>
-    ) : (
-      part
-    )
-  );
-};
+//         <div className="bg-white rounded-lg shadow-lg p-6">
 
-export const PhonebookGrid: React.FC<Props> = ({  }) => {
-  const [searchTerm, setSearchTerm] = useState('');
- const [phoneBooks, setPhoneBooks] = useState<PhoneBook[]>([]);
+//           {/* Tab Header */}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await getPhoneBookList();
-      setPhoneBooks(data);
-    };
+//           <div className="flex mb-6 bg-gray-100 rounded-lg p-1">
 
-    fetchData();
-  }, []);
+//             <button
 
- const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  setSearchTerm(e.target.value);
-};
-  const handleClearSearch = () => {
-    setSearchTerm('');
-    //setDebouncedSearch('');
-  };
+//               onClick={() => setActiveTab('received')}
 
-  // const filteredContacts = useMemo(() => {
-  //   const q = searchTerm.toLowerCase();
-  //   if (!q) return contacts;
+//               className={`flex-1 py-2 px-4 text-center rounded-md font-medium transition-all ${
 
-  //   return contacts.filter((c) =>
-  //     [c.company, c.contact, c.cellPhone, c.email, c.phone, c.address]
-  //       .filter(Boolean)
-  //       .some((field) => field?.toLowerCase().includes(q))
-  //   );
-  // }, [contacts, searchTerm]);
+//                 activeTab === 'received'
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+//                   ? 'bg-white text-purple-600 shadow-sm'
 
-        {/* 🔍 Search */}
-        <div className="relative w-full md:w-1/2  p-4 bg-gray-20 border-b border-gray-300">
-  <input
-    type="text"
-    placeholder="חפש לפי חברה, איש קשר, טלפון..."
-    value={searchTerm}
-    onChange={handleInputChange}
-    className="text-gray-500 w-full p-2 pl-10 pr-2 border border-gray-300 rounded-lg text-right text-base focus:outline-none focus:ring-2 focus:ring-purple-400 placeholder:text-gray-400"
-  />
+//                   : 'text-gray-600 hover:text-purple-600'
 
-  {/* זכוכית מגדלת כשאין טקסט */}
-  {!searchTerm && (
-    <span className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-      🔍
-    </span>
-  )}
+//               }`}
 
-  {/* כפתור X כשיש טקסט */}
-  {searchTerm && (
-    <button
-      onClick={handleClearSearch}
-      className="absolute left-5 top-1/2 transform -translate-y-1/2 text-red-500 hover:text-red-700 text-lg"
-    >
-      ✖
-    </button>
-  )}
-</div>
-        {/* <div className="p-4 bg-gray-100 border-b border-gray-300 flex flex-col md:flex-row items-center gap-2 md:gap-4">
-          <input
-            type="text"
-            placeholder="חפש לפי חברה, איש קשר, טלפון..."
-            value={searchTerm}
-            onChange={handleInputChange}
-            className="text-gray-500 w-full md:w-1/2 p-2 border border-gray-300 rounded-lg text-right text-base focus:outline-none focus:ring-2 focus:ring-purple-400"
-          />
-          {searchTerm && (
-            <button
-              onClick={handleClearSearch}
-              className="text-sm text-red-500 hover:underline"
-            >
-              נקה חיפוש ✖
-            </button>
-          )}
-        </div> */}
+//             >
 
-        {/* 🧾 Header */}
-        <div className="bg-gradient-to-r from-blue-800 to-purple-500 text-white p-4">
-          <h3 className="text-xl md:text-2xl font-bold mb-3 text-right">רשימת אנשי קשר</h3>
-          <div className="grid grid-cols-4 md:grid-cols-6 gap-2 text-base md:text-lg font-semibold">
-            <div className="text-right">חברה</div>
-            <div className="text-right">איש קשר</div>
-            <div className="text-right">נייד</div>
-            <div className="text-right">אימייל</div>
-            <div className="text-right hidden md:block">טלפון</div>
-            <div className="text-right hidden md:block">כתובת</div>
-          </div>
-        </div>
+//               פגישות שקיבלתי
 
-        {/* 📋 Content */}
-        <div className="divide-y divide-gray-100">
-          {phoneBooks.length === 0 ? (
-            <div className="p-4 text-gray-500 text-center">לא נמצאו תוצאות</div>
-          ) : (
-            phoneBooks.map((item, index) => (
-              <div
-                key={item.id}
-                className={`text-gray-800 grid grid-cols-4 md:grid-cols-6 gap-2 text-base md:text-lg p-3 md:p-4 transition-colors duration-150 ${
-                  index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                }`}
-              >
-                <div className="text-right">{highlightMatch(item.name, searchTerm)}</div>
-                <div className="text-right">{highlightMatch(item.contact, searchTerm)}</div>
-                <div className="text-right">{highlightMatch(item.contactCell, searchTerm)}</div>
-                <div className="text-right">{highlightMatch(item.officeEmail, searchTerm)}</div>
-                <div className="text-right hidden md:block">{highlightMatch(item.phoneNum || '-', searchTerm)}</div>
-                <div className="text-right hidden md:block">{highlightMatch(item.addressName || '-', searchTerm)}</div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+//             </button>
 
+//             <button
+
+//               onClick={() => setActiveTab('sent')}
+
+//               className={`flex-1 py-2 px-4 text-center rounded-md font-medium transition-all ${
+
+//                 activeTab === 'sent'
+
+//                   ? 'bg-white text-purple-600 shadow-sm'
+
+//                   : 'text-gray-600 hover:text-purple-600'
+
+//               }`}
+
+//             >
+
+//               פגישות ששלחתי
+
+//             </button>
+
+//           </div>
+
+ 
+
+//           {/* Status Header */}
+
+//           <div className="flex justify-between items-center mb-6">
+
+//             <div className="text-sm text-gray-500">
+
+//               27.8.2025<br/>13:08:51
+
+//             </div>
+
+//             <h2 className="text-xl font-bold text-gray-800">
+
+//               {activeTab === 'received' ? 'התקדמות הפגישות שקיבלתי' : 'התקדמות הפגישות ששלחתי'}
+
+//             </h2>
+
+//           </div>
+
+ 
+
+//           {/* Progress Circle */}
+
+//           <div className="flex flex-col items-center mb-8">
+
+//             <div className="relative w-32 h-32 mb-4">
+
+//               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+
+//                 <circle
+
+//                   cx="50"
+
+//                   cy="50"
+
+//                   r="40"
+
+//                   stroke="#e5e7eb"
+
+//                   strokeWidth="8"
+
+//                   fill="transparent"
+
+//                 />
+
+//                 <circle
+
+//                   cx="50"
+
+//                   cy="50"
+
+//                   r="40"
+
+//                   stroke="#8b5cf6"
+
+//                   strokeWidth="8"
+
+//                   fill="transparent"
+
+//                   strokeDasharray={`${(completedCount / totalCount) * 251.2} 251.2`}
+
+//                   strokeLinecap="round"
+
+//                 />
+
+//               </svg>
+
+//               <div className="absolute inset-0 flex flex-col items-center justify-center">
+
+//                 <span className="text-3xl font-bold text-purple-600">
+
+//                   {Math.round((completedCount / totalCount) * 100)}%
+
+//                 </span>
+
+//                 <span className="text-sm text-gray-500">הושלם</span>
+
+//               </div>
+
+//             </div>
+
+ 
+
+//             {/* Action Buttons */}
+
+//             <div className="flex gap-4 w-full mb-6">
+
+//               <button className="flex-1 bg-pink-500 text-white py-3 px-6 rounded-lg font-medium hover:bg-pink-600 transition-colors">
+
+//                 {activeTab === 'received' ? 'להשיב' : 'לשלוח פגישה'}
+
+//               </button>
+
+//               <button className="px-6 py-3 text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors">
+
+//                 לדחות
+
+//               </button>
+
+//             </div>
+
+ 
+
+//             {/* Add/Filter Section */}
+
+//              </div>
+//               </div>
+//                </div>
+//                 </div>)

@@ -14,3 +14,8 @@ export const TimeTypeLabels: Record<TimeType, string> = {
   [TimeType.Regular]: "רגיל",
   [TimeType.Remote]: "עבודה מהבית"
 };
+export enum Priority {
+  נמוכה = 1,
+  רגילה = 2,
+  גבוהה = 3
+}

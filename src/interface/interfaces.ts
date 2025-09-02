@@ -23,6 +23,10 @@ export interface UiState {
 export interface MainAppProps {
   onLogout?: () => void;
 }
+export interface SelectEmployeesList {
+   id?: number;
+  name?: string;
+}
 export interface Employee {
    id?: string;
   name?: string;
@@ -49,25 +53,43 @@ export interface TimeRecord  {
   notes: string;
   total?: string;
 };
-export interface Contact  {
-  id: number;
+export interface PhoneBook  {
+  id?: number;
+  selectedCompanyId: number;
   company: string;
-  contact: string;
-  cellPhone: string;
+  firstName: string;
+  lastName: string;
+  mobile: string;
   email: string;
-  phone?: string;
-  address?: string;
+  companyPhone?: string;
+  companyAddress?: string;
 };
-export interface PhoneBook {
+export interface Company {
   id: number;
   name: string;
-  contact: string;
-  officeEmail: string;
+  address: string;
   phoneNum: string;
-  // contactPhoneNum?: string; 
-  contactCell: string;
-  addressName: string;
+  cityID?: number; // Assuming address is a string that includes city
 }
+export interface City {
+  id: number;
+  name: string;
+}
+export interface PhoneBookCompany {
+  phoneBooks: PhoneBook[];
+  companies: Company[];
+  cities: City[]; 
+}
+// export interface PhoneBook {
+//   id: number;
+//   name: string;
+//   contact: string;
+//   officeEmail: string;
+//   phoneNum: string;
+//   // contactPhoneNum?: string; 
+//   contactCell: string;
+//   addressName: string;
+// }
 
 export type TimeHourReportsType = {
   id: number;
@@ -80,5 +102,26 @@ export type TimeHourReportsType = {
 //   expiresAt?: string;
 //   [key: string]: any;
 // };
+export interface Task {
+  taskID: number;
+  subject: string;
+  description: string;
+  isCompleted: boolean;
+  isClosed: boolean;
+  priorityID:number;// 'low' | 'medium' | 'high'; // or just string if not fixed options
+  // 'low' | 'medium' | 'high'; // or just string if not fixed options
+  startDate: string;  // ISO date format like "2025-08-24"
+  startTime: string;  // "09:00"
+  dueDate: string;    // "2025-08-24"
+  dueTime: string;    // "17:00"
+  projectID: number;
+  projectName: string;
+  organizerID:number;
+  recipientID:number;
+}
+export interface Project {
+id: number;
+name: string;
+}
 
 export {};

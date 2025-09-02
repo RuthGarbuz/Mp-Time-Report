@@ -4,7 +4,7 @@ import { Menu, X } from 'lucide-react';
 
 import ReportTime from './ReportTime';
 import ReportList from './ReportList';
-
+import { useLocation } from 'react-router-dom';
 
 // import '../App.css';
 import HomePage from './HomePage';
@@ -12,26 +12,48 @@ import type {  MainAppProps } from '../interface/interfaces';
 import '../index.css';
 import "tailwindcss";
 import BusinessPhonebook from './BusinessPhonebook';
+import authService from '../services/authService';
+import TaskManager from './taskList';
 const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const[titleName,setTitleName]=useState("");
   const navigate = useNavigate();
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
   const handleLogout = () => {
-    if (onLogout) onLogout();
+    authService.logout();
+    if (onLogout){
+       
+      onLogout();
+    } 
     navigate('/login');
   };
 
+const location = useLocation();
 
+React.useEffect(() => {
+  // מפה של נתיבים לשמות בעברית
+  const titleMap: Record<string, string> = {
+    '/main/report-time': 'דיווח נוכחות',
+    '/main/report-list': 'רשימת דיווחים',
+    '/main/phone-book-List': 'אלפון',
+    '/main/home': 'דף הבית',
+    '/main/tasks-List': ' משימות נוכחות',
+  };
+
+  const currentTitle = titleMap[location.pathname] || '';
+  setTitleName(currentTitle);
+}, [location.pathname]);
   return (
     
     <div className="main-wrapper">
       {/* Navbar */}
-      <nav className="navbar">
+      <nav className="navbar"dir='rtl'>
         <div className="nav-title">
-            <img src="/favicon.ico" alt="Logo" className="nav-icon" />
-              Time Report
+            <img src="/logo.png" alt="Logo" className="nav-icon" />
+              {/* Time Report */}
+              {titleName}
         </div>
 
         {/* Desktop menu */}
@@ -40,6 +62,7 @@ const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
           <li><Link to="/main/report-list">רשימת דיווחים</Link></li>
           <li><Link to="/main/report-time">דיווח נכחות</Link></li>
           <li><Link to="/main/phone-book-List">אלפון</Link></li>
+          <li><Link to="/main/tasks-List">משימות</Link></li>
 
         </ul>
 
@@ -55,18 +78,22 @@ const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
     <li><Link to="/main/report-time" onClick={() => setMenuOpen(false)}>דיווח נכחות</Link></li>
     <li><Link to="/main/report-list" onClick={() => setMenuOpen(false)}>רשימת דיווחים</Link></li>
     <li><Link to="/main/phone-book-List" onClick={() => setMenuOpen(false)}>אלפון</Link></li>
+    <li><Link to="/main/tasks-List" onClick={() => setMenuOpen(false)}>משימות</Link></li>
     
     <li onClick={() => { setMenuOpen(false); handleLogout(); }} className="logout">התנתק</li>
   </ul>
   )}
 
-      {/* Main content */}
-      <main className="main-content">
+      {/* Main content h-screen overflow-hidden */}
+      <main className="main-content ">
         <Routes>
           <Route index element={<Navigate to="report-time" replace />} />
           <Route path="report-time" element={<ReportTime />} />
           <Route path="report-list" element={<ReportList />} />
           <Route path="phone-book-List" element={<BusinessPhonebook />} />
+          <Route path="tasks-List" element={<TaskManager />} />
+
+
 {/* contacts={dummyData}  */}
           <Route path="home" element={<HomePage />} />
           <Route path="*" element={<Navigate to="report-time" replace />} />

@@ -6,7 +6,7 @@ type LoginProps = {
 };
 
 const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' ,rememberMe: false});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,8 +24,8 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      const response = await authService.login(formData.email, formData.password);
-      // Call parent callback to update app state
+      const response = await authService.login(formData.email, formData.password,formData.rememberMe);
+      // Call parent callback to update app state,formData.rememberMe
       if (onLoginSuccess) {
         onLoginSuccess(response);
       }

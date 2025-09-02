@@ -1,53 +1,128 @@
 // services/authService.js
-const API_BASE_URL = 'http://localhost:5003/api';
-
+const API_BASE_URL = 'http://localhost:5003/api'
+//onst API_BASE_URL = 'http://localhost:5003/api';http://5.144.49.24/GlobalWebAPI/api/Auth/login
+//const API_BASE_URL = 'http://5.144.49.24/GlobalWebAPI/api';
 
 class AuthService {
-  // Login user with email and password
-  async login(email: string, password: string) {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+  [x: string]: any;
+  // Login user with email and password, rememberMe: boolean
+  async login(email: string, password: string,rememberMe: boolean) {
+    // try {
+    //   const response = await fetch(`${API_BASE_URL}/Auth/login`, {
+//     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({ email, password }),
+    //   });
 
        
       
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Login failed');
-      }
+    //   if (!response.ok) {
+    //     const error = await response.text();
+    //     return{
+    //          success:false,
+    //          message: error
+    //     }
+    //     // 
+    //     // throw new Error(error || 'Login failed');
+    //   }
 
-      const data = await response.json();
-     
-      // Store token and user info
-      this.setToken(data.token);
-      localStorage.setItem('user', JSON.stringify({
+    //   const data = await response.json();
+    //  console.log("data",data) 
+    //   // Store token and user info
+    // //   this.setToken(data.token);
+
+    // // // יצירת אובייקט המשתמש
+    // // const userObject = {
+    // //   id: data.id,
+    // //   email: data.email,
+    // //   username: data.username,
+    // //   dataBase: data.dataBase,
+    // //   urlConnection: data.urlConnection,
+    // //   expiresAt: data.expiration,
+    // // };
+
+    // // // שמירה לפי rememberMe
+    // // if (rememberMe) {
+    // //   localStorage.setItem('user', JSON.stringify(userObject));
+    // // } else {
+    // //   sessionStorage.setItem('user', JSON.stringify(userObject));
+    // // }
+    //   this.setToken(data.token);
+    //   localStorage.setItem('user', JSON.stringify({
+    //   id: data.id,
+    //   email: data.email,
+    //   username: data.username,
+    //   dataBase: data.dataBase,
+    //   urlConnection: data.urlConnection,
+    //   expiresAt: data.expiration,
+    //   }));
+ 
+    //   return {
+    //     success: response.ok,
+    //     message: data.message,
+    //     data: data.data,
+    //   };
+    // } catch (error) {
+    //   console.error('Login error:', error);
+    //   throw error;
+    // }
+    try {
+    const response = await fetch(`${API_BASE_URL}/Auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return {
+        success: false,
+        message: error,
+      };
+    }
+
+    const data = await response.json();
+    console.log("data", data);
+
+    // שמירת הטוקן
+    this.setToken(data.token);
+
+    // יצירת אובייקט המשתמש
+    const userObject = {
       id: data.id,
       email: data.email,
       username: data.username,
       dataBase: data.dataBase,
       urlConnection: data.urlConnection,
       expiresAt: data.expiration,
-      }));
- 
-      return {
-        success: response.ok,
-        message: data.message,
-        data: data.data,
-      };
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+    };
+
+    // שמירה לפי rememberMe
+    if (rememberMe) {
+      localStorage.setItem('user', JSON.stringify(userObject));
+    } else {
+      sessionStorage.setItem('user', JSON.stringify(userObject));
     }
+
+    return {
+      success: response.ok,
+      message: data.message,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
   }
 
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
   }
 
   getToken() {
@@ -57,11 +132,14 @@ class AuthService {
   setToken(token: string) {
     localStorage.setItem('token', token);
   }
-
-  getCurrentUser() {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
-  }
+getCurrentUser() {
+  const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+  return userStr ? JSON.parse(userStr) : null;
+}
+  // getCurrentUser() {
+  //   const userStr = localStorage.getItem('user');
+  //   return userStr ? JSON.parse(userStr) : null;
+  // }
 
     getCurrentEmployee() {
     const employeeStr = localStorage.getItem('employee');
