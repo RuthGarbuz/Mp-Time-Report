@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, X } from 'lucide-react';
-import type { Employee, TimeHourReportsType, TimeRecord } from '../interface/interfaces';
-//import { X }from "lucide-react";
+import type { Contract, Employee, HourReport, HourReportModal, Project, Step, SubContract, TimeHourReportsType, TimeRecord } from '../interface/interfaces';
 import "tailwindcss";
-import { TimeType } from '../enum';
 import React from 'react';
 import authService from '../services/authService';
-import timeRecordService from '../services/timeRecordService';
+import hourReportService, { getHourReportStepsModal, getStepsList, insertProjectHourReport } from '../services/hourReportService';
+import { getProjectsList } from '../services/TaskService';
 //import HebrewDatePicker from 'react-hebrew-datepicker';
-const ReportList = () => {
+const ProjectHours = () => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [editingReportId, setEditingReportId] = useState<number | null>(null);
   const [modalTitle, setModalTitle] = useState<string>();
@@ -17,16 +16,28 @@ const ReportList = () => {
   const [contextMenuRowId, setContextMenuRowId] = useState<number | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [totalTime, setTotalTime] = useState<string>();
-  const [totalDay, setTotalDay] = useState<number>();
   // Date navigation
-  const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [filteredReports, setFilteredReports] = useState<TimeRecord[] | null>(null);
+  const [currentDay, setCurrentDay] = useState(new Date());
+  const [filteredReports, setFilteredReports] = useState<HourReport[] | null>(null);
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [typeReports, setTypeReports] = useState<TimeHourReportsType[]>([]);
   const [typeReport, setTypeReport] = useState<TimeHourReportsType | null>(null);
   const [editPermision, setEditPermision] = useState(false);
+  const [searchProject, setSearchProject] = useState("");
+  const [isOpenProject, setIsOpenProject] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [contracs, setContracts] = useState<Contract[] | null>(null);
+  const [subContracts, setSubContracts] = useState<SubContract[] | null>(null);
+  const [steps, setSteps] = useState<Step[] | null>(null);
+const [reportingType,setReportingType]=useState("");
+let calculateclockOutTime = "";
+
+  const [projectsList, setProjectsList] = useState<Project[]>(
+    [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
+  );
+
 
   const validateTimes = (clockInTime: string, clockOutTime: string) => {
     if (clockInTime && clockOutTime && clockOutTime < clockInTime) {
@@ -35,39 +46,106 @@ const ReportList = () => {
       setError(null);
     }
   };
-  const [newReport, setNewReport] = useState<TimeRecord>(
+
+  const [newReport, setNewReport] = useState<HourReportModal>(
     {
+      id: 0,
+      name: "",
       date: new Date(),
-      type: TimeType.Regular,
-      typeID: 5,
-      clockInTime: "",
-      clockOutTime: "",
-      notes: ""
+      clockInTime: undefined,
+      clockOutTime: undefined,
+      notes: "",
+      total: undefined,
+      projectID: selectedProject?.id ?? 0,
+      contractID: 0,
+      subContractID: 0,
+      stepID: 0,
+      hourReportMethodID: selectedProject?.hoursReportMethodID ?? 0,
+      employeeId: employee?.id ? Number(employee.id) : 0,
+      // contractsList: [],
+      // subContractsList: [],
+      // stepsList: []
     }
   );
+  //reportingType: 'simple' as 'simple' | 'time-range' | 'total',
+  // const setSubContractsList = async (contractID:number) => {
+  //   const subContractsData = await getSubContractsList(contractID);
+  //   if (subContractsData) {
+  //     setSubContracts(subContractsData);
+  //   }
+  // }
   //setHousrForFreeDay();
-  const initNewReport = (): void => {
-    let calculateclockOutTime = ""
+  const initNewReport = async () => {
+    console.log('initNew')
+    if (selectedProject?.hoursReportMethodID === 5) {
+      const HourReportStepsData = await getHourReportStepsModal(selectedProject?.id ?? 0);
+      if (HourReportStepsData) {
+        if (HourReportStepsData.contractsList) {
+
+          setContracts(HourReportStepsData.contractsList);
+        }
+        if (HourReportStepsData.subContractsList) {
+          setSubContracts(HourReportStepsData.subContractsList);
+        }
+        if (HourReportStepsData.stepsList.length > 0) {
+          console.log('stepsList', HourReportStepsData.stepsList)
+
+          setSteps(HourReportStepsData.stepsList);
+        }
+      }
+    }
+    else if (selectedProject?.hoursReportMethodID === 3) {
+      setSubContracts(null)
+      setContracts(null)
+      setSteps(null)
+
+    }
+    else if (selectedProject) {
+      let StepList = await getStepsList(selectedProject?.id ?? 0);
+      if (StepList && StepList.length > 0) {
+         console.log('stepsList4', StepList)
+        setSteps(StepList);
+      }
+      setSubContracts(null)
+      setContracts(null)
+    }
+    //let reportData= await hourReportService.getFullHourReportProjectData(currentDay);
+     calculateclockOutTime = ""
     if (employee?.minutesHoursAmount) {
       calculateclockOutTime = addTime("08:00", employee.minutesHoursAmount)
     }
+    console.log("minutesHoursAmount",employee?.minutesHoursAmount)
     setNewReport({
-      date: new Date(),
-      type: TimeType.Regular,
-      typeID: 5,
+      id: 0,
+      name: "",
+      date: currentDay,
       clockInTime: "08:00",
       clockOutTime: calculateclockOutTime,
-      notes: ""
+      notes: "",
+      total: employee?.minutesHoursAmount,
+      projectID: selectedProject?.id ?? 0,
+      contractID: 0,
+      subContractID: 0,
+      stepID: 0,
+      hourReportMethodID: selectedProject?.hoursReportMethodID ?? 0,
+      employeeId: employee?.id ? Number(employee.id) : 0,
+      // contractsList: [],
+      // subContractsList: [],
+      // stepsList: []
     })
+    setReportingType('time-range')
   }
   // Sample reports data
-  const [reports, setReports] = useState<TimeRecord[]>([]);
-  // const [selectedDate, setSelectedDate] = useState('');
+  const [reports, setReports] = useState<HourReport[]>([]);
+  const [newReportList, setNewReportList] = useState<HourReport>({
+    id: 0,
+    clockInTime: '',
+    clockOutTime: '',
+    total: '',
+    projectName: '',
+  });
 
-  //   const handleDateChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
-  //     setSelectedDate(event.target.value);
-  //     console.log('Selected date:', event.target.value); // ISO format: YYYY-MM-DD
-  //   };
+ 
   const timeToMinutes = (time: string): number => {
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes;
@@ -88,11 +166,10 @@ const ReportList = () => {
     return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
   }
 
-  const validateOverlappingReports = (reports: TimeRecord[]): string[] => {
+  const validateOverlappingReports = (reports: HourReport[]): string[] => {
     const errors: string[] = [];
     for (let i = 0; i < reports.length; i++) {
       const reportA = reports[i];
-      const dateA = toDateString(reportA.date);
 
       if (!reportA.clockInTime || !reportA.clockOutTime) continue;
       if (reportA.clockInTime === "-" || reportA.clockOutTime === "-") continue;
@@ -102,8 +179,6 @@ const ReportList = () => {
 
       for (let j = i + 1; j < reports.length; j++) {
         const reportB = reports[j];
-        const dateB = toDateString(reportB.date);
-        if (dateA !== dateB) continue;
         if (!reportB.clockInTime || !reportB.clockOutTime) continue;
         if (reportB.clockInTime === "-" || reportB.clockOutTime === "-") continue;
 
@@ -113,30 +188,20 @@ const ReportList = () => {
         const isOverlap = startA < endB && startB < endA;
 
         if (isOverlap) {
-          errors.push(`יש דיווחים מתאריך ${reportA.date} שחופפים בשעות`);
+          errors.push(`יש דיווחים מתאריך ${currentDay.toDateString()} שחופפים בשעות`);
+          return errors;
         }
       }
     }
 
     return errors;
   };
-  const filterReport = (reportData: TimeRecord[]) => {
+  const filterReport = (reportData: HourReport[]) => {
 
     setTotalTime(getTotalTime(reportData));
-    setTotalDay(getReportedDaysCount(reportData))
     setFilteredReports(reportData);
   }
-  const getReportedDaysCount = (reports: TimeRecord[]): number => {
-    const uniqueDates = new Set<string>();
 
-    for (const report of reports) {
-      if (report.typeID !== 5 && report.typeID !== 6) continue;
-      if (report.date) {
-        uniqueDates.add(report.date.toString());
-      }
-    }
-    return uniqueDates.size;
-  };
 
   //  setFilteredReports(reports);
   // Calculate total hours
@@ -150,11 +215,11 @@ const ReportList = () => {
     const minutes = totalMinutes % 60;
     return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
   };
-  const getTotalTime = (reports: TimeRecord[]): string => {
+  const getTotalTime = (reports: HourReport[]): string => {
     let totalMinutes = 0;
 
     for (const report of reports) {
-      if (report.typeID !== 5 && report.typeID !== 6) continue;
+      //   if (report.typeID !== 5 && report.typeID !== 6) continue;
       if (!report.total || !report.total.includes(':')) continue;
 
       const [hoursStr, minutesStr] = report.total.split(':');
@@ -178,26 +243,7 @@ const ReportList = () => {
   };
 
   // Format date for display
-  const formatWeekRange = (inputDate: string | number | Date) => {
-    const date = new Date(inputDate);
-    const dayOfWeek = date.getDay(); // 0 = Sunday
 
-    // קבע את תחילת השבוע ליום ראשון
-    const startOfWeek = new Date(date);
-    startOfWeek.setDate(date.getDate() - dayOfWeek);
-
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-
-    const formatDate = (d: Date) => {
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = String(d.getFullYear()).slice(-2);
-      return `${day}/${month}/${year}`;
-    };
-
-    return `${formatDate(startOfWeek)} - ${formatDate(endOfWeek)}`;
-  };
   const onDeleteClick = (id: number) => {
     setItemToDelete(id);
     setIsConfirmOpen(true);
@@ -212,17 +258,9 @@ const ReportList = () => {
     setIsConfirmOpen(false);
     setItemToDelete(null);
   };
-  const handleAddNewRecord = async () => {
-    try {
-      await timeRecordService.insertTimeRecord(newReport); // שליחה לשרת
-      const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
-      setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
-    } catch (error) {
-      console.error('Error adding new report:', error);
-    }
-  };
+  
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Always prevent default first
 
     if (error) {
@@ -230,12 +268,13 @@ const ReportList = () => {
 
       return;
     }
+    if(reportingType==='time-range'){ 
     if (!newReport.clockInTime || !newReport.clockOutTime) {
       return 0;
     }
     const totalHours = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
     newReport.total = totalHours;
-    newReport.typeID = typeReport?.id ?? 0;
+  }
     if (editingReportId !== null) {
       setReports(prevReports =>
         prevReports.map(report =>
@@ -246,43 +285,33 @@ const ReportList = () => {
       );
       setEditingReportId(null);
     } else {
-      const newId = reports.length + 1;
-      const newUpdateReports = [...reports, { ...newReport, id: newId }]
+      const newId = reports.length + 1;//get from update server and set newReportList
+      setNewReportList({
+        id: newId,
+        clockInTime: newReport.clockInTime || '',
+        clockOutTime: newReport.clockOutTime || '',
+        total: newReport.total || '',
+        projectName: newReport.name || '',
+      })
+      const newUpdateReports = [...reports, newReportList]
       const validateError = validateOverlappingReports(newUpdateReports)
       if (validateError.length !== 0) {
         alert(validateError);
         return;
       }
-      handleAddNewRecord()
+      console.log('newReport', newReport)
+      const insertedReport = await insertProjectHourReport(newReport)
+      if(insertedReport && insertedReport>0){
+     setNewReport({ ...newReport, id: insertedReport })
+     getHourReportsList()
+      }
       setTypeReport(typeReports.find((t) => t.id === 5) || null)
     }
 
     // ✅ Close only after successful handling
     setIsModalOpen(false);
   };
-  // const getWeekRange = (dateStr: Date): { start: string; end: string } => {
-  //   const date = new Date(dateStr);
-  //   const dayOfWeek = date.getDay(); // 0 = Sunday
-  //   const sunday = new Date(date);
-  //   sunday.setDate(date.getDate() - dayOfWeek);
-  //   const saturday = new Date(sunday);
-  //   saturday.setDate(sunday.getDate() + 6);
-  //   const toISO = (d: Date) => d.toISOString().split("T")[0];
-  //   return {
-  //     start: toISO(sunday),
-  //     end: toISO(saturday)
-  //   };
-  // };
-  //   const getReportsInRange = (startDate: string, endDate: string,reportData: TimeRecord[]) => {
-  //   const start = new Date(startDate);
-  //   const end = new Date(endDate);
-
-  //   return reportData.filter((report) => {
-  //     const filterReportDate = new Date(report.date);
-  //     return filterReportDate >= start && filterReportDate <= end;
-  //   });
-  // };
-  // Reset form when closing modal
+ 
   const closeModal = () => {
     if (error) {
       alert("לא ניתן לסגור את הטופס כל עוד קיימת שגיאה. אנא תקן/י את השדות.");
@@ -294,61 +323,36 @@ const ReportList = () => {
 
 
 
-  const navigateWeek = (direction: 'prev' | 'next' | 'today') => {
+  const navigateDay = (direction: 'prev' | 'next' | 'today') => {
 
     let newDay: Date;
 
     if (direction !== 'today') {
-      const base = new Date(currentWeek); // לצורך חישוב שבוע חדש
-      base.setDate(base.getDate() + (direction === 'next' ? 7 : -7));
+      const base = new Date(currentDay); // לצורך חישוב יום חדש
+      base.setDate(base.getDate() + (direction === 'next' ? 1 : -1));
       newDay = base;
     } else {
       newDay = new Date(); // היום
     }
 
-    setCurrentWeek(newDay);
+    setCurrentDay(newDay);
     filterReport(reports);//newDay,
 
   };
 
-  // Get report type styling
-  //   useEffect(() => {
-  //   const handleClickOutside = (event: MouseEvent) => {
-  //     if (
-  //       contextMenuRowId !== null &&
-  //       rowRef.current &&
-  //       !rowRef.current.contains(event.target as Node)
-  //     ) {
-  //       setContextMenuRowId(null);
-  //     }
-  //   };
 
-  //   document.addEventListener("mousedown", handleClickOutside);
-  //   return () => {
-  //     document.removeEventListener("mousedown", handleClickOutside);
-  //   };
-  // }, [contextMenuRowId]);
   useEffect(() => {
     const permisionEmployee = authService.getCurrentEmployee();
     if (permisionEmployee) {
       setEditPermision(permisionEmployee.editPermision);
+      setEmployee(permisionEmployee);
     }
   }, []);
   useEffect(() => {
 
-    const storedEmployee = timeRecordService.getEmployee();
-    if (storedEmployee) {
-      setEmployee(storedEmployee);
-    } else {
-      setEmployee({
-        name: "משתמש לא ידוע",
-        profileImage: "https://via.placeholder.com/150"
-      });
-    }
     const fetchData = async () => {
       try {
-        const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
-        setReports(storedTimeRecord ?? []);
+        getHourReportsList()
         initNewReport()
       } catch (error) {
         console.error('Failed to fetch time records:', error);
@@ -357,42 +361,17 @@ const ReportList = () => {
     };
 
     fetchData();
-  }, [currentWeek]);
+  }, [currentDay]);
 
   useEffect(() => {
+    console.log("reports changed:", reports);
     filterReport(reports);//currentWeek,
   }, [reports]);
-  useEffect(() => {
-    const json = localStorage.getItem("timeHourReportsTypes");
-    if (json) {
-      try {
-        const list: TimeHourReportsType[] = JSON.parse(json);
-        setTypeReports(list);
-        setTypeReport(list.find((item) => item.id == 5) || null)
-      } catch (e) {
-        console.error("Failed to parse localStorage:", e);
-      }
-    }
-  }, []);
-  const getReportTypeStyle = (type: number) => {
-    switch (type) {
-      case 5:
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 1://"מחלה":
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 3://"חופש":
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 6://"עבודה מהבית":
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 4://"מילואים":
-        return 'bg-pink-100 text-pink-800 border-red-200';
-      case 2://"העדרות בתשלום":
-        return 'bg-orange-100 text-orange-800 orange-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
 
-  };
+ const getHourReportsList=async()=>{
+   const storedTimeRecord = await hourReportService.getHourReportProjectData(currentDay);
+        setReports(storedTimeRecord ?? []);
+}
   const getProfileImage = () => {
     const img = employee?.image?.trim();
     if (img && img !== 'null') {
@@ -413,15 +392,7 @@ const ReportList = () => {
   }
 
   function onUpdateClick(id: number) {
-    const updateReport = reports.find(report => report.id === id);
-    setNewReport({
-      date: updateReport ? updateReport.date : new Date(),
-      type: updateReport ? updateReport.type : TimeType.Regular,
-      typeID: 5,
-      clockInTime: updateReport ? updateReport.clockInTime : '',
-      clockOutTime: updateReport ? updateReport.clockOutTime : '',
-      notes: updateReport ? updateReport.notes : ''
-    });
+   
     setEditingReportId(id);
     setError(null)
     setIsModalOpen(true);
@@ -446,7 +417,34 @@ const ReportList = () => {
 
     return `${clockOutTimeHoursStr}:${clockOutTimeMinutesStr}`;
   }
+  const setOpenProjectList = async () => {
+    const projectsData = await getProjectsList();
+    if (projectsData) {
+      setProjectsList(projectsData as Project[]);
+    }
+    setIsOpenProject(true);
+  }
+  const handleOk = async () => {
+    setIsOpenProject(false);
+    if (selectedProject) {
+      setError(null)
+      await initNewReport()
+      setModalTitle('  דיווח שעות לפרויקט ' );
+    }
 
+  };
+const changeReportingType=(type:string)=>{
+setReportingType(type)
+if(type=='total'){
+  setNewReport({...newReport, clockInTime:undefined,clockOutTime:undefined })
+}
+else{
+  setNewReport({...newReport, clockInTime:"08:00",clockOutTime:calculateclockOutTime })
+}
+}
+  const filteredProjects = projectsList.filter((p) =>
+    p.name.toLowerCase().includes(searchProject.toLowerCase())
+  );
   return (
     <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
       <div className="max-w-6xl mx-auto h-full flex flex-col">
@@ -483,7 +481,7 @@ const ReportList = () => {
         <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigateWeek('prev')}
+              onClick={() => navigateDay('prev')}
               className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-500 hover:bg-blue-600 transition-all duration-200 hover:scale-105 shadow-lg"
             >
               <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
@@ -492,12 +490,12 @@ const ReportList = () => {
             <div className="flex items-center gap-2 md:gap-3">
               <Calendar className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
               <h2 className="text-lg md:text-xl font-bold text-gray-800">
-                {formatWeekRange(currentWeek)}
+                {currentDay.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' })}
               </h2>
             </div>
 
             <button
-              onClick={() => navigateWeek('next')}
+              onClick={() => navigateDay('next')}
               className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-500 hover:bg-blue-600  transition-all duration-200 hover:scale-105 shadow-lg"
             >
               <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
@@ -510,10 +508,8 @@ const ReportList = () => {
           <div className="mb-6">
             <button
               onClick={() => {
-                setError(null)
-                initNewReport()
-                setIsModalOpen(true)
-                setModalTitle('הוספת דיווח חדש')
+                setOpenProjectList()
+
               }}
               className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
             >
@@ -526,16 +522,14 @@ const ReportList = () => {
         {/* Reports Grid */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Grid Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 md:p-4">
-            <h3 className="text-lg md:text-xl font-bold mb-3">דיווחי נוכחות</h3>
-            <div className="grid grid-cols-5 gap-1 md:gap-4 font-semibold text-sm md:text-base">
-              <div className="text-center">תאריך</div>
-              <div className="text-center">סוג</div>
-              <div className="text-center">כניסה</div>
-              <div className="text-center">יציאה</div>
-              <div className="text-center">סה"כ</div>
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-2 md:p-3">
+            <h3 className="text-lg md:text-xl font-bold mb-3">דיווחי שעות לפרויקטים</h3>
+            <div className="flex flex-row items-center justify-between  font-semibold text-sm md:text-base">
+              <div className="w-[40%] text-center">פרויקט</div>
+              <div className="w-[20%] text-center">כניסה</div>
+              <div className="w-[20%] text-center">יציאה</div>
+              <div className="w-[20%] text-center">סה"כ</div>
               <div className="text-center"></div>
-
             </div>
           </div>
 
@@ -552,42 +546,15 @@ const ReportList = () => {
                 onClick={() => setContextMenuRowId(report.id ?? null)}
                 className={`relative p-2 md:p-3 hover:bg-gray-50 transition-colors duration-200
     ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
-    flex flex-row items-center justify-between gap-2 text-xs md:text-sm`}
+    flex flex-row items-center justify-between gap-3 text-xs md:text-sm`}
               >
-                {/* Date */}
-                <div className="w-[20%] text-center">
-                  <div className="font-medium text-gray-800">
-                    {(() => {
-                      const d = new Date(report.date);
-                      const day = String(d.getDate()).padStart(2, '0');
-                      const month = String(d.getMonth() + 1).padStart(2, '0');
-                      const year = String(d.getFullYear()).slice(-2);
-                      return `${day}/${month}/${year}`;
-                    })()}
-                  </div>
-                  <div className="text-xs text-gray-500 hidden md:block">
-                    {new Date(report.date).toLocaleDateString('he-IL', { weekday: 'long' })}
-                  </div>
-                </div>
-
-                {/* Report Type */}
-
-                <div className="w-[20%] text-center">
-                  <span className={`inline-block px-2 py-0.5 rounded-full border text-[10px] md:text-xs ${getReportTypeStyle(report.typeID)}`}>
-                    <span className="block md:hidden">
-                      {report.typeID === 5 ? 'ר' :
-                        report.typeID === 3 ? 'ח' :
-                          report.typeID === 6 ? 'ב' :
-                            report.typeID === 4 ? 'מ' :
-                              report.typeID === 2 ? 'ת' :
-                                report.typeID === 1 ? 'מח' :
-                                  typeReports.find((type) => (type.id === report.typeID))?.name}
-                    </span>
-                    <span className="hidden md:block">
-                      {typeReports.find((type) => (type.id === report.typeID))?.name}
-                    </span>
+                {/* Project */}
+                <div className="w-[40%] text-center">
+                  <span className={`font-mono text-xs md:text-base text-blue-600 font-semibold`}>
+                    {report.projectName ?? 'כללי'}
                   </span>
                 </div>
+
 
 
                 {/* clockInTime Time */}
@@ -641,7 +608,7 @@ const ReportList = () => {
                     <button
                       onClick={() => {
                         if (report.id !== undefined) {
-                          setModalTitle('עדכון דיווח מתאריך: ' + report.date);
+                          //   setModalTitle('עדכון דיווח מתאריך: ' + report.date);
                           onUpdateClick(report.id);
                         }
                         setContextMenuRowId(null);
@@ -685,13 +652,13 @@ const ReportList = () => {
           </div>
         )}
         {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div className="bg-white rounded-xl shadow-lg p-4 text-center">
             <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
               {/* <User className="w-5 h-5 text-green-600" /> */}
               <Clock className="w-5 h-5 text-green-600" />
             </div>
-            <h4 className="text-base font-semibold text-gray-800 mb-2">שעות שדווחו השבוע</h4>
+            <h4 className="text-base font-semibold text-gray-800 mb-2">שעות שדווחו</h4>
             <p className="text-2xl font-bold text-green-600">{totalTime}</p>
           </div>
 
@@ -703,86 +670,85 @@ const ReportList = () => {
             <p className="text-2xl font-bold text-blue-600">{employee.minutesHoursAmount}</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-4 text-center">
-            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Calendar className="w-5 h-5 text-purple-600" />
-            </div>
-            <h4 className="text-base font-semibold text-gray-800 mb-2">ימי נוכחות</h4>
-            <p className="text-2xl font-bold text-purple-600">{totalDay}</p>
-          </div>
+
         </div>
       </div>
-
-      {/* Modal for Adding New Report */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-6 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold"> {modalTitle} </h3>
-
+{isModalOpen && (
+        <div className="text-gray-800 fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-2">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-800"> דיווח שעות לפרויקט</h2>
                 <button
-                  onClick={closeModal}
-                  className="w-8 h-8 rounded-full hover:bg-green-400 text-white flex items-center justify-center transition-all duration-200"
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="h-6 w-6" />
                 </button>
               </div>
-            </div>
-
-            {/* Modal Content */}
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              {/* Date Field */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  תאריך הדיווח
-                </label>
-                <input
-                  type="date"
-                  value={newReport.date ? newReport.date.toISOString().split("T")[0] : ""}
+                <form onSubmit={handleSubmit} className="2 space-y-2">
+              
+            <div className="space-y-4">
+                {/* Project Name and Date */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      שם פרויקט
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedProject?.name}
+                      onChange={(e) => setNewReport({...newReport, projectID:selectedProject?.id ?? 0 })}
+                     className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
+                     disabled
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      תאריך
+                    </label>
+                    <input
+                      type="date"
+                  value={currentDay ? currentDay.toISOString().split("T")[0] : ""}
                   onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
-                  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                   required
-                />
-              </div>
-              {/* <div  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
- >
-      <HebrewDatePicker
-      
-        name="hebrewDate"
-        value={selectedDate}
-        onChange={handleDateChange}
-        label="בחר תאריך עברי"
-        required
-      />
-    </div> */}
-              {/* Report Type */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  סוג הדיווח
-                </label>
-                <select
-                  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                  value={typeReport?.id || ""}
-                  onChange={(e) => {
-                    const selectedId = Number(e.target.value);
-                    const selected = typeReports.find((t) => t.id === selectedId) || null;
-                    setTypeReport(selected);
-                    //setHousrForFreeDay();
-                  }}
-                >
-                  {typeReports.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
+                  disabled
+                    />
+                  </div>
+                </div>
 
-              </div>
+                {/* Reporting Type */}
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-gray-700">
+                    אופן דיווח שעות
+                  </label>
+                  <div className="space-y-2">
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={reportingType === 'time-range'}
+                        onChange={() => changeReportingType('time-range')}
+                        className="ml-2 text-blue-500"
+                      />
+                      <span className="text-sm">משעה עד שעה</span>
+                    </label>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={reportingType === 'total'}
+                        onChange={() => changeReportingType('total')}
+                        className="ml-2 text-blue-500"
+                      />
+                      <span className="text-sm">סה"כ שעות</span>
+                    </label>
+                  </div>
 
-              {/* clockInTime and clockOutTime Times */}
-              <div className="grid grid-cols-2 gap-4">
+                  {/* Time Range */}
+                  {reportingType === 'time-range' && (
+                     <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     שעת כניסה
@@ -798,7 +764,6 @@ const ReportList = () => {
                     }
                     }
                     className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                    disabled={newReport.typeID === 3}
                   />
                 </div>
                 <div>
@@ -823,20 +788,30 @@ const ReportList = () => {
                   {error && <p className="text-red-600 text-sm">{error}</p>}
                 </div>
               </div>
+                  )}
 
-              {/* Total Hours Display */}
-              {newReport.clockInTime && newReport.clockOutTime && newReport.typeID !== 3 && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    סה"כ שעות
-                  </label>
-                  <div className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg font-mono text-lg font-bold text-blue-600">
-                    {calculateTotalHours(newReport.clockInTime, newReport.clockOutTime)}
-                  </div>
+                  {/* Total Hours */}
+                  {reportingType === 'total' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        סה"כ שעות
+                      </label>
+                      <input
+                        type="time"
+                        // step="0.5"
+                        value={
+                         newReport.total
+                           ? newReport.total.padStart(5, "0") // ensures "8:00" → "08:00"
+                           : ""
+  }
+                        onChange={(e) => setNewReport({...newReport, total: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {/* Notes */}
+                 {/* Notes */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   הערות
@@ -850,7 +825,75 @@ const ReportList = () => {
                   placeholder="הערות נוספות (אופציונלי)"
                 />
               </div>
-
+              {/* Contract */}
+              {contracs && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    חוזה *
+                  </label>
+                  <select
+                    value={newReport.contractID}
+                    onChange={(e) => setNewReport({ ...newReport, contractID: Number(e.target.value) })}
+                 className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
+                  >
+                    <option value="">בחר חוזה</option>
+                    {contracs?.map(contract => (
+                      <option key={contract.id} value={contract.id}>{contract.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {/* Sub-Contract */}
+              {(newReport.contractID ?? 0) > 0&&subContracts && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    תת חוזה *
+                  </label>
+                  <select
+                    value={newReport.subContractID}
+                    onChange={(e) => setNewReport({ ...newReport, subContractID: Number(e.target.value) })}
+                   className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
+                  >
+                    <option value="">בחר תת חוזה</option>
+                    {subContracts
+                      ? subContracts
+                        .filter(sc => sc.contractID === newReport.contractID)
+                        .map(subContract => (
+                          <option key={subContract.id} value={subContract.id}>
+                            {subContract.name}
+                          </option>
+                        )) : null
+                    }
+                  </select>
+                </div>
+              )}
+              {/* Step */}
+              {(newReport.subContractID ?? 0) > 0||(selectedProject?.hoursReportMethodID!=5&&selectedProject?.hoursReportMethodID!=3) &&steps&& (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                      שלב * 
+                  </label>
+                  <select
+                    value={newReport.stepID}
+                    onChange={(e) => setNewReport({ ...newReport, stepID: Number(e.target.value) })}
+                    className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
+                  >
+                    <option value="">בחר שלב</option>
+                    {steps
+                      ? steps
+                        .filter( step =>
+                         newReport.subContractID === 0 ||
+                         step.subContractID === newReport.subContractID)
+                        .map(step => (
+                          <option key={step.id} value={step.id}>
+                            {step.name}
+                          </option>
+                        )) : null
+                    }
+                  </select>
+                </div>
+              )}
+             
               {/* Submit Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
@@ -868,7 +911,63 @@ const ReportList = () => {
                   ביטול
                 </button>
               </div>
-            </form>
+              </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+ 
+      
+      {/* מודאל */}
+      {isOpenProject && (
+        <div className="text-gray-800 min-h-40 fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="bg-white rounded-lg shadow-lg w-96 p-4">
+            <h2 className="text-lg font-semibold mb-3">בחר פרויקט</h2>
+
+            {/* חיפוש */}
+            <input
+              type="text"
+              placeholder="חיפוש..."
+              value={searchProject}
+              onChange={(e) => setSearchProject(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg mb-3"
+            />
+
+            {/* רשימת פרויקטים */}
+            <div className="min-h-60 max-h-60 overflow-y-auto border-gray-300 rounded-lg">
+              {filteredProjects.map((p) => (
+                <div
+                  key={p.id}
+                  onClick={() => setSelectedProject(p)}
+                  onDoubleClick={async () => {
+                    setSelectedProject(p),
+                      await handleOk(),
+                      setIsModalOpen(true)
+                  }}
+                  className={`p-2 cursor-pointer hover:bg-purple-100 ${selectedProject?.id === p.id ? "bg-purple-200" : ""
+                    }`}
+                >
+                  {p.name}
+                </div>
+              ))}
+            </div>
+
+            {/* כפתורים */}
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setIsOpenProject(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300"
+              >
+                ביטול
+              </button>
+              <button
+                onClick={async () => { await handleOk(), setIsModalOpen(true) }}
+                className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+              >
+                אישור
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -876,4 +975,4 @@ const ReportList = () => {
   );
 };
 
-export default ReportList;
+export default ProjectHours;

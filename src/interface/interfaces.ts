@@ -53,6 +53,50 @@ export interface TimeRecord  {
   notes: string;
   total?: string;
 };
+export interface HourReport  {
+  id: number;
+  clockInTime?: string;
+  clockOutTime?: string;
+  total?: string;
+  projectName: string;
+};
+export interface SubContract{
+ id: number;
+ name: string;
+ contractID:number;
+}
+export interface HourReportStepsModal{
+  contractsList:Contract[];
+  subContractsList:SubContract[];  
+  stepsList:Step[];
+}
+export interface Contract{
+ id: number;
+ name: string;
+}
+export interface Step{
+ id: number;
+ name: string;
+ subContractID:number;
+}
+export interface HourReportModal{
+  id: number;
+  name: string;
+  date: Date;
+  clockInTime?: string;
+  clockOutTime?: string;
+  notes: string;
+  total?: string;
+  projectID?: number;
+  contractID?: number;
+  subContractID?: number;
+  stepID?: number;
+  hourReportMethodID:number;
+  employeeId:number;
+  // contractsList:Contract[];
+  // subContractsList:SubContract[];
+  // stepsList:Step[];
+}
 export interface PhoneBook  {
   id?: number;
   selectedCompanyId: number;
@@ -122,6 +166,18 @@ export interface Task {
 export interface Project {
 id: number;
 name: string;
+hoursReportMethodID:number;
 }
-
+export interface Contrat {
+  id: number;
+  name: string;
+}
+export interface SubContrat {
+  id: number;
+  name: string;
+}
+export interface Step {
+  id: number;
+  name: string;
+}
 export {};

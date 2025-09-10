@@ -458,7 +458,6 @@ const clearCompanyData=()=>{
       {/* model */}
       {selectedContact && (
         <div className="fixed inset-0  bg-opacity-40 backdrop-blur-sm backdrop-saturate-150 flex items-center justify-center z-50">
-
           <div className="bg-opacity-40 bg-white p-6 rounded-xl shadow-xl w-[300px]  max-w-sm">
             <h2 className="text-gray-600 text-xl font-bold mb-4">פרטי איש קשר</h2>
             <div className="text-gray-500 space-y-2 text-right">

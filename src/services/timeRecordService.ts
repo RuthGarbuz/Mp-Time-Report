@@ -26,7 +26,6 @@ class TimeRecordService {
   private employeeKey = 'employee';
 async getTimeRecordsData(date:Date):Promise<TimeRecord[] | null>{
   try{
-    console.log('getTime')
       const user = authService.getCurrentUser();
           if (!user) throw new Error('User not authenticated');
     

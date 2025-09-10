@@ -14,6 +14,7 @@ import "tailwindcss";
 import BusinessPhonebook from './BusinessPhonebook';
 import authService from '../services/authService';
 import TaskManager from './taskList';
+import ProjectHours from './ProjectHours';
 const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const[titleName,setTitleName]=useState("");
@@ -40,6 +41,7 @@ React.useEffect(() => {
     '/main/phone-book-List': 'אלפון',
     '/main/home': 'דף הבית',
     '/main/tasks-List': ' משימות נוכחות',
+    '/main/projectHours-List': 'שעות לפרויקטים',
   };
 
   const currentTitle = titleMap[location.pathname] || '';
@@ -63,9 +65,8 @@ React.useEffect(() => {
           <li><Link to="/main/report-time">דיווח נכחות</Link></li>
           <li><Link to="/main/phone-book-List">אלפון</Link></li>
           <li><Link to="/main/tasks-List">משימות</Link></li>
-
+          <li><Link to="/main/projectHours-List">שעות לפרויקטים</Link></li>
         </ul>
-
         {/* Mobile hamburger */}
         <button onClick={toggleMenu} className="hamburger" aria-label="Toggle menu">
           {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -79,7 +80,7 @@ React.useEffect(() => {
     <li><Link to="/main/report-list" onClick={() => setMenuOpen(false)}>רשימת דיווחים</Link></li>
     <li><Link to="/main/phone-book-List" onClick={() => setMenuOpen(false)}>אלפון</Link></li>
     <li><Link to="/main/tasks-List" onClick={() => setMenuOpen(false)}>משימות</Link></li>
-    
+    <li><Link to="/main/projectHours-List" onClick={() => setMenuOpen(false)}>שעות לפרויקטים</Link></li>
     <li onClick={() => { setMenuOpen(false); handleLogout(); }} className="logout">התנתק</li>
   </ul>
   )}
@@ -92,14 +93,13 @@ React.useEffect(() => {
           <Route path="report-list" element={<ReportList />} />
           <Route path="phone-book-List" element={<BusinessPhonebook />} />
           <Route path="tasks-List" element={<TaskManager />} />
-
+          <Route path="projectHours-List" element={<ProjectHours />} /> 
 
 {/* contacts={dummyData}  */}
           <Route path="home" element={<HomePage />} />
           <Route path="*" element={<Navigate to="report-time" replace />} />
         </Routes>
       </main>
-      
     </div>
      
   );
