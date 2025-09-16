@@ -1,37 +1,66 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Phone, Edit3, Save, X, Mail, User } from "lucide-react";
-import type { City, PhoneBook } from "../../interface/interfaces";
+import type { City, PhoneBook,Company } from "../../interface/interfaces";
+import { updateCompany, updatePhoneBookContact } from "../../services/phoneBookService";
 
 
 
 interface UpdatePhoneBookProps {
     contact: PhoneBook | null;
-    isEditing: boolean;
-    editData: Partial<PhoneBook>;
     onClose: () => void;
-    onStartEdit: () => void;
     onSave: () => void;
-    onChange: (field: keyof PhoneBook, value: string) => void;
-    onCancelEdit: () => void;
-    isAddingCompany: boolean;
     citiesList: City[];
-    setCompany: (value: boolean) => void;
 }
 
 const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     contact,
-    isEditing,
-    editData,
     onClose,
-    onStartEdit,
     onSave,
-    onChange,
-    onCancelEdit,
-    isAddingCompany,
-
     citiesList,
-    setCompany
 }) => {
+    const [isEditing, setIsEditing] = useState(false);
+      const [isAddingCompany, setIsAddingCompany] = useState(false);
+      const [editData, setEditData] = useState<PhoneBook>({
+    id: 0,
+    firstName: '',
+    lastName: '',
+    company: '',
+    companyAddress: '',
+    companyPhone: '',
+    mobile: '',
+    email: '',
+    selectedCompanyId: 0,
+    companyCityID: 0
+  });
+  
+    const saveChanges = async () => {
+      if (isAddingCompany && editData.company) {
+        // Add new company
+        const Company: Company = {
+          id: editData.selectedCompanyId,
+          name: editData.company,
+          address: editData.companyAddress ?? '',
+          phoneNum: editData.companyPhone ?? '',
+          cityID: editData.companyCityID  // Use selected city if available, fallback to 0
+        };
+        const update = await updateCompany(Company);
+  
+        if (update) {
+      
+        }
+      }
+      const upDateContact = await updatePhoneBookContact(editData)
+      if (upDateContact) {
+   onSave()
+      }
+     
+    };
+  useEffect(() => {
+  if (contact) {
+    setEditData(contact);
+    setIsAddingCompany(false);
+  }
+}, [contact]);
     if (!contact) return null;
     console.log("editData", editData)
     return (
@@ -42,7 +71,8 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
 
 
                     <button
-                        onClick={isEditing ? onSave : onStartEdit}
+                   
+                        onClick={()=>{isEditing ? saveChanges() : setIsEditing(true), setIsAddingCompany(false) }}
                         className="w-8 h-8 flex items-center justify-center"
                     >
                         {isEditing ? (
@@ -71,7 +101,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                 <input
                                     type="text"
                                     value={editData.firstName || ""}
-                                    onChange={(e) => onChange("firstName", e.target.value)}
+                                    onChange={(e) => setEditData({...editData, firstName:e.target.value})}
                                     className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                             ) : (
@@ -89,7 +119,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                 <input
                                     type="text"
                                     value={editData.lastName || ""}
-                                    onChange={(e) => onChange("lastName", e.target.value)}
+                                    onChange={(e) => setEditData({...editData, lastName:e.target.value})}
                                     className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                             ) : (
@@ -124,7 +154,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                         type="checkbox"
                                         name="companyOption"
                                         checked={isAddingCompany}
-                                        onChange={(e) => setCompany(e.target.checked)}
+                                        onChange={(e) =>setIsAddingCompany(e.target.checked) }
                                         className="text-purple-600"
                                     />
                                     <span className="block text-lg font-bold text-gray-700 mt-2 mb-2"> פרטי חברה </span>
@@ -142,7 +172,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                             <input
                                                 type="text"
                                                 value={editData.company || ""}
-                                                onChange={(e) => onChange("company", e.target.value)}
+                                                onChange={(e) => setEditData({...editData, company:e.target.value})}
                                                 className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                             />
                                         </div>
@@ -163,7 +193,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                             <input
                                                 type="text"
                                                 value={editData.companyAddress || ""}
-                                                onChange={(e) => onChange("companyAddress", e.target.value)}
+                                                onChange={(e) => setEditData({...editData, companyAddress:e.target.value})}
                                                 className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                                 placeholder="הכנס כתובת..."
                                             />
@@ -174,7 +204,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                             </label>
                                             <select
                                                 value={editData.companyCityID || ""}
-                                                onChange={(e) => onChange("companyCityID", e.target.value)}
+                                                onChange={(e) => setEditData({...editData, companyCityID:Number(e.target.value)})}
                                                 className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                             >
                                                 <option value="">בחר עיר...</option>
@@ -227,7 +257,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                         <input
                                             type="tel"
                                             value={editData.companyPhone || ""}
-                                            onChange={(e) => onChange("companyPhone", e.target.value)}
+                                            onChange={(e) => setEditData({...editData, companyPhone:e.target.value})}
                                             className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     ) : (
@@ -255,7 +285,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                 <input
                                     type="tel"
                                     value={editData.mobile || ""}
-                                    onChange={(e) => onChange("mobile", e.target.value)}
+                                    onChange={(e) => setEditData({...editData, mobile:e.target.value})}
                                     className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                             ) : (
@@ -294,7 +324,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                     <input
                                         type="email"
                                         value={editData.email || ""}
-                                        onChange={(e) => onChange("email", e.target.value)}
+                                        onChange={(e) => setEditData({...editData, email:e.target.value})}
                                         className="w-full p-3 border border-gray-300 rounded-lg text-left focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         placeholder="name@example.com"
                                     />
@@ -325,13 +355,14 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                         {isEditing ? (
                             <>
                                 <button
-                                    onClick={onCancelEdit}
+                                    onClick={()=>{setIsEditing(false),
+            setEditData(contact)}}
                                     className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors"
                                 >
                                     ביטול
                                 </button>
                                 <button
-                                    onClick={onSave}
+                                    onClick={()=>saveChanges()}
                                     className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity"
                                 >
                                     שמור שינויים
@@ -340,7 +371,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                         ) : (
                             <>
                                 <button
-                                    onClick={onStartEdit}
+                                    onClick={()=>{setIsEditing(true), setIsAddingCompany(false) }}
                                     className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
                                 >
                                     <Edit3 className="w-4 h-4" />

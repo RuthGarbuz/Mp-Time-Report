@@ -204,22 +204,21 @@ export default function BusinessPhonebook() {
     a.click();
 
   };
-  const openEditContact = (contact: PhoneBook) => {
-    newContact.id = contact.id;
-    newContact.company = contact.company;
-    newContact.selectedCompanyId = contact.selectedCompanyId;
-    newContact.companyAddress = contact.companyAddress;
-    newContact.companyPhone = contact.companyPhone;
-    newContact.email = contact.email;
-    newContact.firstName = contact.firstName;
-    newContact.lastName = contact.lastName;
-    newContact.mobile = contact.mobile;
-    setTitle('עריכת איש קשר');
-    setSelectedContact(contact)
-    setEditData(contact)
-    setIsAddingCompany(false);
-    //setIsAddModalOpen(true);
-  }
+  // const openEditContact = (contact: PhoneBook) => {
+  //   newContact.id = contact.id;
+  //   newContact.company = contact.company;
+  //   newContact.selectedCompanyId = contact.selectedCompanyId;
+  //   newContact.companyAddress = contact.companyAddress;
+  //   newContact.companyPhone = contact.companyPhone;
+  //   newContact.email = contact.email;
+  //   newContact.firstName = contact.firstName;
+  //   newContact.lastName = contact.lastName;
+  //   newContact.mobile = contact.mobile;
+  //   setTitle('עריכת איש קשר');
+  //   setSelectedContact(contact)
+  //   setEditData(contact)
+  //   setIsAddingCompany(false);
+  // }
   const clearCompanyData = () => {
     newContact.company = '';
     newContact.companyAddress = '';
@@ -266,13 +265,9 @@ export default function BusinessPhonebook() {
         cityID: editData.companyCityID  // Use selected city if available, fallback to 0
       };
       const update = await updateCompany(Company);
-      //let newCompanyID = await addNewCompany(newCompany);
+
       if (update) {
-        // companiesList.map(company =>
-        //   company.id === selectedContact?.id
-        //     ? { ...company, ...Company } // keep id + merge updated fields
-        //     : company
-        // )
+    
       }
     }
     const upDateContact = await updatePhoneBookContact(editData)
@@ -280,7 +275,6 @@ export default function BusinessPhonebook() {
 
     }
     getData();
-   
     resetForm()
   };
   return (
@@ -315,21 +309,10 @@ export default function BusinessPhonebook() {
       {selectedContact && (
 
         <UpdatePhoneBook
-
           contact={selectedContact}
-          isEditing={isEditing}
-          editData={editData}
-          onClose={() => { resetForm() }}
-          onStartEdit={() => { setIsEditing(true), setIsAddingCompany(false) }}
-          onSave={saveChanges}
-          onChange={(field, value) => setEditData({ ...editData, [field]: value })}
-          onCancelEdit={() => {
-            setIsEditing(false);
-            setEditData(selectedContact);
-          }}
-          isAddingCompany={isAddingCompany}
+          onClose={() => { setSelectedContact(null); }}
+          onSave={()=>{ setSelectedContact(null),getData()}}
           citiesList={citiesList}
-          setCompany={(value: boolean) => { console.log("value", value), clearCompanyData(), setIsAddingCompany(value); }}
         />
       )}
 
@@ -517,85 +500,7 @@ export default function BusinessPhonebook() {
         </div>
       )}
 
-      {/* model */}
-      {/* {selectedContact && (
-        <div className="fixed inset-0  bg-opacity-40 backdrop-blur-sm backdrop-saturate-150 flex items-center justify-center z-50">
-          <div className="bg-opacity-40 bg-white p-6 rounded-xl shadow-xl w-[300px]  max-w-sm">
-            <h2 className="text-gray-600 text-xl font-bold mb-4">פרטי איש קשר</h2>
-            <div className="text-gray-500 space-y-2 text-right">
-
-              <div><strong>שם: </strong> {selectedContact.firstName} {selectedContact.lastName}</div>
-              <div><strong>חברה: </strong> {selectedContact.company}</div>
-              <div> <strong>דוא"ל: </strong>{' '}
-                <a href={`mailto:${selectedContact.email}`} className="text-blue-600 underline">
-                  {selectedContact.email}
-                </a></div>
-              <div><strong>טלפון: </strong>
-                <a
-                  href={`tel:${selectedContact.companyPhone}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {selectedContact.companyPhone}
-                </a> </div>
-              <div className="flex items-center gap-2">
-                <strong>נייד: </strong>
-                <a
-                  href={`tel:${selectedContact.mobile}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {selectedContact.mobile}
-                </a>
-
-                {selectedContact.mobile && (
-                  <a
-                    href={`https://wa.me/${selectedContact.mobile
-                      .replace(/[^0-9]/g, '') // מסירים כל דבר שהוא לא מספר
-                      .replace(/^0/, '972')  // מחליפים את 0 ההתחלתי בקידומת ישראל
-                      }`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title="שלח הודעה ב־WhatsApp"
-                  >
-                    <img
-                      src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-                      alt="WhatsApp"
-                      className="w-5 h-5"
-                    />
-                  </a>
-                )}
-              </div>
-
-
-              <div className="flex items-center gap-2">
-                <strong>כתובת: </strong> {selectedContact.companyAddress}
-                {selectedContact.companyAddress && (<a
-                  href={`https://waze.com/ul?q=${encodeURIComponent(selectedContact.companyAddress)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="פתח ב-Waze"
-                >
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Waze_logo.svg/32px-Waze_logo.svg.png"
-                    alt="Waze"
-                    className="w-5 h-5 inline-block"
-                  />
-                </a>
-                )}
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() =>{setUpdate(false),
-                  setSelectedContact(null)
-                } }
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                סגור
-              </button>
-            </div>
-          </div>
-        </div>
-      )} */}
+      
       <div
         ref={listRef}
         onScroll={handleScroll}
@@ -610,9 +515,9 @@ export default function BusinessPhonebook() {
               className="backdrop-blur-lg border-b border-white/20 py-6  mx-4 text-white flex justify-between items-center"
               onClick={() => {
                 setUpdate(true),
-                  openEditContact(contact)
+                  setSelectedContact(contact)
               }
-                //setSelectedContact(contact)
+                //
               }
             >
               {/* <div className="flex justify-between items-center"> */}
