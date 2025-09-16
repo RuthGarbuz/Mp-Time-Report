@@ -16,7 +16,7 @@ export default function TaskManager() {
     [{ id: 0, name: 'Loading...' }]
   );
   const [projectsList, setProjectsList] = useState<Project[]>(
-    [{ id: 0, name: 'Loading...' , HoursReportMethodID:0}]
+    [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
   );
   const [loaded, setLoaded] = useState(false);
   const [loadedProject, setLoadedProject] = useState(false);
@@ -39,11 +39,11 @@ export default function TaskManager() {
   const [activeTab, setActiveTab] = useState('received'); // 'received' or 'sent'  
   const [isOpenProject, setIsOpenProject] = useState(false);
   const [searchProject, setSearchProject] = useState("");
-    const [searchEmployee, setSearchEmployee] = useState("");
+  const [searchEmployee, setSearchEmployee] = useState("");
   const [isOpenEmployee, setIsOpenEmployee] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   // נתוני משימה חדשה מפורטים
-
+const [userID,setUserID]=useState(0);
   const [newTaskDetails, setNewTaskDetails] = useState<Task>({
     taskID: 0,
     subject: '',
@@ -66,6 +66,7 @@ export default function TaskManager() {
     setErrorRecipient("");
   }
   const resetNewTaskDetails = () => {
+  console.log("use",userID)
     resetError();
     // setOpenError(false)
     setShowAddModal(false);
@@ -83,8 +84,8 @@ export default function TaskManager() {
       dueTime: '10:00',
       projectID: 0,
       projectName: '',
-      organizerID: 0,
-      recipientID: 0
+      organizerID: userID,
+      recipientID: userID
     });
   };
   // const getEmployeesList=async()=>{ 
@@ -140,6 +141,7 @@ export default function TaskManager() {
       hasError = true;
     }
     if (!newTaskDetails.recipientID) {
+     
       setErrorRecipient("נדרש מקבל המשימה");
       hasError = true;
     }
@@ -159,17 +161,13 @@ export default function TaskManager() {
     // if (newTaskDetails?.subject.trim()) {
     const taskData = await insertTask(newTaskDetails);
     if (taskData > 0) {
-      setTasksList([...tasksList, { ...newTaskDetails, taskID: taskData }]);
+      const taskData = await getTasksList(fromDate, toDate, activeTab);
+      if (taskData) {
+        setTasksList(taskData)
+      }
     }
-    // setTasks([...tasks, {
-    //   id: Date.now(),
-    //   ...newTaskDetails,
-    //   completed: false
-    // }]);
+   
     resetNewTaskDetails();
-
-    // }
-
   };
 
   const toggleTask = async (id: any) => {
@@ -195,19 +193,24 @@ export default function TaskManager() {
 
   const startEdit = (id: any, text: string) => {
     const task = tasksList.find(task => task.taskID === id);
-    if (task) setNewTaskDetails(task);
+    if (task){
+    const empName= employeesList.find(emp=>emp.id===task.recipientID);
+    setSearchEmployee(empName?.name ?? "");
+    setNewTaskDetails(task);
     setEditingId(id);
     setEditText(text);
-    setTitle("עריכת משימה:")
+    setTitle("עריכת משימה")
     setShowAddModal(true)
+    } 
   };
   const openNewTask = () => {
-    setTitle("הוספת משימה חדשה:")
+    setTitle("הוספת משימה חדשה")
     setNewTaskDetails(prev => ({
       ...prev,
       priorityID: 0,
       subject: '',
     }))
+    setSearchEmployee("");
     setShowAddModal(true)
   }
   const saveEdit = () => {
@@ -273,23 +276,20 @@ export default function TaskManager() {
   useEffect(() => {
     const fetchData = async () => {
       const taskData = await getTasksList(fromDate, toDate, activeTab);
-      if (activeTab === 'received') {
-        const user = authService.getCurrentUser();
-        if (user && newTaskDetails) {
-          setNewTaskDetails(prev => ({
-            ...prev,
-            recipientID: user.id,
-            organizerID: user.id
-          }));
-        }
-      }
+      const user = authService.getCurrentUser();
+      setUserID(user.id)
       if (taskData) {
         setTasksList(taskData);
       }
     };
     fetchData();
   }, [fromDate, toDate, activeTab]);
-
+//update reciptionID
+useEffect(() => {
+  if (userID) {
+    resetNewTaskDetails();
+  }
+}, [userID]);
   const completedCount = tasksList.filter(task => task.isCompleted).length;
   const totalCount = tasksList.length;
 
@@ -339,16 +339,16 @@ export default function TaskManager() {
   // const AddTaskModal = () => (
 
   // );
- const filteredEmployees = employeesList.filter((emp) =>
+  const filteredEmployees = employeesList.filter((emp) =>
     emp.name?.toLowerCase().includes(searchEmployee.toLowerCase())
   );
 
   const handleSelect = (emp: SelectEmployeesList) => {
     setNewTaskDetails((prev) => ({
       ...prev,
-      recipientID: emp.id? emp.id :0  ,
+      recipientID: emp.id ? emp.id : 0,
     }));
-    setSearchEmployee(emp.name? emp.name : "");
+    setSearchEmployee(emp.name ? emp.name : "");
     setIsOpenEmployee(false);
   };
 
@@ -364,7 +364,7 @@ export default function TaskManager() {
       {/* Main Card */}
       <div className="bg-white rounded-3xl p-3 mb-4 shadow-lg">
         <div className="flex mb-3 bg-gray-100 rounded-lg p-1">
-          <button
+          {/* <button
             onClick={() => setActiveTab('received')}
             className={`flex-1 py-2 px-4 text-center rounded-md transition-all 
      text-[clamp(0.9rem,1.5vw,1.3rem)] font-medium
@@ -383,7 +383,34 @@ export default function TaskManager() {
                 : 'text-gray-600 hover:text-purple-600'}`}
           >
             פגישות ששלחתי
-          </button>
+          </button> */}
+         <button
+      onClick={() => setActiveTab("sent")}
+      className={`relative flex-1 px-4 py-2 font-semibold transition-colors ${
+        activeTab === "sent"
+          ? "bg-gradient-to-r from-purple-600 to-pink-500 text-transparent bg-clip-text"
+          : "text-gray-500"
+      }`}
+    >
+      פגישות ששלחתי
+      {activeTab === "sent" && (
+        <span className="absolute bottom-0 left-0 w-full h-1 rounded-t bg-gradient-to-r from-purple-600 to-pink-500"></span>
+      )}
+    </button>
+
+    <button
+      onClick={() => setActiveTab("received")}
+      className={`relative flex-1 px-4 py-2 font-semibold transition-colors ${
+        activeTab === "received"
+          ? "bg-gradient-to-r from-purple-600 to-pink-500 text-transparent bg-clip-text"
+          : "text-gray-500"
+      }`}
+    >
+      פגישות שקיבלתי
+      {activeTab === "received" && (
+        <span className="absolute bottom-0 left-0 w-full h-1 rounded-t bg-gradient-to-r from-purple-600 to-pink-500"></span>
+      )}
+    </button>
         </div>
         {/* <div className="relative flex items-center justify-between w-full mb-2">
   <div className="text-right">
@@ -434,8 +461,8 @@ export default function TaskManager() {
           <button
             onClick={() => setData('today')}
             className={`flex-1 py-2 px-4 rounded-xl font-medium transition-colors ${filter === 'today'
-                ? 'bg-purple-600 text-white'
-                : 'bg-purple-100 text-purple-600'
+              ? 'bg-purple-600 text-white'
+              : 'bg-purple-100 text-purple-600'
               }`}
           >
             להיום
@@ -446,8 +473,8 @@ export default function TaskManager() {
             }
             }
             className={`flex-1 py-2 px-4 rounded-xl font-medium transition-colors ${filter === 'week'
-                ? 'bg-pink-500 text-white'
-                : 'bg-pink-100 text-pink-600'
+              ? 'bg-pink-500 text-white'
+              : 'bg-pink-100 text-pink-600'
               }`}
           >
             להשבוע
@@ -468,7 +495,7 @@ export default function TaskManager() {
               // onChange={(e) => setNewTask(e.target.value)}
               // onKeyPress={(e) => e.key === 'Enter' && addTask()}
               placeholder="הוסף משימה מהירה..."
-              className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
             <select
               value={newTaskDetails.priorityID}
@@ -481,26 +508,27 @@ export default function TaskManager() {
 
               // value={newTaskPriority}
               // onChange={(e) => setNewTaskPriority(e.target.value)}
-              className="px-3 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
             >
               <option value={Priority.נמוכה}>{Priority[Priority.נמוכה]}</option>
               <option value={Priority.רגילה}>{Priority[Priority.רגילה]}</option>
               <option value={Priority.גבוהה}>{Priority[Priority.גבוהה]}</option>
             </select>
             <button
-              onClick={addDetailedTask
-                //addTask
+            type="button" 
+              onClick={  
+                 addDetailedTask
               }
-              className="inline-flex px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors  items-center"
+              className="inline-flex px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors  items-center"
             >
-              <Plus size={20} />
+              <Plus size={20}/>
             </button>
           </div>
 
           {/* כפתור הוספה מפורטת */}
           <button
             onClick={() => openNewTask()}
-            className="w-full py-3 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:from-green-600 hover:to-teal-600 transition-colors font-medium"
+            className="w-full py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:from-green-600 hover:to-teal-600 transition-colors font-medium"
           >
             הוספת משימה מפורטת
           </button>
@@ -542,15 +570,15 @@ export default function TaskManager() {
               <div
                 key={task.taskID}
                 className={`flex items-start gap-3 p-4 border rounded-2xl transition-all ${task.isCompleted
-                    ? 'bg-gray-50 border-gray-200'
-                    : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-sm'
+                  ? 'bg-gray-50 border-gray-200'
+                  : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-sm'
                   }`}
               >
                 <button
                   onClick={() => toggleTask(task.taskID)}
                   className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${task.isCompleted
-                      ? 'bg-green-500 border-green-500 text-white'
-                      : 'border-gray-300 hover:border-green-400'
+                    ? 'bg-green-500 border-green-500 text-white'
+                    : 'border-gray-300 hover:border-green-400'
                     }`}
                 >
                   {task.isCompleted && <Check size={16} />}
@@ -583,8 +611,8 @@ export default function TaskManager() {
                   <> */}
                 <div className="flex-1">
                   <div className={`font-medium mb-1 ${task.isCompleted
-                      ? 'text-gray-500 line-through'
-                      : 'text-gray-800'
+                    ? 'text-gray-500 line-through'
+                    : 'text-gray-800'
                     }`}>
                     {task.subject}
                   </div>
@@ -617,7 +645,7 @@ export default function TaskManager() {
                   <button
                     onClick={() => {
                       setEditingId(task.taskID),
-                      startEdit(task.taskID, task.subject)
+                        startEdit(task.taskID, task.subject)
                     }
                     }
                     className="p-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
@@ -649,7 +677,7 @@ export default function TaskManager() {
                 className="px-4 py-2 rounded-lg bg-gray-300 text-gray-800 hover:bg-gray-400"
                 onClick={() => {
                   setShowDeleteModal(false),
-                  setSelectedTaskID(null)
+                    setSelectedTaskID(null)
                 }}
               >
                 ביטול
@@ -666,21 +694,23 @@ export default function TaskManager() {
         </div>
       )}
       {/* Add Task Modal */}
-      {showAddModal && (<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="text-gray-800 bg-white rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-800">{title}</h3>
-            <button
-              onClick={() => {
-                resetNewTaskDetails();
-              }}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
-            >
-              <X size={20} />
-            </button>
-          </div>
+      {showAddModal && (
+ <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="relative pt-1 flex items-center justify-center mb-2">
+              <h2 className="text-lg font-semibold text-gray-800 text-center">{title}</h2>
+              <button
+                onClick={() => { resetNewTaskDetails(); }}
+                className="absolute left-0  w-8 h-8 flex items-center justify-center"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+             
+            </div>
+            {/* Scrollable body */}
+            <div className="p-4 space-y-3 overflow-y-auto">
 
-          <div className="space-y-4">
 
             {/* תיאור המשימה */}
             <div>
@@ -799,73 +829,72 @@ export default function TaskManager() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 רמת דחיפות
               </label>
-              
-              <div className="relative w-full">
-  <select
-    value={newTaskDetails.priorityID}
-    onChange={(e) =>
-      setNewTaskDetails((prev) => ({
-        ...prev,
-        priorityID: Number(e.target.value),
-      }))
-    }
-    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white"
-  >
-    {/* <option value="">בחר עדיפות</option> */}
-    <option value={Priority.נמוכה} className="hover:bg-purple-100">
-      {Priority[Priority.נמוכה]}
-    </option>
-    <option value={Priority.רגילה} className="hover:bg-purple-100">
-      {Priority[Priority.רגילה]}
-    </option>
-    <option value={Priority.גבוהה} className="hover:bg-purple-100">
-      {Priority[Priority.גבוהה]}
-    </option>
-  </select>
 
-  {/* Chevron icon on the right */}
-  <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center pr-3 text-gray-500">
-    <ChevronDownIcon className="h-6 w-6" />
-  </div>
-</div>
+              <div className="relative w-full">
+                <select
+                  value={newTaskDetails.priorityID}
+                  onChange={(e) =>
+                    setNewTaskDetails((prev) => ({
+                      ...prev,
+                      priorityID: Number(e.target.value),
+                    }))
+                  }
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none bg-white"
+                >
+                  {/* <option value="">בחר עדיפות</option> */}
+                  <option value={Priority.נמוכה} className="hover:bg-purple-100">
+                    {Priority[Priority.נמוכה]}
+                  </option>
+                  <option value={Priority.רגילה} className="hover:bg-purple-100">
+                    {Priority[Priority.רגילה]}
+                  </option>
+                  <option value={Priority.גבוהה} className="hover:bg-purple-100">
+                    {Priority[Priority.גבוהה]}
+                  </option>
+                </select>
+
+                {/* Chevron icon on the right */}
+                <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center pr-3 text-gray-500">
+                  <ChevronDownIcon className="h-6 w-6" />
+                </div>
+              </div>
             </div>
             <div className="relative w-full">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 מקבל<span className="text-red-500">*</span>
               </label>
-<input
-        type="text"
-        value={searchEmployee}
-        onChange={(e) => {
-          setSearchEmployee(e.target.value);
-          setIsOpenEmployee(true);
-        }}
-        // onFocus={() => setIsOpenEmployee(true)}
-        placeholder="בחר מקבל..."
-        className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent${
-          errorRecipient ? "border-red-500" : "border-gray-300"
-        }`}
-      />
- <button
-    type="button"
-    onClick={() => {setIsOpenEmployee(!isOpenEmployee),setSearchEmployee("");}}
-    className="pt-6 absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
-  >
-    <ChevronDownIcon className="h-6 w-6" />
-  </button>
-      {isOpenEmployee && filteredEmployees.length > 0 && (
-        <ul className=" absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-          {filteredEmployees.map((emp) => (
-            <li
-              key={emp.id}
-              onClick={() => handleSelect(emp)}
-              className="p-2 cursor-pointer  hover:bg-[#0078d7]  hover:text-white"
-            >
-              {emp.name}
-            </li>
-          ))}
-        </ul>
-      )}
+              <input
+                type="text"
+                value={searchEmployee}
+                onChange={(e) => {
+                  setSearchEmployee(e.target.value);
+                  setIsOpenEmployee(true);
+                }}
+                // onFocus={() => setIsOpenEmployee(true)}
+                placeholder="בחר מקבל..."
+                className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent${errorRecipient ? "border-red-500" : "border-gray-300"
+                  }`}
+              />
+              <button
+                type="button"
+                onClick={() => { setIsOpenEmployee(!isOpenEmployee), setSearchEmployee(""); }}
+                className="pt-7 absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
+              >
+                <ChevronDownIcon className="h-6 w-6" />
+              </button>
+              {isOpenEmployee && filteredEmployees.length > 0 && (
+                <ul className=" absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {filteredEmployees.map((emp) => (
+                    <li
+                      key={emp.id}
+                      onClick={() => handleSelect(emp)}
+                      className="p-2 cursor-pointer  hover:bg-[#0078d7]  hover:text-white"
+                    >
+                      {emp.name}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {/* <select hover:bg-purple-100
                 value={newTaskDetails.recipientID}
                 onChange={(e) => {
@@ -887,7 +916,7 @@ export default function TaskManager() {
               {errorRecipient && <p className="text-red-500 text-sm mt-1">{errorRecipient}</p>}
             </div>
             {/* פרויקט */}
-       
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 פרויקט
@@ -1008,5 +1037,7 @@ export default function TaskManager() {
 
   );
 }
+
+
 
 

@@ -107,6 +107,7 @@ export interface PhoneBook  {
   email: string;
   companyPhone?: string;
   companyAddress?: string;
+  companyCityID?:number
 };
 export interface Company {
   id: number;

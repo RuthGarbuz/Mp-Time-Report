@@ -164,3 +164,36 @@ const data: number = await response.json();
     return 0;
   }
 };
+export const updateCompany = async (company: Company): Promise<number> => {
+  try {
+    const user = authService.getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+
+    const dynamicBaseUrl = user.urlConnection;
+    const endpoint = `${dynamicBaseUrl}/phoneBook/UpdateCompany`; 
+    // <-- make sure this matches your backend route
+
+    const requestBody = {
+      database: user.dataBase,
+      id:company.id,
+      name: company.name,
+      address: company.address,
+      cityID: company.cityID, // Assuming address is a string that includes city
+      phoneNum: company.phoneNum
+     // ...company, // merge all contact fields into body
+    };
+    const response = await authService.makeAuthenticatedRequest(endpoint, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to save company");
+    }
+const data: number = await response.json();
+    return data
+  } catch (error) {
+    console.error("Error update phone book company:", error);
+    return 0;
+  }
+};

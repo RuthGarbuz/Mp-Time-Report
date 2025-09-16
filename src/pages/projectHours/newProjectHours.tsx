@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, X } from 'lucide-react';
-import type { Contract, Employee, HourReport, HourReportModal, Project, Step, SubContract, TimeHourReportsType, TimeRecord } from '../interface/interfaces';
+import type { Contract, Employee, HourReport, HourReportModal, Project, Step, SubContract, TimeHourReportsType, TimeRecord } from '../../interface/interfaces';
 import "tailwindcss";
 import React from 'react';
-import authService from '../services/authService';
-import hourReportService, { getHourReportStepsModal, getStepsList, insertProjectHourReport } from '../services/hourReportService';
-import { getProjectsList } from '../services/TaskService';
+import authService from '../../services/authService';
+import hourReportService, { getHourReportStepsModal, getStepsList, insertProjectHourReport } from '../../services/hourReportService';
+import { getProjectsList } from '../../services/TaskService';
+import HourReportModalOpen from './HourReportModalOpen';
+import EmployeeProfileCard from '../shared/employeeProfileCard';
 //import HebrewDatePicker from 'react-hebrew-datepicker';
 const ProjectHours = () => {
   const rowRef = useRef<HTMLDivElement>(null);
@@ -23,7 +25,6 @@ const ProjectHours = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [typeReports, setTypeReports] = useState<TimeHourReportsType[]>([]);
-  const [typeReport, setTypeReport] = useState<TimeHourReportsType | null>(null);
   const [editPermision, setEditPermision] = useState(false);
   const [searchProject, setSearchProject] = useState("");
   const [isOpenProject, setIsOpenProject] = useState(false);
@@ -39,13 +40,13 @@ let calculateclockOutTime = "";
   );
 
 
-  const validateTimes = (clockInTime: string, clockOutTime: string) => {
-    if (clockInTime && clockOutTime && clockOutTime < clockInTime) {
-      setError("שעת יציאה לא יכולה להיות לפני שעת כניסה");
-    } else {
-      setError(null);
-    }
-  };
+  // const validateTimes = (clockInTime: string, clockOutTime: string) => {
+  //   if (clockInTime && clockOutTime && clockOutTime < clockInTime) {
+  //     setError("שעת יציאה לא יכולה להיות לפני שעת כניסה");
+  //   } else {
+  //     setError(null);
+  //   }
+  // };
 
   const [newReport, setNewReport] = useState<HourReportModal>(
     {
@@ -305,21 +306,14 @@ let calculateclockOutTime = "";
      setNewReport({ ...newReport, id: insertedReport })
      getHourReportsList()
       }
-      setTypeReport(typeReports.find((t) => t.id === 5) || null)
+      //setTypeReport(typeReports.find((t) => t.id === 5) || null)
     }
 
     // ✅ Close only after successful handling
     setIsModalOpen(false);
   };
  
-  const closeModal = () => {
-    if (error) {
-      alert("לא ניתן לסגור את הטופס כל עוד קיימת שגיאה. אנא תקן/י את השדות.");
-      return;
-    }
-    setTypeReport(typeReports.find((t) => t.id === 5) || null)
-    setIsModalOpen(false)
-  };
+  
 
 
 
@@ -372,24 +366,7 @@ let calculateclockOutTime = "";
    const storedTimeRecord = await hourReportService.getHourReportProjectData(currentDay);
         setReports(storedTimeRecord ?? []);
 }
-  const getProfileImage = () => {
-    const img = employee?.image?.trim();
-    if (img && img !== 'null') {
-      return `data:image/jpeg;base64,${img}`;
-    }
-    return '/images/default-profile.png'; // מ- public/images
-  };
-  // Add loading state while employee data is being fetched
-  if (!employee) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans flex items-center justify-center" dir="rtl">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען נתונים...</p>
-        </div>
-      </div>
-    );
-  }
+ 
 
   function onUpdateClick(id: number) {
    
@@ -425,23 +402,24 @@ let calculateclockOutTime = "";
     setIsOpenProject(true);
   }
   const handleOk = async () => {
-    setIsOpenProject(false);
+    
     if (selectedProject) {
       setError(null)
       await initNewReport()
       setModalTitle('  דיווח שעות לפרויקט ' );
+      setIsModalOpen(true)
     }
 
   };
-const changeReportingType=(type:string)=>{
-setReportingType(type)
-if(type=='total'){
-  setNewReport({...newReport, clockInTime:undefined,clockOutTime:undefined })
-}
-else{
-  setNewReport({...newReport, clockInTime:"08:00",clockOutTime:calculateclockOutTime })
-}
-}
+// const changeReportingType=(type:string)=>{
+// setReportingType(type)
+// if(type=='total'){
+//   setNewReport({...newReport, clockInTime:undefined,clockOutTime:undefined })
+// }
+// else{
+//   setNewReport({...newReport, clockInTime:"08:00",clockOutTime:calculateclockOutTime })
+// }
+// }
   const filteredProjects = projectsList.filter((p) =>
     p.name.toLowerCase().includes(searchProject.toLowerCase())
   );
@@ -449,13 +427,12 @@ else{
     <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
       <div className="max-w-6xl mx-auto h-full flex flex-col">
 
-        {/* Employee Profile Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative overflow-hidden">
-          {/* Background decoration */}
+        {/* Employee Profile Section name={employee.name ?? ''} imageUrl={getProfileImage()*/}
+         {employee && <EmployeeProfileCard employee={employee} />}
+        {/* <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
 
           <div className="flex items-center gap-4">
-            {/* Profile Image */}
             <div className="relative flex-shrink-0">
               <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-3 border-white shadow-lg ring-2 ring-blue-100">
                 <img
@@ -469,12 +446,11 @@ else{
               </div>
             </div>
 
-            {/* Employee Name */}
             <div className="flex-1">
               <h1 className="text-xl md:text-2xl font-bold text-gray-800">{employee.name}</h1>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Week Navigation */}
 
@@ -584,15 +560,7 @@ else{
                     {report.total ?? '00:00'}
                   </span>
                 </div>
-                {/* Total Hours */}
-                {/* <div className="text-center">
-                  <span className={`font-mono text-xs md:text-base font-bold px-1 md:px-2 py-1 rounded-lg ${report.total === '00:00'
-                      ? 'text-gray-400 bg-gray-100'
-                      : 'text-blue-600 bg-blue-100'
-                    }`}>
-                    {report.total === 'NaN:NaN' ? '00:00' : report.total}
-                  </span>
-                </div> */}
+        
                 {contextMenuRowId === -900 && (//report.id 
                   <div className="absolute top-1 right-1 flex flex-col gap-1 z-10">
                     <button
@@ -667,255 +635,32 @@ else{
               <Clock className="w-5 h-5 text-blue-600" />
             </div>
             <h4 className="text-base font-semibold text-gray-800 mb-2">שעות תקן ליום</h4>
-            <p className="text-2xl font-bold text-blue-600">{employee.minutesHoursAmount}</p>
+            <p className="text-2xl font-bold text-blue-600">{employee?.minutesHoursAmount}</p>
           </div>
 
 
         </div>
       </div>
+      
 {isModalOpen && (
-        <div className="text-gray-800 fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-2">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-800"> דיווח שעות לפרויקט</h2>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
-                <form onSubmit={handleSubmit} className="2 space-y-2">
-              
-            <div className="space-y-4">
-                {/* Project Name and Date */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      שם פרויקט
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedProject?.name}
-                      onChange={(e) => setNewReport({...newReport, projectID:selectedProject?.id ?? 0 })}
-                     className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                     disabled
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      תאריך
-                    </label>
-                    <input
-                      type="date"
-                  value={currentDay ? currentDay.toISOString().split("T")[0] : ""}
-                  onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
-                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                  required
-                  disabled
-                    />
-                  </div>
-                </div>
-
-                {/* Reporting Type */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    אופן דיווח שעות
-                  </label>
-                  <div className="space-y-2">
-                    
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={reportingType === 'time-range'}
-                        onChange={() => changeReportingType('time-range')}
-                        className="ml-2 text-blue-500"
-                      />
-                      <span className="text-sm">משעה עד שעה</span>
-                    </label>
-                    
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={reportingType === 'total'}
-                        onChange={() => changeReportingType('total')}
-                        className="ml-2 text-blue-500"
-                      />
-                      <span className="text-sm">סה"כ שעות</span>
-                    </label>
-                  </div>
-
-                  {/* Time Range */}
-                  {reportingType === 'time-range' && (
-                     <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    שעת כניסה
-                  </label>
-                  <input
-                    type="time"
-                    value={newReport.clockInTime}
-                    onChange={(e) => setNewReport({ ...newReport, clockInTime: e.target.value })}
-                    onBlur={() => {
-                      if (newReport.clockInTime && newReport.clockOutTime) {
-                        validateTimes(newReport.clockInTime, newReport.clockOutTime)
-                      }
-                    }
-                    }
-                    className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    שעת יציאה
-                  </label>
-                  <input
-                    type="time"
-                    value={newReport.clockOutTime}
-                    onChange={(e) =>
-                      setNewReport({ ...newReport, clockOutTime: e.target.value })}
-                    onBlur={() => {
-                      if (newReport.clockInTime && newReport.clockOutTime) {
-                        validateTimes(newReport.clockInTime, newReport.clockOutTime)
-                      }
-                    }
-                    }
-                    className={`text-black w-full px-4 py-3 border rounded-lg transition-all duration-200 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
-                      } focus:border-transparent`}
-                  // disabled={newReport.type === 'חופש'}
-                  />
-                  {error && <p className="text-red-600 text-sm">{error}</p>}
-                </div>
-              </div>
-                  )}
-
-                  {/* Total Hours */}
-                  {reportingType === 'total' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        סה"כ שעות
-                      </label>
-                      <input
-                        type="time"
-                        // step="0.5"
-                        value={
-                         newReport.total
-                           ? newReport.total.padStart(5, "0") // ensures "8:00" → "08:00"
-                           : ""
-  }
-                        onChange={(e) => setNewReport({...newReport, total: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                 {/* Notes */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  הערות
-                </label>
-                <textarea
-
-                  value={newReport.notes}
-                  onChange={(e) => setNewReport({ ...newReport, notes: e.target.value })}
-                  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  rows={3}
-                  placeholder="הערות נוספות (אופציונלי)"
-                />
-              </div>
-              {/* Contract */}
-              {contracs && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    חוזה *
-                  </label>
-                  <select
-                    value={newReport.contractID}
-                    onChange={(e) => setNewReport({ ...newReport, contractID: Number(e.target.value) })}
-                 className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  >
-                    <option value="">בחר חוזה</option>
-                    {contracs?.map(contract => (
-                      <option key={contract.id} value={contract.id}>{contract.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              {/* Sub-Contract */}
-              {(newReport.contractID ?? 0) > 0&&subContracts && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    תת חוזה *
-                  </label>
-                  <select
-                    value={newReport.subContractID}
-                    onChange={(e) => setNewReport({ ...newReport, subContractID: Number(e.target.value) })}
-                   className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  >
-                    <option value="">בחר תת חוזה</option>
-                    {subContracts
-                      ? subContracts
-                        .filter(sc => sc.contractID === newReport.contractID)
-                        .map(subContract => (
-                          <option key={subContract.id} value={subContract.id}>
-                            {subContract.name}
-                          </option>
-                        )) : null
-                    }
-                  </select>
-                </div>
-              )}
-              {/* Step */}
-              {(newReport.subContractID ?? 0) > 0||(selectedProject?.hoursReportMethodID!=5&&selectedProject?.hoursReportMethodID!=3) &&steps&& (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                      שלב * 
-                  </label>
-                  <select
-                    value={newReport.stepID}
-                    onChange={(e) => setNewReport({ ...newReport, stepID: Number(e.target.value) })}
-                    className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  >
-                    <option value="">בחר שלב</option>
-                    {steps
-                      ? steps
-                        .filter( step =>
-                         newReport.subContractID === 0 ||
-                         step.subContractID === newReport.subContractID)
-                        .map(step => (
-                          <option key={step.id} value={step.id}>
-                            {step.name}
-                          </option>
-                        )) : null
-                    }
-                  </select>
-                </div>
-              )}
-             
-              {/* Submit Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="submit"
-                  // onClick={() => setIsModalOpen(false)}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
-                >
-                  שמור דיווח
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200"
-                >
-                  ביטול
-                </button>
-              </div>
-              </div>
-              </form>
-            </div>
-          </div>
-        </div>
+  <HourReportModalOpen
+  isOpen={isModalOpen}
+  onClose={() => setIsModalOpen(false)}
+  newReport={newReport}
+  setNewReport={setNewReport}
+  handleSubmit={handleSubmit}
+  error={error}
+  setError={setError}  // ⬅️ חשוב
+  reportingType={reportingType}
+  changeReportingType={setReportingType}
+  contracs={contracs}
+  subContracts={subContracts}
+  steps={steps}
+  selectedProject={selectedProject??undefined}
+  currentDay={currentDay}
+  calculateclockOutTime={() => calculateclockOutTime} 
+/>
+    
       )}
  
       
@@ -942,8 +687,8 @@ else{
                   onClick={() => setSelectedProject(p)}
                   onDoubleClick={async () => {
                     setSelectedProject(p),
-                      await handleOk(),
-                      setIsModalOpen(true)
+                      await handleOk()
+                      
                   }}
                   className={`p-2 cursor-pointer hover:bg-purple-100 ${selectedProject?.id === p.id ? "bg-purple-200" : ""
                     }`}
@@ -962,7 +707,7 @@ else{
                 ביטול
               </button>
               <button
-                onClick={async () => { await handleOk(), setIsModalOpen(true) }}
+                onClick={async () => {setIsOpenProject(false), await handleOk() }}
                 className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
               >
                 אישור

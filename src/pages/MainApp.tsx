@@ -14,7 +14,7 @@ import "tailwindcss";
 import BusinessPhonebook from './BusinessPhonebook';
 import authService from '../services/authService';
 import TaskManager from './taskList';
-import ProjectHours from './ProjectHours';
+import ProjectHours from './projectHours/ProjectHours';
 const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const[titleName,setTitleName]=useState("");

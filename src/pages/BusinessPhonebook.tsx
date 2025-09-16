@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
-import { Phone, Plus, Search, X } from 'lucide-react';
-import { addCompany, getPhoneBookCompanyList, updatePhoneBookContact } from '../services/phoneBookService';
+import { Edit3, Phone, Plus, Save, Search, X } from 'lucide-react';
+import { addCompany, getPhoneBookCompanyList, updatePhoneBookContact, updateCompany } from '../services/phoneBookService';
 import { addPhoneBookContact } from "../services/phoneBookService";
 import type { City, Company, PhoneBook } from '../interface/interfaces';
+import UpdatePhoneBook from './phoneBook/UpdatePhoneBook';
 
 export default function BusinessPhonebook() {
   const [selectedContact, setSelectedContact] = useState<PhoneBook | null>(null);
-   const [emailError, setEmailError] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
   //const [editingContact, setEditingContact] = useState<Contact | null>(null);
   //const [isDesktop, setIsDesktop] = useState(false);
   const [isUpdate, setUpdate] = useState(false);
@@ -15,16 +16,28 @@ export default function BusinessPhonebook() {
   const [contactsList, setContactsList] = useState<PhoneBook[]>([]);
   const [companiesList, setCompaniesList] = useState<Company[]>([]);
   const [citiesList, setCitiesList] = useState<City[]>([]);
-  const [selectedCity, setselectedCity] = useState<number>();
 
   const [title, setTitle] = useState('');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [visibleCount, setVisibleCount] = useState(20);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState<PhoneBook>({
+    id: 0,
+    firstName: '',
+    lastName: '',
+    company: '',
+    companyAddress: '',
+    companyPhone: '',
+    mobile: '',
+    email: '',
+    selectedCompanyId: 0,
+    companyCityID: 0
+  });
   const [newContact, setNewContact] = useState<PhoneBook>(
     {
-      id:0,
+      id: 0,
       firstName: '',
       lastName: '',
       company: '',
@@ -32,7 +45,8 @@ export default function BusinessPhonebook() {
       companyPhone: '',
       mobile: '',
       email: '',
-      selectedCompanyId: 0
+      selectedCompanyId: 0,
+      companyCityID: 0
     }
   );
 
@@ -50,7 +64,7 @@ export default function BusinessPhonebook() {
   // };
   const resetForm = () => {
     setNewContact({
-      id:0,
+      id: 0,
       firstName: '',
       lastName: '',
       company: '',
@@ -58,91 +72,87 @@ export default function BusinessPhonebook() {
       companyPhone: '',
       mobile: '',
       email: '',
-      selectedCompanyId: 0
+      selectedCompanyId: 0,
+      companyCityID: 0
     });
     setIsAddingCompany(false);
-    setselectedCity(undefined)
+     setSelectedContact(null);
+    setIsEditing(false);
+    setIsAddModalOpen(false);
   };
   const setCompanyData = async () => {
- if (isAddingCompany && newContact.company) {
-        // Add new company
-        const newCompany: Company = {
-          id: Date.now(),
-          name: newContact.company,
-          address: newContact.companyAddress ?? '',
-          phoneNum: newContact.companyPhone ?? '',
-          cityID: selectedCity  // Use selected city if available, fallback to 0
-        };
-        const newCompanyID = await addCompany(newCompany);
-        //let newCompanyID = await addNewCompany(newCompany);
-        if (newCompanyID && newCompanyID > 0) {
-          newContact.selectedCompanyId = newCompanyID;
-          newCompany.id=newCompanyID;
-        }
-        setCompaniesList([...companiesList, newCompany]);
+    if (isAddingCompany && newContact.company) {
+      // Add new company
+      const newCompany: Company = {
+        id: Date.now(),
+        name: newContact.company,
+        address: newContact.companyAddress ?? '',
+        phoneNum: newContact.companyPhone ?? '',
+        cityID: newContact.companyCityID  // Use selected city if available, fallback to 0
+      };
+      const newCompanyID = await addCompany(newCompany);
+      //let newCompanyID = await addNewCompany(newCompany);
+      if (newCompanyID && newCompanyID > 0) {
+        newContact.selectedCompanyId = newCompanyID;
+        newCompany.id = newCompanyID;
       }
-      else if (newContact.selectedCompanyId) {
-        // Use existing company
-        const selectedCompany = companiesList.find(c => c.id === newContact.selectedCompanyId);
-        newContact.company = selectedCompany?.name || '';
-        newContact.companyAddress = (selectedCompany?.address || '');
-        newContact.companyPhone = selectedCompany?.phoneNum || '';
-      }
+      setCompaniesList([...companiesList, newCompany]);
+    }
+    else if (newContact.selectedCompanyId) {
+      // Use existing company
+      const selectedCompany = companiesList.find(c => c.id === newContact.selectedCompanyId);
+      newContact.company = selectedCompany?.name || '';
+      newContact.companyAddress = (selectedCompany?.address || '');
+      newContact.companyPhone = selectedCompany?.phoneNum || '';
+    }
   }
   const handleAddContact = async () => {
-   console.log("Adding/updating contact:", newContact); 
-       if (!validateEmail(newContact.email)) {
-      setEmailError("האימייל לא תקין");
-      return;
-    }
-    if(newContact.id && newContact.id>0 ){
-      // update existing contact
-     // const selectedContactObj = contactsList.find(contact => contact.id === newContact.id);
-     if(isAddingCompany ){
-         await setCompanyData();
-        }
 
-      const updatedContacts = contactsList.map(contact => 
-        contact.id === newContact.id ? {...newContact} : contact
+    if (newContact.id && newContact.id > 0) {
+      // update existing contact
+      // const selectedContactObj = contactsList.find(contact => contact.id === newContact.id);
+      if (isAddingCompany) {
+        await setCompanyData();
+      }
+
+      const updatedContacts = contactsList.map(contact =>
+        contact.id === newContact.id ? { ...newContact } : contact
       );
       const success = await updatePhoneBookContact(newContact);
       console.log("Update success:", success);
       setContactsList(updatedContacts);
-     
+     setEmailError("")
     }
-  
-    else{//add new contact
-    if (newContact.firstName && newContact.lastName && newContact.mobile) {
-    await setCompanyData();
-      } 
-      const newContactID = await addPhoneBookContact(newContact);
-       if (newContactID && newContactID > 0) {
-          newContact.id = newContactID;
-           setContactsList([...contactsList, newContact]);
-        }
-     
-    
-    }
-     setIsAddModalOpen(false);
-      resetForm();
-      setUpdate(false);
-    }
-  
 
+    else {//add new contact
+      if (newContact.firstName && newContact.lastName && newContact.mobile) {
+        await setCompanyData();
+      }
+      const newContactID = await addPhoneBookContact(newContact);
+      if (newContactID && newContactID > 0) {
+        newContact.id = newContactID;
+        setContactsList([...contactsList, newContact]);
+      }
+    }
+    
+    resetForm();
+    setUpdate(false);
+  }
+
+  const getData = async () => {
+    const phoneBookData = await getPhoneBookCompanyList();
+
+    if (phoneBookData) {
+      setContactsList(phoneBookData.phoneBooks);
+      setCompaniesList(phoneBookData.companies);
+      setCitiesList(phoneBookData.cities);
+    }
+
+  };
 
   useEffect(() => {
 
-    const fetchData = async () => {
-      const phoneBookData = await getPhoneBookCompanyList();
-
-      if (phoneBookData) {
-        setContactsList(phoneBookData.phoneBooks);
-        setCompaniesList(phoneBookData.companies);
-        setCitiesList(phoneBookData.cities);
-      }
-
-    };
-    fetchData();
+    getData();
   }, []);
 
   useEffect(() => {
@@ -190,32 +200,33 @@ export default function BusinessPhonebook() {
   const callContact = (phone: string) => {
     if (!phone) return;
     const a = document.createElement('a');
-  a.href = `tel:${phone}`;
-  a.click();
- 
-  };
-  const openEditContact=(contact: PhoneBook)=> {
-    newContact.id=contact.id;
-    newContact.company=contact.company;
-    newContact.selectedCompanyId=contact.selectedCompanyId;
-    newContact.companyAddress=contact.companyAddress; 
-    newContact.companyPhone=contact.companyPhone;
-    newContact.email=contact.email;
-    newContact.firstName=contact.firstName; 
-    newContact.lastName=contact.lastName; 
-    newContact.mobile=contact.mobile; 
-    setTitle('עריכת איש קשר');
+    a.href = `tel:${phone}`;
+    a.click();
 
-    setIsAddModalOpen(true);
+  };
+  const openEditContact = (contact: PhoneBook) => {
+    newContact.id = contact.id;
+    newContact.company = contact.company;
+    newContact.selectedCompanyId = contact.selectedCompanyId;
+    newContact.companyAddress = contact.companyAddress;
+    newContact.companyPhone = contact.companyPhone;
+    newContact.email = contact.email;
+    newContact.firstName = contact.firstName;
+    newContact.lastName = contact.lastName;
+    newContact.mobile = contact.mobile;
+    setTitle('עריכת איש קשר');
+    setSelectedContact(contact)
+    setEditData(contact)
+    setIsAddingCompany(false);
+    //setIsAddModalOpen(true);
   }
-const clearCompanyData=()=>{
-  newContact.company='';
-  newContact.companyAddress='';
-  newContact.companyPhone='';
-  //newContact.selectedCompanyId=0;
-  setselectedCity(undefined);
-}
- const validateEmail = (email: string) => {
+  const clearCompanyData = () => {
+    newContact.company = '';
+    newContact.companyAddress = '';
+    newContact.companyPhone = '';
+    newContact.companyCityID = 0;
+  }
+  const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
@@ -229,6 +240,8 @@ const clearCompanyData=()=>{
     }
   };
 
+
+
   // const highlightMatch = (text: string, query: string) => {
   //     if (!query) return text;
 
@@ -241,6 +254,35 @@ const clearCompanyData=()=>{
   //         )
   //     );
   // };
+
+  const saveChanges = async () => {
+    if (isAddingCompany && editData.company) {
+      // Add new company
+      const Company: Company = {
+        id: editData.selectedCompanyId,
+        name: editData.company,
+        address: editData.companyAddress ?? '',
+        phoneNum: editData.companyPhone ?? '',
+        cityID: editData.companyCityID  // Use selected city if available, fallback to 0
+      };
+      const update = await updateCompany(Company);
+      //let newCompanyID = await addNewCompany(newCompany);
+      if (update) {
+        // companiesList.map(company =>
+        //   company.id === selectedContact?.id
+        //     ? { ...company, ...Company } // keep id + merge updated fields
+        //     : company
+        // )
+      }
+    }
+    const upDateContact = await updatePhoneBookContact(editData)
+    if (upDateContact) {
+
+    }
+    getData();
+   
+    resetForm()
+  };
   return (
     <div className="h-full bg-gradient-to-br from-purple-500 via-pink-300 to-pink-500 font-sans p-4" dir="rtl">
       {/*old // <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50  font-sans p-4" dir="rtl"> */}
@@ -267,23 +309,50 @@ const clearCompanyData=()=>{
           )}
         </div>
       </div>
-     
+
       {/* Add Contact Modal */}
+      {/* Contact Modal */}
+      {selectedContact && (
+
+        <UpdatePhoneBook
+
+          contact={selectedContact}
+          isEditing={isEditing}
+          editData={editData}
+          onClose={() => { resetForm() }}
+          onStartEdit={() => { setIsEditing(true), setIsAddingCompany(false) }}
+          onSave={saveChanges}
+          onChange={(field, value) => setEditData({ ...editData, [field]: value })}
+          onCancelEdit={() => {
+            setIsEditing(false);
+            setEditData(selectedContact);
+          }}
+          isAddingCompany={isAddingCompany}
+          citiesList={citiesList}
+          setCompany={(value: boolean) => { console.log("value", value), clearCompanyData(), setIsAddingCompany(value); }}
+        />
+      )}
+
+
+
       {/* Add Contact Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="relative pt-1 flex items-center justify-center mb-2">
+              <h2 className="text-lg font-semibold text-gray-800 text-center">{title}</h2>
               <button
-                onClick={() => { setIsAddModalOpen(false); resetForm(); }}
-                className=" text-gray-500 p-2 hover:bg-gray-100 rounded-full"
+                onClick={() => {  resetForm(); }}
+                className="absolute left-0  w-8 h-8 flex items-center justify-center"
               >
-                <X size={20} />
+                <X className="w-5 h-5 text-gray-500" />
               </button>
+             
             </div>
-
-            <div className="space-y-4">
+            {/* Scrollable body */}
+            <div className="p-4 space-y-3 overflow-y-auto">
+             
               {/* Personal Info */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">שם פרטי *</label>
@@ -320,25 +389,18 @@ const clearCompanyData=()=>{
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">אימייל</label>
-                {/* <input
+              
+                <input
                   type="email"
                   value={newContact.email}
-                  onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                  className="text-gray-800 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  onChange={handleEmailChange}
+                  className={`text-gray-800 w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 ${emailError
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-purple-500"
+                    }`}
                   placeholder="example@company.com"
-                /> */}
-                 <input
-        type="email"
-        value={newContact.email}
-        onChange={handleEmailChange}
-        className={`text-gray-800 w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 ${
-          emailError
-            ? "border-red-500 focus:ring-red-500"
-            : "border-gray-300 focus:ring-purple-500"
-        }`}
-        placeholder="example@company.com"
-      />
-      {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
+                />
+                {emailError && <p className="text-red-500 text-sm mt-1">{emailError}</p>}
               </div>
 
               {/* Company Selection */}
@@ -357,27 +419,26 @@ const clearCompanyData=()=>{
                       <span className=" text-gray-800 text-sm">בחר חברה קיימת</span>
                     </label>
                   </div>
- 
+
                   {!isAddingCompany && (
-                    
+
                     <select
                       value={newContact.selectedCompanyId}
                       onChange={(e) => setNewContact({ ...newContact, selectedCompanyId: Number(e.target.value) })}
-   className="text-gray-800 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-//className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-           //           className="text-gray-800 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="text-gray-800 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    
                     >
                       <option value="">בחר חברה...</option>
                       {companiesList.map(company => (
-                        <option 
-                        //className=" text-sm text-gray-700 bg-white hover:bg-purple-100" 
-                        key={company.id} value={company.id}>
+                        <option
+                          //className=" text-sm text-gray-700 bg-white hover:bg-purple-100" 
+                          key={company.id} value={company.id}>
                           {company.name}
                         </option>
                       ))}
                     </select>
 
-                  
+
                   )}
 
                   <div>
@@ -386,7 +447,7 @@ const clearCompanyData=()=>{
                         type="radio"
                         name="companyOption"
                         checked={isAddingCompany}
-                        onChange={() =>{clearCompanyData(), setIsAddingCompany(true)}}
+                        onChange={() => { clearCompanyData(), setIsAddingCompany(true) }}
                         className="text-purple-600"
                       />
                       <span className=" text-gray-800 text-sm">הוסף חברה חדשה</span>
@@ -410,8 +471,8 @@ const clearCompanyData=()=>{
                         placeholder="כתובת החברה"
                       />
                       <select
-                        value={selectedCity}
-                        onChange={(e) => setselectedCity(Number(e.target.value))}
+                        value={newContact.companyCityID}
+                        onChange={(e) => setNewContact({ ...newContact, companyCityID: Number(e.target.value) })}
                         className="text-gray-800 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                       >
                         <option value="">בחר עיר...</option>
@@ -432,31 +493,32 @@ const clearCompanyData=()=>{
                   )}
                 </div>
               </div>
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-8">
+                <button
+                  onClick={() => {  resetForm(); }}
+                  className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                >
+                  ביטול
+                </button>
+                {/* save */}
+                <button
+                  onClick={handleAddContact}
+                  disabled={emailError!=""||!newContact.firstName || !newContact.lastName || !newContact.mobile || (isAddingCompany && !newContact.company) || (!isAddingCompany && !newContact.selectedCompanyId)}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {title}
+                </button>
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-8">
-              <button
-                onClick={() => { setIsAddModalOpen(false); resetForm(); }}
-                className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition-colors"
-              >
-                ביטול
-              </button>
-              {/* save */}
-              <button
-                onClick={handleAddContact}
-                disabled={!newContact.firstName || !newContact.lastName || !newContact.mobile || (isAddingCompany && !newContact.company)||(!isAddingCompany&&!newContact.selectedCompanyId)}
-                className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {title}
-              </button>
-            </div>
+
           </div>
         </div>
       )}
 
       {/* model */}
-      {selectedContact && (
+      {/* {selectedContact && (
         <div className="fixed inset-0  bg-opacity-40 backdrop-blur-sm backdrop-saturate-150 flex items-center justify-center z-50">
           <div className="bg-opacity-40 bg-white p-6 rounded-xl shadow-xl w-[300px]  max-w-sm">
             <h2 className="text-gray-600 text-xl font-bold mb-4">פרטי איש קשר</h2>
@@ -533,7 +595,7 @@ const clearCompanyData=()=>{
             </div>
           </div>
         </div>
-      )}
+      )} */}
       <div
         ref={listRef}
         onScroll={handleScroll}
@@ -546,12 +608,12 @@ const clearCompanyData=()=>{
           {visibleContacts.map((contact, index) => (
             <div key={index}
               className="backdrop-blur-lg border-b border-white/20 py-6  mx-4 text-white flex justify-between items-center"
-              onClick={() =>{
+              onClick={() => {
                 setUpdate(true),
-                openEditContact(contact)
+                  openEditContact(contact)
               }
-                 //setSelectedContact(contact)
-                }
+                //setSelectedContact(contact)
+              }
             >
               {/* <div className="flex justify-between items-center"> */}
               <div>
@@ -592,11 +654,11 @@ const clearCompanyData=()=>{
               </div>
               <div className="flex">
                 <button
-               
-                  onClick={(e) =>{
+
+                  onClick={(e) => {
                     e.stopPropagation();
                     callContact(contact.companyPhone ?? '')
-                }
+                  }
                   }
                   className="bg-green-500 hover:bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
                   title="התקשר"
@@ -616,14 +678,16 @@ const clearCompanyData=()=>{
           )}
         </div>
       </div>
-    
-     
+
+
       {/* Floating Add Button - Fixed Position */}
       <div className="fixed bottom-20 right-6 z-40 group">
         <button
-    
-          onClick={() => {setTitle('הוספת איש קשר'),
-            setIsAddModalOpen(true)}}
+
+          onClick={() => {
+            setTitle('הוספת איש קשר'),
+            setIsAddModalOpen(true)
+          }}
           className="bg-gradient-to-r from-green-400 to-green-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
         >
           <Plus className="w-6 h-6" />
