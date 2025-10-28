@@ -1,4 +1,4 @@
-import type { Contract, HourReport, HourReportModal, HourReportStepsModal, Step, SubContract } from "../interface/interfaces";
+import type { HourReport, HourReportModal, HourReportStepsModal, Step } from "../interface/interfaces";
 import authService from "./authService";
 
 class HourReportsService{
@@ -26,8 +26,7 @@ const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
         throw new Error(error || 'Failed to get employee data');
       }
       const data: HourReport[] = await response.json();
-      console.log('ReportData')
-      console.log(data)
+      
       //const timeRepordData: TimeRecord[] = JSON.parse(data);
       return data
       //   return {
@@ -65,8 +64,7 @@ const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
         throw new Error(error || 'Failed to get employee data');
       }
       const data: HourReport = await response.json();
-      console.log('ReportData')
-      console.log(data)
+     
       //const timeRepordData: TimeRecord[] = JSON.parse(data);
       return data
       //   return {

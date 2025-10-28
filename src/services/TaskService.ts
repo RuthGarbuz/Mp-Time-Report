@@ -22,7 +22,6 @@ export const getProjectsList= async ()=>{
 
     const data= await response.json();
     return data;
-    console.log("Employees list data:", data);
   } catch (error) {
     console.error("Error fetching employees list:", error);
     return null
@@ -54,7 +53,6 @@ export const getTasksList = async (fromDate: Date, toDate: Date,activeTab:string
     }
 
     const data: Task[] = await response.json();
-    console.log('TasksList:', data);
 
     return data;
   } catch (error) {
@@ -83,7 +81,6 @@ export const insertTask = async (task: Task): Promise<number> => {
       throw new Error("Failed to insert task");
     }
 const data: number = await response.json();
-console.log("task inserted successfully:", data);
     return data;
  } 
  catch (error) {
@@ -113,7 +110,7 @@ export const updateTask = async (task: Task): Promise<boolean> => {
       throw new Error("Failed to update contact");
     }
 const data = await response.json();
-console.log("Contact updated successfully:", data);
+if(data===false) throw new Error("Failed to update task");
     return true;
  } 
  catch (error) {
@@ -144,7 +141,7 @@ export const saveCompletedTask = async (taskID: number,isCompleted:boolean,organ
       throw new Error("Failed to update contact");
     }
 const data = await response.json();
-console.log("Contact updated successfully:", data);
+if(data===false) throw new Error("Failed to update task");
     return true;
  } 
  catch (error) {
@@ -173,7 +170,7 @@ export const deleteTask = async (taskID: number): Promise<boolean> => {
       throw new Error("Failed to Delete Task");
     }
 const data = await response.json();
-console.log("task Deleted successfully:", data);
+if(data===false) throw new Error("Failed to Delete task");
     return true;
  } 
  catch (error) {

@@ -9,31 +9,56 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'robots.txt', 'icons/*'],
-      manifest: {
-        name: '',
-        short_name: 'MyApp',
-        start_url: '.',
-        display: 'standalone',
-        background_color: '#ffffff',
-        theme_color: '#4a90e2',
-        icons: [
-          {
-            src: 'icons/icon-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'icons/icon-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          }
-        ]
+      includeAssets: ['favicon.svg', 'robots.txt','logo.png'],
+     manifest: {
+    name: "MasterPlan",
+    short_name: "MP",
+    start_url: "/",
+    display: "standalone",
+    background_color: "#ffffff",
+    theme_color: "#4a90e2",
+    lang: "en",
+    scope: "/",
+    icons: [
+      {
+        src: "/red-logo-192.png",
+        sizes: "192x192",
+        type: "image/png"
+      },
+      {
+        src: "/red-logo-512.png",
+        sizes: "512x512",
+        type: "image/png"
       }
+    ]
+  }
+
     })
   ],
+   build: {
+    minify: 'terser',  // שימוש ב-Terser כמיניפייר
+    terserOptions: {
+      compress: {
+        drop_console: true,    // מסיר את כל console.log
+        drop_debugger: true,   // מסיר debugger אם יש
+      },
+    },
+  },
    server: {
     proxy: {
+       '/api': {
+        target: 'https://mpwebapp.master-plan.co.il/GlobalWebAPI/api',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''), 
+         configure: (proxy, _options) => {
+    proxy.on('proxyRes', (proxyRes, req, res) => {
+      // add a debug header to the response the browser receives
+      try { res.setHeader('X-Proxy-Debug', 'proxied-to-mpwebapp'); } catch (e) {}
+      console.log('[vite-proxy] proxied', req.url, '=>', proxyRes.statusCode);
+    });
+  }
+      },
       '/nominatim': {
         target: 'https://nominatim.openstreetmap.org',
         changeOrigin: true,

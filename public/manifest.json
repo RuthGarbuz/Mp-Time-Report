@@ -1,33 +1,36 @@
 {
-  "short_name": "MyApp",
+  "short_name": "MP",
   "name": "MasterPlan",
-  "screenshots": [
-  {
-    "src": "/screenshots/wide.png",
-    "sizes": "1280x720",
-    "type": "image/png",
-    "form_factor": "wide"
-  },
-  {
-    "src": "/screenshots/mobile.png",
-    "sizes": "640x1136",
-    "type": "image/png"
-  }
-],
-  "icons": [
-   {
-    "src": "/red-logo-192.png",
-    "type": "image/png",
-    "sizes": "192x192"
-  },
-  {
-    "src": "/red-logo-512.png",
-    "type": "image/png",
-    "sizes": "512x512"
-  }
-  ],
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4a90e2"
+  "theme_color": "#4a90e2",
+  "orientation": "portrait",
+  "screenshots": [
+    {
+      "src": "/screenshots/wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshots/mobile.png",
+      "sizes": "640x1136",
+      "type": "image/png"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/red-logo-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/red-logo-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
 }
+

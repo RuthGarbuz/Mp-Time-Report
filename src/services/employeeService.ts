@@ -1,5 +1,4 @@
 // services/employeeService.js
-import type { SelectEmployeesList } from '../interface/interfaces';
 import authService from './authService';
 
 class EmployeeService {
@@ -30,9 +29,7 @@ class EmployeeService {
         throw new Error(error || 'Failed to get employee data');
       }
       const data = await response.json();
-console.log('data')
 
-console.log(data)
       // Store employee info in localStorage
       localStorage.setItem('employee', JSON.stringify({
         id: data.id,
@@ -82,7 +79,8 @@ async  getUserLocation(): Promise<string> {
   try {
     const position = await getPosition();
     const { latitude, longitude } = position.coords;
-
+// const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://nominatim.openstreetmap.org';
+// const response = await fetch(`${BASE_URL}/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=he`);
     const response = await fetch(
       `/nominatim/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=he`
     );
@@ -90,7 +88,6 @@ async  getUserLocation(): Promise<string> {
     if (!response.ok) throw new Error(`Nominatim error: ${response.status}`);
 
     const data = await response.json();
-    console.log("Response data:", data);
 
     const address = data.address || {};
 
@@ -176,7 +173,6 @@ async  getUserLocation(): Promise<string> {
   }
 async clockOut() {
   try {
-    console.log('clockOut');
     const user = authService.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -188,7 +184,6 @@ async clockOut() {
 //
 
 const location = await this.getUserLocation();
-console.log('מיקום המשתמש:', location);
     // ⬇️ Get latest location from geolocation
    
 
@@ -248,7 +243,6 @@ async getEmployeesList(){
 
     const data= await response.json();
     return data;
-    console.log("Employees list data:", data);
   } catch (error) {
     console.error("Error fetching employees list:", error);
     return null

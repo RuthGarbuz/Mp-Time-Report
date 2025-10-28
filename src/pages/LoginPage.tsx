@@ -5,31 +5,7 @@ import authService from '../services/authService';
 import type { LoginFormData, SecurityState, UiState } from '../interface/interfaces';
 import "tailwindcss";
 
-// interface FormData {
-//   email: string;
-//   password: string;
-//   rememberMe: boolean;
-// }
 
-// interface SecurityState {
-//   attempts: number;
-//   isLocked: boolean;
-//   lockTime: Date | null;
-//   showCaptcha: boolean;
-// }
-
-// interface UiState {
-//   showPassword: boolean;
-//   isLoading: boolean;
-//   errors: { [key: string]: string }; // OR more specific: errors: Partial<Record<keyof FormData, string>>;
-//   message: string;
-//   isSuccess: boolean;
-// }
-// const MainPage = () => (
-//   <div className="min-h-screen flex items-center justify-center text-3xl font-bold">
-//     Welcome to the Main Page!
-//   </div>
-// );
 ``
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -37,7 +13,6 @@ const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState<LoginFormData>({
     email: '', password: '', rememberMe: false,
   });
-
   const [security, setSecurity] = useState<SecurityState>({
     attempts: 0, isLocked: false, lockTime: null, showCaptcha: false
   });
@@ -65,6 +40,7 @@ const LoginPage: React.FC = () => {
       }, 30000); // 30 seconds lockout
 
       return () => clearTimeout(timer);
+
     }
   }, [security.isLocked, security.lockTime]);
 //<Route path="/forgot-password" element={<ForgotPassword />} />
@@ -79,6 +55,23 @@ const LoginPage: React.FC = () => {
   //     }));
   //   }
   // }, []);
+  useEffect(() => {
+     setFormData({ email: '', password: '', rememberMe: false });
+    const savedUser = localStorage.getItem("user");
+  
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+     
+      setFormData({
+        email: user.email || "",
+        password: user.password || "",
+        rememberMe: !!localStorage.getItem("user"),
+      });
+    }
+
+
+  }, []);
+
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -140,25 +133,9 @@ const LoginPage: React.FC = () => {
 
     try {
       const result = await authService.login(formData.email, formData.password,formData.rememberMe);
-
+     
       if (result.success) {
-        console.log('success');
-        console.log(result);
-
-        //const { data } = result;,formData.rememberMe
-        //       if (formData.rememberMe) {
-        //   localStorage.setItem('rememberedEmail', formData.email);
-        // } else {
-        //   localStorage.removeItem('rememberedEmail');
-        // }
-        // if (formData.rememberMe) {
-        //   localStorage.setItem('rememberedEmail', formData.email);
-        //   //localStorage.setItem('user', JSON.stringify(data));
-        // } else {
-        //   //sessionStorage.setItem('user', JSON.stringify(data));
-        //   localStorage.removeItem('rememberedEmail');
-        // }
-
+      
         setUi(prev => ({
           ...prev,
           isLoading: false,
@@ -173,7 +150,7 @@ const LoginPage: React.FC = () => {
           navigate('/main');
         }, 1500);
       } else {
-        console.log('not success');
+       
         const newAttempts = security.attempts + 1;
         const shouldLock = newAttempts >= 3;
 
@@ -274,7 +251,10 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="p-6 pt-0 space-y-6">
+          <form autoComplete="off" onSubmit={handleSubmit} className="p-6 pt-0 space-y-6">
+             {/* Dummy inputs */}
+  <input type="text" name="fakeusernameremembered" style={{ display: 'none' }} />
+  <input type="password" name="fakepasswordremembered" style={{ display: 'none' }} />
             {/* Email Field */}
             <div className="group">
               <label htmlFor="email" className="block text-gray-700 text-sm font-semibold mb-2">
@@ -285,6 +265,7 @@ const LoginPage: React.FC = () => {
                   <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
                 </div>
                 <input
+                 autoComplete="new-email"
                   type="email"
                   id="email"
                   name="email"
@@ -316,6 +297,7 @@ const LoginPage: React.FC = () => {
                   <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" />
                 </div>
                 <input
+               autoComplete="new-password"
                   type={ui.showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
@@ -363,8 +345,9 @@ const LoginPage: React.FC = () => {
               </label>
 
               <button
+              
                 type="button"
-                className="text-sm text-purple-600 hover:text-purple-800 font-medium transition-colors"
+                className="hidden text-sm text-purple-600 hover:text-purple-800 font-medium transition-colors"
                 onClick={() => alert('Forgot password functionality would be implemented here')}
               // onClick={() => navigate("forgot-password")}
               >

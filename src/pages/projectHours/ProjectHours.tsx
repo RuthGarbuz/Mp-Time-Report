@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, X } from 'lucide-react';
-import type { Contract, Employee, HourReport, HourReportModal, Project, Step, SubContract, TimeHourReportsType, TimeRecord } from '../../interface/interfaces';
+import { ChevronLeft, ChevronRight, Clock, Calendar, Plus } from 'lucide-react';
+import type { Contract, Employee, HourReport, HourReportModal, Project, Step, SubContract } from '../../interface/interfaces';
 import "tailwindcss";
 import React from 'react';
 import hourReportService, { getHourReportStepsModal, getStepsList, insertProjectHourReport } from '../../services/hourReportService';
 import authService from '../../services/authService';
+import ProjectFilter from '../shared/projectsFilter';
 import { getProjectsList } from '../../services/TaskService';
+import HourReportModalOpen from './HourReportModalOpen';
+import EmployeeProfileCard from '../shared/employeeProfileCard';
 //import HebrewDatePicker from 'react-hebrew-datepicker';
 const ProjectHours = () => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [editingReportId, setEditingReportId] = useState<number | null>(null);
-  const [modalTitle, setModalTitle] = useState<string>();
+  // const [modalTitle, setModalTitle] = useState<string>();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [contextMenuRowId, setContextMenuRowId] = useState<number | null>(null);
@@ -21,31 +24,23 @@ const ProjectHours = () => {
   const [filteredReports, setFilteredReports] = useState<HourReport[] | null>(null);
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [typeReports, setTypeReports] = useState<TimeHourReportsType[]>([]);
-  const [typeReport, setTypeReport] = useState<TimeHourReportsType | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string[] | null>(null);
+  //const [error, setError] = useState<string | null>(null);
   const [editPermision, setEditPermision] = useState(false);
-  const [searchProject, setSearchProject] = useState("");
   const [isOpenProject, setIsOpenProject] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [contracs, setContracts] = useState<Contract[] | null>(null);
+  const [contracts, setContracts] = useState<Contract[] | null>(null);
   const [subContracts, setSubContracts] = useState<SubContract[] | null>(null);
   const [steps, setSteps] = useState<Step[] | null>(null);
-const [reportingType,setReportingType]=useState("");
-let calculateclockOutTime = "";
+  let reportingType="";
+  let calculateclockOutTime = "";
 
   const [projectsList, setProjectsList] = useState<Project[]>(
     [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
   );
 
 
-  const validateTimes = (clockInTime: string, clockOutTime: string) => {
-    if (clockInTime && clockOutTime && clockOutTime < clockInTime) {
-      setError("שעת יציאה לא יכולה להיות לפני שעת כניסה");
-    } else {
-      setError(null);
-    }
-  };
+
 
   const [newReport, setNewReport] = useState<HourReportModal>(
     {
@@ -67,14 +62,7 @@ let calculateclockOutTime = "";
       // stepsList: []
     }
   );
-  //reportingType: 'simple' as 'simple' | 'time-range' | 'total',
-  // const setSubContractsList = async (contractID:number) => {
-  //   const subContractsData = await getSubContractsList(contractID);
-  //   if (subContractsData) {
-  //     setSubContracts(subContractsData);
-  //   }
-  // }
-  //setHousrForFreeDay();
+
   const initNewReport = async () => {
     console.log('initNew')
     if (selectedProject?.hoursReportMethodID === 5) {
@@ -103,18 +91,17 @@ let calculateclockOutTime = "";
     else if (selectedProject) {
       let StepList = await getStepsList(selectedProject?.id ?? 0);
       if (StepList && StepList.length > 0) {
-         console.log('stepsList4', StepList)
+        console.log('stepsList4', StepList)
         setSteps(StepList);
       }
       setSubContracts(null)
       setContracts(null)
     }
-    //let reportData= await hourReportService.getFullHourReportProjectData(currentDay);
-     calculateclockOutTime = ""
+    
+    calculateclockOutTime = ""
     if (employee?.minutesHoursAmount) {
       calculateclockOutTime = addTime("08:00", employee.minutesHoursAmount)
     }
-    console.log("minutesHoursAmount",employee?.minutesHoursAmount)
     setNewReport({
       id: 0,
       name: "",
@@ -129,42 +116,18 @@ let calculateclockOutTime = "";
       stepID: 0,
       hourReportMethodID: selectedProject?.hoursReportMethodID ?? 0,
       employeeId: employee?.id ? Number(employee.id) : 0,
-      // contractsList: [],
-      // subContractsList: [],
-      // stepsList: []
+    
     })
-    setReportingType('time-range')
   }
-  // Sample reports data
   const [reports, setReports] = useState<HourReport[]>([]);
-  const [newReportList, setNewReportList] = useState<HourReport>({
-    id: 0,
-    clockInTime: '',
-    clockOutTime: '',
-    total: '',
-    projectName: '',
-  });
 
- 
+
+
   const timeToMinutes = (time: string): number => {
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes;
   };
-  function toDateString(date: string | Date): string | null {
-    if (!date) return null;
 
-    let d: Date;
-
-    if (date instanceof Date) {
-      d = date;
-    } else if (typeof date === "string") {
-      d = new Date(date);
-    } else {
-      return null;
-    }
-
-    return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
-  }
 
   const validateOverlappingReports = (reports: HourReport[]): string[] => {
     const errors: string[] = [];
@@ -203,8 +166,6 @@ let calculateclockOutTime = "";
   }
 
 
-  //  setFilteredReports(reports);
-  // Calculate total hours
   const calculateTotalHours = (clockInTime: string, clockOutTime: string) => {
     if (clockInTime === '-' || clockOutTime === '-') return '00:00';
 
@@ -258,23 +219,17 @@ let calculateclockOutTime = "";
     setIsConfirmOpen(false);
     setItemToDelete(null);
   };
-  
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Always prevent default first
 
-    if (error) {
-      alert("לא ניתן לסגור את הטופס כל עוד קיימת שגיאה. אנא תקן/י את השדות.");
 
-      return;
+    if (reportingType === 'time-range') {
+      
+      const totalHours = calculateTotalHours(newReport.clockInTime ?? "", newReport.clockOutTime ?? "");
+      newReport.total = totalHours;
     }
-    if(reportingType==='time-range'){ 
-    if (!newReport.clockInTime || !newReport.clockOutTime) {
-      return 0;
-    }
-    const totalHours = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
-    newReport.total = totalHours;
-  }
     if (editingReportId !== null) {
       setReports(prevReports =>
         prevReports.map(report =>
@@ -286,40 +241,37 @@ let calculateclockOutTime = "";
       setEditingReportId(null);
     } else {
       const newId = reports.length + 1;//get from update server and set newReportList
-      setNewReportList({
+
+      const newItem = {
         id: newId,
         clockInTime: newReport.clockInTime || '',
         clockOutTime: newReport.clockOutTime || '',
         total: newReport.total || '',
         projectName: newReport.name || '',
-      })
-      const newUpdateReports = [...reports, newReportList]
+      };
+      const newUpdateReports = [...reports, newItem]
       const validateError = validateOverlappingReports(newUpdateReports)
+
       if (validateError.length !== 0) {
-        alert(validateError);
+        setErrorMessage(validateError);
         return;
+      } else {
+        setErrorMessage(null);
       }
-      console.log('newReport', newReport)
       const insertedReport = await insertProjectHourReport(newReport)
-      if(insertedReport && insertedReport>0){
-     setNewReport({ ...newReport, id: insertedReport })
-     getHourReportsList()
+      if (insertedReport && insertedReport > 0) {
+        setNewReport({ ...newReport, id: insertedReport })
+        getHourReportsList()
       }
-      setTypeReport(typeReports.find((t) => t.id === 5) || null)
+
     }
 
     // ✅ Close only after successful handling
+
     setIsModalOpen(false);
   };
- 
-  const closeModal = () => {
-    if (error) {
-      alert("לא ניתן לסגור את הטופס כל עוד קיימת שגיאה. אנא תקן/י את השדות.");
-      return;
-    }
-    setTypeReport(typeReports.find((t) => t.id === 5) || null)
-    setIsModalOpen(false)
-  };
+
+
 
 
 
@@ -368,17 +320,11 @@ let calculateclockOutTime = "";
     filterReport(reports);//currentWeek,
   }, [reports]);
 
- const getHourReportsList=async()=>{
-   const storedTimeRecord = await hourReportService.getHourReportProjectData(currentDay);
-        setReports(storedTimeRecord ?? []);
-}
-  const getProfileImage = () => {
-    const img = employee?.image?.trim();
-    if (img && img !== 'null') {
-      return `data:image/jpeg;base64,${img}`;
-    }
-    return '/images/default-profile.png'; // מ- public/images
-  };
+  const getHourReportsList = async () => {
+    const storedTimeRecord = await hourReportService.getHourReportProjectData(currentDay);
+    setReports(storedTimeRecord ?? []);
+  }
+
   // Add loading state while employee data is being fetched
   if (!employee) {
     return (
@@ -392,9 +338,9 @@ let calculateclockOutTime = "";
   }
 
   function onUpdateClick(id: number) {
-   
+
     setEditingReportId(id);
-    setError(null)
+    // setError(null)
     setIsModalOpen(true);
   }
   function addTime(clockInTimeTime: string, duration: string): string {
@@ -425,57 +371,27 @@ let calculateclockOutTime = "";
     setIsOpenProject(true);
   }
   const handleOk = async () => {
-    setIsOpenProject(false);
     if (selectedProject) {
-      setError(null)
+      // setError(null)
       await initNewReport()
-      setModalTitle('  דיווח שעות לפרויקט ' );
+      setErrorMessage(null)
       setIsModalOpen(true)
+      setIsOpenProject(false);
+
     }
 
   };
-const changeReportingType=(type:string)=>{
-setReportingType(type)
-if(type=='total'){
-  setNewReport({...newReport, clockInTime:undefined,clockOutTime:undefined })
-}
-else{
-  setNewReport({...newReport, clockInTime:"08:00",clockOutTime:calculateclockOutTime })
-}
-}
-  const filteredProjects = projectsList.filter((p) =>
-    p.name.toLowerCase().includes(searchProject.toLowerCase())
-  );
+
+
   return (
+
     <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
       <div className="max-w-6xl mx-auto h-full flex flex-col">
 
         {/* Employee Profile Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-
-          <div className="flex items-center gap-4">
-            {/* Profile Image */}
-            <div className="relative flex-shrink-0">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-3 border-white shadow-lg ring-2 ring-blue-100">
-                <img
-                  src={getProfileImage()}
-                  alt={employee.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              </div>
-            </div>
-
-            {/* Employee Name */}
-            <div className="flex-1">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800">{employee.name}</h1>
-            </div>
-          </div>
-        </div>
+        <EmployeeProfileCard
+        employee={employee}
+        ></EmployeeProfileCard>
 
         {/* Week Navigation */}
 
@@ -509,8 +425,7 @@ else{
           <div className="mb-6">
             <button
               onClick={() => {
-                setOpenProjectList()
-
+                setOpenProjectList();
               }}
               className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
             >
@@ -627,31 +542,7 @@ else{
           </div>
 
         </div>
-        {isConfirmOpen && (
-          <div className="fixed inset-0  bg-opacity-40 backdrop-blur-sm backdrop-saturate-150 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full text-center">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">אישור מחיקה</h2>
-              <p className="text-sm text-gray-600 mb-6">האם הנך בטוח שברצונך למחוק את הדיווח?</p>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => {
-                    setIsConfirmOpen(false);
-                    setItemToDelete(null);
-                  }}
-                  className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition"
-                >
-                  אישור מחיקה
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
         {/* Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div className="bg-white rounded-xl shadow-lg p-4 text-center">
@@ -674,321 +565,65 @@ else{
 
         </div>
       </div>
-{isModalOpen && (
-<div className="text-gray-800 fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
-            {/* Header */}
-            <div className="relative pt-1 flex items-center justify-center mb-2">
-              <h2 className="text-lg font-semibold text-gray-800 text-center"> דיווח שעות לפרויקט</h2>
-              <button
-                onClick={() =>  setIsModalOpen(false)}
-                className="absolute left-0  w-8 h-8 flex items-center justify-center"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-             
-            </div>
-            {/* Scrollable body */}
-            <div className="p-4 space-y-3 overflow-y-auto">
 
-          {/* <div className="text-gray-800 fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-             <div className="p-2">
-               <div className="flex justify-between items-center mb-4">
-                 <h2 className="text-xl font-bold text-gray-800"> דיווח שעות לפרויקט</h2>
-                 <button
-                   onClick={() => setIsModalOpen(false)}
-                   className="text-gray-400 hover:text-gray-600"
-                 >
-                   <X className="h-6 w-6" />
-                 </button>
-               </div>  */}
-                <form onSubmit={handleSubmit} className="2 space-y-2">
-              
-            <div className="space-y-4">
-                {/* Project Name and Date */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      שם פרויקט
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedProject?.name}
-                      onChange={(e) => setNewReport({...newReport, projectID:selectedProject?.id ?? 0 })}
-                     className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                     disabled
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      תאריך
-                    </label>
-                    <input
-                      type="date"
-                  value={currentDay ? currentDay.toISOString().split("T")[0] : ""}
-                  onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
-                  className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                  required
-                  disabled
-                    />
-                  </div>
-                </div>
 
-                {/* Reporting Type */}
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    אופן דיווח שעות
-                  </label>
-                  <div className="space-y-2">
-                    
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={reportingType === 'time-range'}
-                        onChange={() => changeReportingType('time-range')}
-                        className="ml-2 text-blue-500"
-                      />
-                      <span className="text-sm">משעה עד שעה</span>
-                    </label>
-                    
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={reportingType === 'total'}
-                        onChange={() => changeReportingType('total')}
-                        className="ml-2 text-blue-500"
-                      />
-                      <span className="text-sm">סה"כ שעות</span>
-                    </label>
-                  </div>
 
-                  {/* Time Range */}
-                  {reportingType === 'time-range' && (
-                     <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    שעת כניסה
-                  </label>
-                  <input
-                    type="time"
-                    value={newReport.clockInTime}
-                    onChange={(e) => setNewReport({ ...newReport, clockInTime: e.target.value })}
-                    onBlur={() => {
-                      if (newReport.clockInTime && newReport.clockOutTime) {
-                        validateTimes(newReport.clockInTime, newReport.clockOutTime)
-                      }
-                    }
-                    }
-                    className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    שעת יציאה
-                  </label>
-                  <input
-                    type="time"
-                    value={newReport.clockOutTime}
-                    onChange={(e) =>
-                      setNewReport({ ...newReport, clockOutTime: e.target.value })}
-                    onBlur={() => {
-                      if (newReport.clockInTime && newReport.clockOutTime) {
-                        validateTimes(newReport.clockInTime, newReport.clockOutTime)
-                      }
-                    }
-                    }
-                    className={`text-black w-full px-4 py-3 border rounded-lg transition-all duration-200 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
-                      } focus:border-transparent`}
-                  // disabled={newReport.type === 'חופש'}
-                  />
-                  {error && <p className="text-red-600 text-sm">{error}</p>}
-                </div>
-              </div>
-                  )}
-
-                  {/* Total Hours */}
-                  {reportingType === 'total' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        סה"כ שעות
-                      </label>
-                      <input
-                        type="time"
-                        // step="0.5"
-                        value={
-                         newReport.total
-                           ? newReport.total.padStart(5, "0") // ensures "8:00" → "08:00"
-                           : ""
-  }
-                        onChange={(e) => setNewReport({...newReport, total: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                 {/* Notes */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  הערות
-                </label>
-                <textarea
-
-                  value={newReport.notes}
-                  onChange={(e) => setNewReport({ ...newReport, notes: e.target.value })}
-                  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  rows={3}
-                  placeholder="הערות נוספות (אופציונלי)"
-                />
-              </div>
-              {/* Contract */}
-              {contracs && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    חוזה *
-                  </label>
-                  <select
-                    value={newReport.contractID}
-                    onChange={(e) => setNewReport({ ...newReport, contractID: Number(e.target.value) })}
-                 className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  >
-                    <option value="">בחר חוזה</option>
-                    {contracs?.map(contract => (
-                      <option key={contract.id} value={contract.id}>{contract.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              {/* Sub-Contract */}
-              {(newReport.contractID ?? 0) > 0&&subContracts && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    תת חוזה *
-                  </label>
-                  <select
-                    value={newReport.subContractID}
-                    onChange={(e) => setNewReport({ ...newReport, subContractID: Number(e.target.value) })}
-                   className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  >
-                    <option value="">בחר תת חוזה</option>
-                    {subContracts
-                      ? subContracts
-                        .filter(sc => sc.contractID === newReport.contractID)
-                        .map(subContract => (
-                          <option key={subContract.id} value={subContract.id}>
-                            {subContract.name}
-                          </option>
-                        )) : null
-                    }
-                  </select>
-                </div>
-              )}
-              {/* Step */}
-              {(newReport.subContractID ?? 0) > 0||(selectedProject?.hoursReportMethodID!=5&&selectedProject?.hoursReportMethodID!=3) &&steps&& (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                      שלב * 
-                  </label>
-                  <select
-                    value={newReport.stepID}
-                    onChange={(e) => setNewReport({ ...newReport, stepID: Number(e.target.value) })}
-                    className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  >
-                    <option value="">בחר שלב</option>
-                    {steps
-                      ? steps
-                        .filter( step =>
-                         newReport.subContractID === 0 ||
-                         step.subContractID === newReport.subContractID)
-                        .map(step => (
-                          <option key={step.id} value={step.id}>
-                            {step.name}
-                          </option>
-                        )) : null
-                    }
-                  </select>
-                </div>
-              )}
-             
-              {/* Submit Buttons */}
-              <div className="flex gap-3 pt-4">
-                  <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors"
-                >
-                  ביטול
-                </button>
-                <button
-                  type="submit"
-                  // onClick={() => setIsModalOpen(false)}
-                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity"
-                >
-                  שמור דיווח
-                </button>
-              
-              </div>
-              </div>
-              </form>
-            </div>
-          </div>
-        </div>
+      {isModalOpen && (
+        <HourReportModalOpen
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          newReport={newReport}
+          setNewReport={setNewReport}
+          handleSubmit={handleSubmit}
+          contracts={contracts}
+          subContracts={subContracts}
+          steps={steps}
+          selectedProject={selectedProject || undefined}
+          currentDay={currentDay}
+          calculateclockOutTime={() => calculateclockOutTime}
+          errorMessage={errorMessage ? errorMessage.join(', ') : ""}
+        />
       )}
- 
-      
+
+
       {/* מודאל */}
       {isOpenProject && (
-        <div className="text-gray-800 min-h-40 fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white rounded-lg shadow-lg w-96 p-4">
-            <h2 className="text-lg font-semibold mb-3">בחר פרויקט</h2>
-
-            {/* חיפוש */}
-            <input
-              type="text"
-              placeholder="חיפוש..."
-              value={searchProject}
-              onChange={(e) => setSearchProject(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg mb-3"
-            />
-
-            {/* רשימת פרויקטים */}
-            <div className="min-h-60 max-h-60 overflow-y-auto border-gray-300 rounded-lg">
-              {filteredProjects.map((p) => (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedProject(p)}
-                  onDoubleClick={async () => {
-                    setSelectedProject(p),
-                      await handleOk()
-                  }}
-                  className={`p-2 cursor-pointer hover:bg-purple-100 ${selectedProject?.id === p.id ? "bg-purple-200" : ""
-                    }`}
-                >
-                  {p.name}
-                </div>
-              ))}
-            </div>
-
-            {/* כפתורים */}
-            <div className="flex justify-end gap-2 mt-4">
+        <ProjectFilter
+          isOpen={isOpenProject}
+          projectsList={projectsList}
+          selectedProject={selectedProject}
+          setSelectedProject={setSelectedProject}
+          handleOk={handleOk}
+          onClose={() => setIsOpenProject(false)}
+        />
+      )}
+      {isConfirmOpen && (
+        <div className="fixed inset-0  bg-opacity-40 backdrop-blur-sm backdrop-saturate-150 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full text-center">
+            <h2 className="text-lg font-bold text-gray-800 mb-4">אישור מחיקה</h2>
+            <p className="text-sm text-gray-600 mb-6">האם הנך בטוח שברצונך למחוק את הדיווח?</p>
+            <div className="flex justify-center gap-4">
               <button
-                onClick={() => setIsOpenProject(false)}
-                className="px-4 py-2 rounded-lg border border-gray-300"
+                onClick={() => {
+                  setIsConfirmOpen(false);
+                  setItemToDelete(null);
+                }}
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition"
               >
                 ביטול
               </button>
               <button
-                onClick={async () => { await handleOk() }}
-                className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition"
               >
-                אישור
+                אישור מחיקה
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
+
   );
 };
 

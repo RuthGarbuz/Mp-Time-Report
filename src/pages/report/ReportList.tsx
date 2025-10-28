@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, X } from 'lucide-react';
-import type { Employee, TimeHourReportsType, TimeRecord } from '../interface/interfaces';
+import { ChevronLeft, ChevronRight, Clock, Calendar, Plus} from 'lucide-react';
+import type { Employee, TimeHourReportsType, TimeRecord } from '../../interface/interfaces';
 //import { X }from "lucide-react";
 import "tailwindcss";
-import { TimeType } from '../enum';
+import { TimeType } from '../../enum';
 import React from 'react';
-import authService from '../services/authService';
-import timeRecordService from '../services/timeRecordService';
-//import HebrewDatePicker from 'react-hebrew-datepicker';
+import authService from '../../services/authService';
+import timeRecordService from '../../services/timeRecordService';
+import EmployeeProfileCard from '../shared/employeeProfileCard';
+import ConfirmModal from '../shared/confirmDeleteModal';
+import ReportModal from './createUpdateReportModal';
 const ReportList = () => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [editingReportId, setEditingReportId] = useState<number | null>(null);
-  const [modalTitle, setModalTitle] = useState<string>();
+  //const [modalTitle, setModalTitle] = useState<string>();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [contextMenuRowId, setContextMenuRowId] = useState<number | null>(null);
@@ -23,18 +25,11 @@ const ReportList = () => {
   const [filteredReports, setFilteredReports] = useState<TimeRecord[] | null>(null);
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [typeReports, setTypeReports] = useState<TimeHourReportsType[]>([]);
   const [typeReport, setTypeReport] = useState<TimeHourReportsType | null>(null);
   const [editPermision, setEditPermision] = useState(false);
 
-  const validateTimes = (clockInTime: string, clockOutTime: string) => {
-    if (clockInTime && clockOutTime && clockOutTime < clockInTime) {
-      setError("שעת יציאה לא יכולה להיות לפני שעת כניסה");
-    } else {
-      setError(null);
-    }
-  };
+
   const [newReport, setNewReport] = useState<TimeRecord>(
     {
       date: new Date(),
@@ -62,21 +57,14 @@ const ReportList = () => {
   }
   // Sample reports data
   const [reports, setReports] = useState<TimeRecord[]>([]);
-  // const [selectedDate, setSelectedDate] = useState('');
-
-  //   const handleDateChange = (event: { target: { value: React.SetStateAction<string>; }; }) => {
-  //     setSelectedDate(event.target.value);
-  //     console.log('Selected date:', event.target.value); // ISO format: YYYY-MM-DD
-  //   };
+ 
   const timeToMinutes = (time: string): number => {
     const [hours, minutes] = time.split(":").map(Number);
     return hours * 60 + minutes;
   };
   function toDateString(date: string | Date): string | null {
     if (!date) return null;
-
     let d: Date;
-
     if (date instanceof Date) {
       d = date;
     } else if (typeof date === "string") {
@@ -84,7 +72,6 @@ const ReportList = () => {
     } else {
       return null;
     }
-
     return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
   }
 
@@ -121,7 +108,6 @@ const ReportList = () => {
     return errors;
   };
   const filterReport = (reportData: TimeRecord[]) => {
-
     setTotalTime(getTotalTime(reportData));
     setTotalDay(getReportedDaysCount(reportData))
     setFilteredReports(reportData);
@@ -138,18 +124,7 @@ const ReportList = () => {
     return uniqueDates.size;
   };
 
-  //  setFilteredReports(reports);
-  // Calculate total hours
-  const calculateTotalHours = (clockInTime: string, clockOutTime: string) => {
-    if (clockInTime === '-' || clockOutTime === '-') return '00:00';
-
-    const clockInTimeMinutes = timeToMinutes(clockInTime);
-    const clockOutTimeMinutes = timeToMinutes(clockOutTime);
-    const totalMinutes = clockOutTimeMinutes - clockInTimeMinutes;
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-  };
+  
   const getTotalTime = (reports: TimeRecord[]): string => {
     let totalMinutes = 0;
 
@@ -222,19 +197,15 @@ const ReportList = () => {
     }
   };
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<Element>) => {
     e.preventDefault(); // Always prevent default first
 
-    if (error) {
-      alert("לא ניתן לסגור את הטופס כל עוד קיימת שגיאה. אנא תקן/י את השדות.");
-
-      return;
-    }
+    
     if (!newReport.clockInTime || !newReport.clockOutTime) {
       return 0;
     }
-    const totalHours = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
-    newReport.total = totalHours;
+    // const totalHours = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
+    // newReport.total = totalHours;
     newReport.typeID = typeReport?.id ?? 0;
     if (editingReportId !== null) {
       setReports(prevReports =>
@@ -260,34 +231,10 @@ const ReportList = () => {
     // ✅ Close only after successful handling
     setIsModalOpen(false);
   };
-  // const getWeekRange = (dateStr: Date): { start: string; end: string } => {
-  //   const date = new Date(dateStr);
-  //   const dayOfWeek = date.getDay(); // 0 = Sunday
-  //   const sunday = new Date(date);
-  //   sunday.setDate(date.getDate() - dayOfWeek);
-  //   const saturday = new Date(sunday);
-  //   saturday.setDate(sunday.getDate() + 6);
-  //   const toISO = (d: Date) => d.toISOString().split("T")[0];
-  //   return {
-  //     start: toISO(sunday),
-  //     end: toISO(saturday)
-  //   };
-  // };
-  //   const getReportsInRange = (startDate: string, endDate: string,reportData: TimeRecord[]) => {
-  //   const start = new Date(startDate);
-  //   const end = new Date(endDate);
-
-  //   return reportData.filter((report) => {
-  //     const filterReportDate = new Date(report.date);
-  //     return filterReportDate >= start && filterReportDate <= end;
-  //   });
-  // };
+ 
   // Reset form when closing modal
   const closeModal = () => {
-    if (error) {
-      alert("לא ניתן לסגור את הטופס כל עוד קיימת שגיאה. אנא תקן/י את השדות.");
-      return;
-    }
+   
     setTypeReport(typeReports.find((t) => t.id === 5) || null)
     setIsModalOpen(false)
   };
@@ -311,23 +258,7 @@ const ReportList = () => {
 
   };
 
-  // Get report type styling
-  //   useEffect(() => {
-  //   const handleClickOutside = (event: MouseEvent) => {
-  //     if (
-  //       contextMenuRowId !== null &&
-  //       rowRef.current &&
-  //       !rowRef.current.contains(event.target as Node)
-  //     ) {
-  //       setContextMenuRowId(null);
-  //     }
-  //   };
-
-  //   document.addEventListener("mousedown", handleClickOutside);
-  //   return () => {
-  //     document.removeEventListener("mousedown", handleClickOutside);
-  //   };
-  // }, [contextMenuRowId]);
+ 
   useEffect(() => {
     const permisionEmployee = authService.getCurrentEmployee();
     if (permisionEmployee) {
@@ -393,13 +324,7 @@ const ReportList = () => {
     }
 
   };
-  const getProfileImage = () => {
-    const img = employee?.image?.trim();
-    if (img && img !== 'null') {
-      return `data:image/jpeg;base64,${img}`;
-    }
-    return '/images/default-profile.png'; // מ- public/images
-  };
+
   // Add loading state while employee data is being fetched
   if (!employee) {
     return (
@@ -423,7 +348,6 @@ const ReportList = () => {
       notes: updateReport ? updateReport.notes : ''
     });
     setEditingReportId(id);
-    setError(null)
     setIsModalOpen(true);
   }
   function addTime(clockInTimeTime: string, duration: string): string {
@@ -452,31 +376,9 @@ const ReportList = () => {
       <div className="max-w-6xl mx-auto h-full flex flex-col">
 
         {/* Employee Profile Section */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative overflow-hidden">
-          {/* Background decoration */}
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
-
-          <div className="flex items-center gap-4">
-            {/* Profile Image */}
-            <div className="relative flex-shrink-0">
-              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-3 border-white shadow-lg ring-2 ring-blue-100">
-                <img
-                  src={getProfileImage()}
-                  alt={employee.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white shadow-lg flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full"></div>
-              </div>
-            </div>
-
-            {/* Employee Name */}
-            <div className="flex-1">
-              <h1 className="text-xl md:text-2xl font-bold text-gray-800">{employee.name}</h1>
-            </div>
-          </div>
-        </div>
+        <EmployeeProfileCard
+          employee={employee}
+        ></EmployeeProfileCard>
 
         {/* Week Navigation */}
 
@@ -510,10 +412,9 @@ const ReportList = () => {
           <div className="mb-6">
             <button
               onClick={() => {
-                setError(null)
+               // setError(null)
                 initNewReport()
                 setIsModalOpen(true)
-                setModalTitle('הוספת דיווח חדש')
               }}
               className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
             >
@@ -641,7 +542,7 @@ const ReportList = () => {
                     <button
                       onClick={() => {
                         if (report.id !== undefined) {
-                          setModalTitle('עדכון דיווח מתאריך: ' + report.date);
+                          //setModalTitle('עדכון דיווח מתאריך: ' + report.date);
                           onUpdateClick(report.id);
                         }
                         setContextMenuRowId(null);
@@ -660,29 +561,19 @@ const ReportList = () => {
 
         </div>
         {isConfirmOpen && (
-          <div className="fixed inset-0  bg-opacity-40 backdrop-blur-sm backdrop-saturate-150 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full text-center">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">אישור מחיקה</h2>
-              <p className="text-sm text-gray-600 mb-6">האם הנך בטוח שברצונך למחוק את הדיווח?</p>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => {
-                    setIsConfirmOpen(false);
+          <ConfirmModal
+    message="האם הנך בטוח שברצונך למחוק משימה זו?"
+    onOk={() => {
+     setIsConfirmOpen(false);
                     setItemToDelete(null);
-                  }}
-                  className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition"
-                >
-                  אישור מחיקה
-                </button>
-              </div>
-            </div>
-          </div>
+    }}
+    onCancel={() => {
+      confirmDelete
+    }}
+    okText="מחק"
+    cancelText="ביטול"
+  />
+         
         )}
         {/* Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -713,167 +604,169 @@ const ReportList = () => {
         </div>
       </div>
 
-      {/* Modal for Adding New Report */}
+     
       {isModalOpen && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-               <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
-                 {/* Header */}
-                 <div className="relative pt-1 flex items-center justify-center mb-2">
-                   <h2 className="text-lg font-semibold text-gray-800 text-center">{modalTitle}</h2>
-                   <button
-                       onClick={closeModal}
-                     className="absolute left-0  w-8 h-8 flex items-center justify-center"
-                   >
-                     <X className="w-5 h-5 text-gray-500" />
-                   </button>
-                  
-                 </div>
-                 {/* Scrollable body */}
-                 <div className="p-4 space-y-3 overflow-y-auto">
-
-      
-            {/* Modal Content */}
-            <form onSubmit={handleSubmit} >
-              {/* Date Field */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  תאריך הדיווח
-                </label>
-                <input
-                  type="date"
-                  value={newReport.date ? newReport.date.toISOString().split("T")[0] : ""}
-                  onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
-                  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                  required
-                />
-              </div>
-              {/* <div  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
- >
-      <HebrewDatePicker
-      
-        name="hebrewDate"
-        value={selectedDate}
-        onChange={handleDateChange}
-        label="בחר תאריך עברי"
-        required
+        <ReportModal
+        isOpen={isModalOpen}
+        title={"הוספת דיווח חדש"}
+        newReport={newReport}
+        setNewReport={setNewReport}
+        typeReport={typeReport}
+        setTypeReport={setTypeReport}
+        typeReports={typeReports}
+        closeModal={closeModal}
+        handleSubmit={handleSubmit}
+        currentWeek={currentWeek}
       />
-    </div> */}
-              {/* Report Type */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  סוג הדיווח
-                </label>
-                <select
-                  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                  value={typeReport?.id || ""}
-                  onChange={(e) => {
-                    const selectedId = Number(e.target.value);
-                    const selected = typeReports.find((t) => t.id === selectedId) || null;
-                    setTypeReport(selected);
-                    //setHousrForFreeDay();
-                  }}
-                >
-                  {typeReports.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.name}
-                    </option>
-                  ))}
-                </select>
+        // <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        //   <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+        //     {/* Header */}
+        //     <div className="relative pt-1 flex items-center justify-center mb-2">
+        //       <h2 className="text-lg font-semibold text-gray-800 text-center">{modalTitle}</h2>
+        //       <button
+        //         onClick={closeModal}
+        //         className="absolute left-0  w-8 h-8 flex items-center justify-center"
+        //       >
+        //         <X className="w-5 h-5 text-gray-500" />
+        //       </button>
 
-              </div>
+        //     </div>
+        //     {/* Scrollable body */}
+        //     <div className="p-4 space-y-3 overflow-y-auto">
 
-              {/* clockInTime and clockOutTime Times */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    שעת כניסה
-                  </label>
-                  <input
-                    type="time"
-                    value={newReport.clockInTime}
-                    onChange={(e) => setNewReport({ ...newReport, clockInTime: e.target.value })}
-                    onBlur={() => {
-                      if (newReport.clockInTime && newReport.clockOutTime) {
-                        validateTimes(newReport.clockInTime, newReport.clockOutTime)
-                      }
-                    }
-                    }
-                    className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                    disabled={newReport.typeID === 3}
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    שעת יציאה
-                  </label>
-                  <input
-                    type="time"
-                    value={newReport.clockOutTime}
-                    onChange={(e) =>
-                      setNewReport({ ...newReport, clockOutTime: e.target.value })}
-                    onBlur={() => {
-                      if (newReport.clockInTime && newReport.clockOutTime) {
-                        validateTimes(newReport.clockInTime, newReport.clockOutTime)
-                      }
-                    }
-                    }
-                    className={`text-black w-full px-4 py-3 border rounded-lg transition-all duration-200 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
-                      } focus:border-transparent`}
-                  // disabled={newReport.type === 'חופש'}
-                  />
-                  {error && <p className="text-red-600 text-sm">{error}</p>}
-                </div>
-              </div>
 
-              {/* Total Hours Display */}
-              {newReport.clockInTime && newReport.clockOutTime && newReport.typeID !== 3 && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    סה"כ שעות
-                  </label>
-                  <div className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg font-mono text-lg font-bold text-blue-600">
-                    {calculateTotalHours(newReport.clockInTime, newReport.clockOutTime)}
-                  </div>
-                </div>
-              )}
+        //       {/* Modal Content */}
+        //       <form onSubmit={handleSubmit} >
+        //         {/* Date Field */}
+        //         <div>
+        //           <label className="block text-sm font-semibold text-gray-700 mb-2">
+        //             תאריך הדיווח
+        //           </label>
+        //           <input
+        //             type="date"
+        //             value={newReport.date ? newReport.date.toISOString().split("T")[0] : ""}
+        //             onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
+        //             className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+        //             required
+        //           />
+        //         </div>
+  
+        //         {/* Report Type */}
+        //         <div>
+        //           <label className="block text-sm font-semibold text-gray-700 mb-2">
+        //             סוג הדיווח
+        //           </label>
+        //           <select
+        //             className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+        //             value={typeReport?.id || ""}
+        //             onChange={(e) => {
+        //               const selectedId = Number(e.target.value);
+        //               const selected = typeReports.find((t) => t.id === selectedId) || null;
+        //               setTypeReport(selected);
+        //               //setHousrForFreeDay();
+        //             }}
+        //           >
+        //             {typeReports.map((type) => (
+        //               <option key={type.id} value={type.id}>
+        //                 {type.name}
+        //               </option>
+        //             ))}
+        //           </select>
 
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  הערות
-                </label>
-                <textarea
+        //         </div>
 
-                  value={newReport.notes}
-                  onChange={(e) => setNewReport({ ...newReport, notes: e.target.value })}
-                  className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                  rows={3}
-                  placeholder="הערות נוספות (אופציונלי)"
-                />
-              </div>
+        //         {/* clockInTime and clockOutTime Times */}
+        //         <div className="grid grid-cols-2 gap-4">
+        //           <div>
+        //             <label className="block text-sm font-semibold text-gray-700 mb-2">
+        //               שעת כניסה
+        //             </label>
+        //             <input
+        //               type="time"
+        //               value={newReport.clockInTime}
+        //               onChange={(e) => setNewReport({ ...newReport, clockInTime: e.target.value })}
+        //               onBlur={() => {
+        //                 if (newReport.clockInTime && newReport.clockOutTime) {
+        //                   validateTimes(newReport.clockInTime, newReport.clockOutTime)
+        //                 }
+        //               }
+        //               }
+        //               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+        //               disabled={newReport.typeID === 3}
+        //             />
+        //           </div>
+        //           <div>
+        //             <label className="block text-sm font-semibold text-gray-700 mb-2">
+        //               שעת יציאה
+        //             </label>
+        //             <input
+        //               type="time"
+        //               value={newReport.clockOutTime}
+        //               onChange={(e) =>
+        //                 setNewReport({ ...newReport, clockOutTime: e.target.value })}
+        //               onBlur={() => {
+        //                 if (newReport.clockInTime && newReport.clockOutTime) {
+        //                   validateTimes(newReport.clockInTime, newReport.clockOutTime)
+        //                 }
+        //               }
+        //               }
+        //               className={`text-black w-full px-4 py-3 border rounded-lg transition-all duration-200 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+        //                 } focus:border-transparent`}
+        //             // disabled={newReport.type === 'חופש'}
+        //             />
+        //             {error && <p className="text-red-600 text-sm">{error}</p>}
+        //           </div>
+        //         </div>
 
-              {/* Submit Buttons */}
-              <div className="flex gap-3 pt-4">
-                
-                <button
-                  type="button"
-                  onClick={closeModal}
-                   className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition-colors"
-                >
-                  ביטול
-                </button>
-                <button
-                  type="submit"
-                  // onClick={() => setIsModalOpen(false)}
-                   className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  שמור דיווח
-                </button>
-              </div>
-            </form>
-            </div>
-          </div>
-        </div>
+        //         {/* Total Hours Display */}
+        //         {newReport.clockInTime && newReport.clockOutTime && newReport.typeID !== 3 && (
+        //           <div>
+        //             <label className="block text-sm font-semibold text-gray-700 mb-2">
+        //               סה"כ שעות
+        //             </label>
+        //             <div className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg font-mono text-lg font-bold text-blue-600">
+        //               {calculateTotalHours(newReport.clockInTime, newReport.clockOutTime)}
+        //             </div>
+        //           </div>
+        //         )}
+
+        //         {/* Notes */}
+        //         <div>
+        //           <label className="block text-sm font-semibold text-gray-700 mb-2">
+        //             הערות
+        //           </label>
+        //           <textarea
+
+        //             value={newReport.notes}
+        //             onChange={(e) => setNewReport({ ...newReport, notes: e.target.value })}
+        //             className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
+        //             rows={3}
+        //             placeholder="הערות נוספות (אופציונלי)"
+        //           />
+        //         </div>
+
+        //         {/* Submit Buttons */}
+        //         <div className="flex gap-3 pt-4">
+
+        //           <button
+        //             type="button"
+        //             onClick={closeModal}
+        //             className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+        //           >
+        //             ביטול
+        //           </button>
+        //           <button
+        //             type="submit"
+        //             // onClick={() => setIsModalOpen(false)}
+        //             className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        //           >
+        //             שמור דיווח
+        //           </button>
+        //         </div>
+        //       </form>
+        //     </div>
+        //   </div>
+        // </div>
       )}
     </div>
   );

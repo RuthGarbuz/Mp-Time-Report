@@ -1,73 +1,19 @@
 // services/authService.js
 const API_BASE_URL = 'http://localhost:5003/api'
+//const API_BASE_URL = 'https://mpweba.master-plan.co.il/GlobalWebAPI/api'
+
+
+//const API_BASE_URL = "https://mpwebapp.master-plan.co.il/GlobalWebAPI/api";
+
 //onst API_BASE_URL = 'http://localhost:5003/api';http://5.144.49.24/GlobalWebAPI/api/Auth/login
 //const API_BASE_URL = 'http://5.144.49.24/GlobalWebAPI/api';
+//const API_BASE_URL = '/api';
 
 class AuthService {
   [x: string]: any;
   // Login user with email and password, rememberMe: boolean
   async login(email: string, password: string,rememberMe: boolean) {
-    // try {
-    //   const response = await fetch(`${API_BASE_URL}/Auth/login`, {
-//     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ email, password }),
-    //   });
-
-       
-      
-    //   if (!response.ok) {
-    //     const error = await response.text();
-    //     return{
-    //          success:false,
-    //          message: error
-    //     }
-    //     // 
-    //     // throw new Error(error || 'Login failed');
-    //   }
-
-    //   const data = await response.json();
-    //  console.log("data",data) 
-    //   // Store token and user info
-    // //   this.setToken(data.token);
-
-    // // // יצירת אובייקט המשתמש
-    // // const userObject = {
-    // //   id: data.id,
-    // //   email: data.email,
-    // //   username: data.username,
-    // //   dataBase: data.dataBase,
-    // //   urlConnection: data.urlConnection,
-    // //   expiresAt: data.expiration,
-    // // };
-
-    // // // שמירה לפי rememberMe
-    // // if (rememberMe) {
-    // //   localStorage.setItem('user', JSON.stringify(userObject));
-    // // } else {
-    // //   sessionStorage.setItem('user', JSON.stringify(userObject));
-    // // }
-    //   this.setToken(data.token);
-    //   localStorage.setItem('user', JSON.stringify({
-    //   id: data.id,
-    //   email: data.email,
-    //   username: data.username,
-    //   dataBase: data.dataBase,
-    //   urlConnection: data.urlConnection,
-    //   expiresAt: data.expiration,
-    //   }));
- 
-    //   return {
-    //     success: response.ok,
-    //     message: data.message,
-    //     data: data.data,
-    //   };
-    // } catch (error) {
-    //   console.error('Login error:', error);
-    //   throw error;
-    // }
+    
     try {
     const response = await fetch(`${API_BASE_URL}/Auth/login`, {
       method: 'POST',
@@ -86,7 +32,6 @@ class AuthService {
     }
 
     const data = await response.json();
-    console.log("data", data);
 
     // שמירת הטוקן
     this.setToken(data.token);
@@ -99,6 +44,9 @@ class AuthService {
       dataBase: data.dataBase,
       urlConnection: data.urlConnection,
       expiresAt: data.expiration,
+      seeFinance: data.seeFinance,
+      password: password ,// שמירת הסיסמה
+      rememberMe: rememberMe // שמירת מצב זכור אותי
     };
 
     // שמירה לפי rememberMe
@@ -106,6 +54,7 @@ class AuthService {
       localStorage.setItem('user', JSON.stringify(userObject));
     } else {
       sessionStorage.setItem('user', JSON.stringify(userObject));
+      localStorage.removeItem("user");
     }
 
     return {
@@ -136,10 +85,7 @@ getCurrentUser() {
   const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
   return userStr ? JSON.parse(userStr) : null;
 }
-  // getCurrentUser() {
-  //   const userStr = localStorage.getItem('user');
-  //   return userStr ? JSON.parse(userStr) : null;
-  // }
+
 
     getCurrentEmployee() {
     const employeeStr = localStorage.getItem('employee');
