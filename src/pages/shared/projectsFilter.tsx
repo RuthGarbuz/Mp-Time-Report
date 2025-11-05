@@ -71,7 +71,7 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
           </button>
           <button
             onClick={async () => await handleOk()}
-            className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+            className="px-4 py-2 rounded-lg  bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:from-purple-700 hover:to-pink-600 transition"
           >
             אישור
           </button>

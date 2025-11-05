@@ -1,233 +1,558 @@
 import React, { useEffect, useState } from "react";
-import { Calendar, Clock, User, X } from "lucide-react";
-import type { Conversation } from "../../interface/interfaces";
+import { X, ChevronDownIcon, Edit3, Plus, Save } from "lucide-react";
+import type { ConversationLogType, Contact, ConversationData, SelectEmployeesList } from "../../interface/interfaces";
+import Bars3Icon from "@heroicons/react/24/solid/esm/Bars3Icon";
+import { GetContactsAsync, GetConversationLogTypes, insertConverstion, updateConverstion } from "../../services/TaskService";
+import ContactsGrid from "./contactGrid";
 
-
-
-//type Employee = { id: number; name: string };
-
-type TaskModalProps = {
+type ConversationModalProps = {
     isOpen: boolean;
-    editingId: number;
-   
-   callObject: Conversation | null;
-  onClose: () => void;
 
+    newConversation: ConversationData;
+    setNewConversation: React.Dispatch<React.SetStateAction<ConversationData>>;
+    resetNewConversation: () => void;
+    saveConversation: () => void;
+    userID: number;
+    employeesList: SelectEmployeesList[];
 };
 
-const ConversationModalOpen: React.FC<TaskModalProps> = ({
-  callObject,
-onClose,
+const ConversationModalOpen: React.FC<ConversationModalProps> = ({
     isOpen,
-    editingId,
-   // setNewTaskDetails,
-   // employeesList,
-
-
-
+    newConversation,
+    setNewConversation,
+    resetNewConversation,
+    saveConversation,
+    userID,
+    employeesList
 }) => {
     if (!isOpen) return null;
-            const [selectedCall, setselectedCall] = useState<Conversation | null>(null);
-    const [title, setTitle] = useState('');
+    const [errorSubject, setErrorSubject] = useState("");
+    const [errorTime, setErrorTime] = useState("");
+    const [errorRecipient, setErrorRecipient] = useState("");
+    const [title, setTitle] = useState("פרטי שיחת לקוח");
+    const [logTypes, setLogTypes] = useState<ConversationLogType[]>([]);
+    const [contactsList, setContactsList] = useState<Contact[]>([]);
+    const [isOpenContactList, setIsOpenContactList] = useState(false);
+    const [isnew, setIsnew] = useState(false);
 
-    
+
+    const [searchEmployee, setSearchEmployee] = useState("");
+    //  const [editingId, setEditingId] = useState<number>(0);
+    const [isOpenEmployee, setIsOpenEmployee] = useState(false);
+    const [isOpenType, setIsOpenType] = useState(false);
+    const [isReadOnly, setIsReadOnly] = useState(true);
+
+
+    const inputClass = `text-gray-800 w-full px-3 py-2 ${isReadOnly ? " bg-gray-50" : "border border-gray-300 "}  rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none`;
+
     useEffect(() => {
-        const fetchData = async () => {
+        const init = async () => {
+
             try {
-                setselectedCall(callObject);
-                if (editingId) {
-                    // const empName = employeesList.find(emp => emp.id === newTaskDetails.recipientID);
-                    // setSearchEmployee(empName?.name ?? "");
-                    setTitle("עריכת שיחה")
+                const empName = employeesList.find(emp => emp.id === newConversation.recipientID);
+                console.log("empName", employeesList, empName);
+                setSearchEmployee(empName?.name ?? "");
+                
+                if (localStorage.getItem('conversationLogTypes')) {
+                    const storedLogTypes = JSON.parse(localStorage.getItem('conversationLogTypes') || '[]');
+
+                    setLogTypes(storedLogTypes);
                 }
                 else {
-                    setTitle("הוספת שיחה חדשה")
+                    const logTypesData = await GetConversationLogTypes();
+                    if (logTypesData) {
+                        setLogTypes(logTypesData);
+
+                    }
 
                 }
-            } catch (error) {
-                console.error("Error loading data:", error);
+            } catch (err) {
+                console.error("Error initializing modal:", err);
             }
         };
-        fetchData();
-    }, []);
-     if (!isOpen && !selectedCall) return null;
+        if (newConversation) init();
+    }, [newConversation]);
+    const resetError = () => {
+        setErrorSubject("");
+        setErrorTime("");
+        setErrorRecipient("");
+    }
+    const handleEditOrAddClick = (id: number) => {
+        if (id == 0) {
+            setNewConversation((prev: any) => ({
+                ...prev,
+                subject: "",
+                organizerID: userID,
+                recipientID: 0,
+            }));
+            setIsnew(true);
+            setTitle("הוספת שיחה חדשה");
+        }
+        else {
+            setIsnew(false);
+            setTitle("עריכת שיחה");
+        }
+        setIsReadOnly(false);
+    };
+    const handleCancelClick = () => {
+        resetNewConversation();
+        resetError();
 
-  return (
-     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
-                    {/* Header */}
-                    <div className="relative pt-1 flex items-center justify-center mb-2">
-                        <h2 className="text-lg font-semibold text-gray-800 text-center">{title}</h2>
+        setIsReadOnly(true);
+    };
+
+    const handleSaveClick = async () => {
+
+        resetError();
+        let hasError = false;
+        if (newConversation.startDate && newConversation.dueDate && newConversation.startDate > newConversation.dueDate) {
+            setErrorTime("תאריך/שעה לא תקין");
+            hasError = true;
+
+        }
+        if (!newConversation.subject) {
+            setErrorSubject("נדרש נושא השיחה");
+            hasError = true;
+        }
+        if (!newConversation.recipientID) {
+
+            setErrorRecipient("נדרש מקבל השיחה");
+            hasError = true;
+        }
+        if (hasError) {
+            return;
+        }
+        if (!isnew && newConversation.id) {
+            const success = await updateConverstion(newConversation);
+            if (success) {
+
+            }
+        }
+        else {
+            const taskData = await insertConverstion(newConversation);
+            if (taskData > 0) {
+
+            }
+        }
+        saveConversation();
+        setIsReadOnly(true);
+    };
+    const setOpenContactList = async () => {
+        const contactsData = await GetContactsAsync();
+        if (contactsData) {
+            setContactsList(contactsData as Contact[]);
+        }
+        setIsOpenContactList(true);
+    }
+    const handleSelectContact = (contact: Contact) => {
+        setNewConversation((prev: any) => ({
+            ...prev,
+            contactID: contact.id,
+            contactEmail: contact.email,
+            contactPhone: contact.contactTell,
+            contactCell: contact.contactCell,
+            companyName: contact.companyName,
+            contactName: contact.name,
+        }));
+        setIsOpenContactList(false);
+    };
+
+    const filteredEmployees = !isOpenEmployee || searchEmployee.trim() === ""
+        ? employeesList
+        : employeesList.filter((emp) =>
+            emp.name?.toLowerCase().includes(searchEmployee.toLowerCase())
+        );
+    const handleSelect = (emp: SelectEmployeesList) => {
+        setNewConversation((prev) => ({
+            ...prev,
+            recipientID: emp.id ? emp.id : 0,
+        }));
+        setSearchEmployee(emp.name ? emp.name : "");
+        setIsOpenEmployee(false);
+    };
+    const handleSelectType = (type: ConversationLogType) => {
+        setNewConversation((prev) => ({
+            ...prev,
+            conversationLogTypeID: type.id ? type.id : 0,
+            conversationLogTypeName: type.name ? type.name : "",
+
+        }));
+
+        setIsOpenType(false);
+    }; return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="text-gray-800 bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between relative w-full">
+                    {/* left button (edit/save or placeholder) */}
+                    <div className="w-8 h-8 flex items-center justify-center">
+
                         <button
-                          onClick={onClose}
-                            className="absolute left-0  w-8 h-8 flex items-center justify-center"
+                            onClick={() => {
+                                !isReadOnly ? handleSaveClick() : handleEditOrAddClick(newConversation.id);
+                            }}
+                            className="w-8 h-8 flex items-center justify-center"
                         >
-                            <X className="w-5 h-5 text-gray-500" />
+                            {!isReadOnly ? (
+                                <Save className="w-5 h-5 text-blue-600" />
+                            ) : (
+                                <Edit3 className="w-5 h-5 text-gray-500" />
+                            )}
                         </button>
-    
+
                     </div>
-                    {/* Scrollable body */}
-                    <div className="p-4 space-y-3 overflow-y-auto">
-   
-        {/* Content */}
-        {/* <div className="p-4 sm:p-6 space-y-4 sm:space-y-5"> */}
-          {/* Title */}
-          <div>
-            <label className="block text-right text-xs sm:text-sm text-gray-600 mb-1.5 sm:mb-2 font-semibold">
-              תיאור השיחה
-            </label>
-            <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-              <input
-                type="text"
-                placeholder="הכנס תיאור קצר לשיחה..."
-                defaultValue={selectedCall?.subject}
-                className="w-full text-right bg-transparent outline-none text-gray-800 text-sm sm:text-base"
-              />
-            </div>
-          </div>
+                    <h2 className="absolute left-1/2 -translate-x-1/2 text-lg font-semibold text-gray-800">{title}</h2>
+                    <button
+                        onClick={() => { resetNewConversation(), resetError() }}
+                        className="absolute left-0  w-8 h-8 flex items-center justify-center"
+                    >
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
 
-          {/* Contact Name */}
-          <div>
-            <label className="block text-right text-xs sm:text-sm text-gray-600 mb-1.5 sm:mb-2 font-semibold">
-              שם איש קשר
-            </label>
-            <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 flex items-center justify-between">
-              <User size={18} className="text-gray-400" />
-              <input
-                type="text"
-                placeholder="-נושאשם מלא"
-                defaultValue={selectedCall?.subject}
-                className="flex-1 text-right bg-transparent outline-none text-gray-800 text-sm sm:text-base"
-              />
-            </div>
-          </div>
+                </div>
+                {/* <div className="relative pt-1 flex items-center justify-center mb-2"></div> */}
 
-          {/* Date */}
-          <div>
-            <label className="block text-right text-xs sm:text-sm text-gray-600 mb-1.5 sm:mb-2 font-semibold">
-              תאריך השיחה
-            </label>
-            <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 flex items-center justify-between">
-              <Calendar size={18} className="text-gray-400" />
-              <input
+                {/* Body */}
+                <div className="p-4 space-y-3 overflow-y-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-[2fr_1fr] gap-3">
+                        {/* Project */}
+                        <div className=" p-0 rounded">
+                            <label className="block text-sm font-medium  text-gray-700 mb-1">
+                                שם פרויקט
+                            </label>
+                            <input
+                                type="text"
+                                value={newConversation?.projectName}
+                                className="w-full  not-only:text-lg text-gray-800 bg-gray-50 p-3 rounded-lg text-right"
+                                disabled
+                            />
+                        </div>
+                        {/* Project */}
+                        <div className="p-0 rounded">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                מקור
+                            </label>
+                            <input
+                                type="text"
+                                value={newConversation?.source}
+                                className="w-full  not-only:text-lg text-gray-800 bg-gray-50 p-3 rounded-lg text-right"
+                                disabled
+                            />
+                        </div>
+                    </div>
+                    {/* Subject */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            תיאור השיחה<span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            value={newConversation.subject}
+                            onChange={(e) =>
+                                setNewConversation((prev: any) => ({ ...prev, subject: e.target.value }))
+                            }
+                            placeholder="תיאור השיחה..."
+                            rows={3}
+                            disabled={isReadOnly}
+                            className={inputClass}
+                            // className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500"
+                            dir="rtl"
+                        />
+                        {errorSubject && <p className="text-red-500 text-sm mt-1">{errorSubject}</p>}
+
+                    </div>
+
+                    {/* Conversation Date */}
+                    <div>
+                        <div className="grid grid-cols-1 [@media(min-width:350px)]:grid-cols-2 gap-3 w-full">
+                            {/* Start Date */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">תאריך הפניה</label>
+                                <input
                                     type="date"
-                                    value={ selectedCall?.startDate
-    ? new Date(selectedCall?.startDate).toLocaleDateString('he-IL')
-    : ''}
-                                    //onChange={(e) => {
-                                      //  const newStartDate = e.target.value;
-                                        // setselectedCall((prev) => {
-                                        //     let updated = { ...prev, startDate: newStartDate };
-                                        //     // if start date is after end date -> fix end date
-                                        //     if (prev.dueDate && new Date(newStartDate) > new Date(prev.dueDate)) {
-                                        //         updated.dueDate = newStartDate;
-                                        //     }
-                                        //     return updated;
-                                        // });
-                                    //}}
-                                    className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    value={newConversation.startDate || ""}
+                                    onChange={(e) =>
+                                        setNewConversation((prev: any) => ({ ...prev, startDate: e.target.value }))
+                                    }
+                                    disabled={isReadOnly}
+                                    className={inputClass}
+                                // className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500"
                                 />
-              <input
-                type="text"
-                placeholder="DD.MM.YYYY"
-                defaultValue={
-                  selectedCall?.startDate
-    ? new Date(selectedCall?.startDate).toLocaleDateString('he-IL')
-    : ''
-                }
-                className="flex-1 text-right bg-transparent outline-none text-gray-800 text-sm sm:text-base"
-              />
-            </div>
-          </div>
+                            </div>
+                            {/* Due Date */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">תאריך חזרה</label>
 
-          {/* Time Range */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <div>
-              <label className="block text-right text-xs sm:text-sm text-gray-600 mb-1.5 sm:mb-2 font-semibold">
-                שעת סיום
-              </label>
-              <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 flex items-center justify-between">
-                <Clock size={16} className="text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="10:00"
-                  defaultValue={
-            selectedCall?.dueDate
-    ? new Date(selectedCall.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : ''
-                  }
-                  className="flex-1 text-right bg-transparent outline-none text-gray-800 text-sm sm:text-base"
-                />
-              </div>
-            </div>
+                                <input
+                                    type="date"
+                                    value={newConversation.dueDate || ""}
+                                    onChange={(e) =>
+                                        setNewConversation((prev: any) => ({ ...prev, dueDate: e.target.value }))
+                                    }
+                                    disabled={isReadOnly}
+                                    className={inputClass}
+                                // className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500"
+                                />
+                            </div>
+                        </div>
+                        {errorTime && <p className="text-red-500 text-sm mt-1">{errorTime}</p>}
+                    </div>
+                    {/* Conversation Log Type */}
 
-            <div>
-              <label className="block text-right text-xs sm:text-sm text-gray-600 mb-1.5 sm:mb-2 font-semibold">
-                שעת התחלה
-              </label>
-              <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 flex items-center justify-between">
-                <Clock size={16} className="text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="09:00"
-                  defaultValue={
-                                         selectedCall?.startDate
-    ? new Date(selectedCall.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : ''
-                  }
-                  className="flex-1 text-right bg-transparent outline-none text-gray-800 text-sm sm:text-base"
-                />
-              </div>
-            </div>
-          </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">סוג שיחה</label>
+                        {/* new */}
+                        <div className="relative w-full">
+                            <input
+                                type="text"
+                                value={newConversation.conversationLogTypeName}
+                                onChange={() => {
 
-          {/* Duration */}
-          <div>
-            <label className="block text-right text-xs sm:text-sm text-gray-600 mb-1.5 sm:mb-2 font-semibold">
-              משך השיחה
-            </label>
-            <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-              <input
-                type="text"
-                placeholder="0 דקות"
-               // defaultValue={selectedCall?.duration}
-                className="w-full text-right bg-transparent outline-none text-gray-800 text-sm sm:text-base"
-              />
-            </div>
-          </div>
+                                    setIsOpenType(true);
+                                }}
+                                disabled={isReadOnly}
+                                className={inputClass}
+                            // className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent${errorRecipient ? "border-red-500" : "border-gray-300"
+                            //     }`}
+                            />
+                            <button
+                                type="button"
+                                disabled={isReadOnly}
+                                onClick={() => { setIsOpenType(!isOpenType) }}
+                                className=" absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
+                            >
+                                <ChevronDownIcon className="h-6 w-6" />
+                            </button>
 
-          {/* Notes */}
-          <div>
-            <label className="block text-right text-xs sm:text-sm text-gray-600 mb-1.5 sm:mb-2 font-semibold">
-              הערות
-            </label>
-            <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4">
-              <textarea
-                placeholder="הוסף הערות נוספות..."
-                //defaultValue={selectedCall?.notes}
-                rows={4}
-                className="w-full text-right bg-transparent outline-none text-gray-800 text-xs sm:text-sm resize-none leading-relaxed"
-              />
-            </div>
-          </div>
+                            {isOpenType && (
+                                <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                    {logTypes.map((lt: any) => (
+                                        <li
+                                            key={lt.id}
+                                            onClick={() => handleSelectType(lt)}
+                                            className="p-2 cursor-pointer  hover:bg-[#0078d7]  hover:text-white"
+                                        >
+                                            {lt.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
 
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-2">
-           
-            <button
-              onClick={onClose}
-              className="py-3 sm:py-4 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition text-sm sm:text-base"
-            >
-              ביטול
-            </button>
-             <button className="py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-bold hover:shadow-xl transition text-sm sm:text-base">
-              {selectedCall ? 'עדכן' : 'שמור'}
-            </button>
-          </div>
+
+                        </div>
+                    </div>
+
+                    {/* Orginizer (readonly) */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">שולח</label>
+                        <input
+                            type="text"
+                            value={employeesList.find(e => e.id === newConversation.organizerID)?.name || ""}//name
+                            readOnly
+                            text-gray-800 w-full px-3 py-2 bg-gray-50 rounded-lg
+                            className="text-gray-800 w-full px-3 py-2 bg-gray-50  rounded-lg "
+                        />
+
+                    </div>
+                    {/* Recipient */}
+                    <div className="relative w-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            מקבל<span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            // value={searchEmployee}
+                            value={employeesList.find(e => e.id === newConversation.recipientID)?.name || ""}
+                            onChange={(e) => {
+                                setSearchEmployee(e.target.value);
+                                setIsOpenEmployee(true);
+                            }}
+
+                            placeholder="בחר מקבל..."
+                            disabled={isReadOnly}
+                            className={inputClass}
+
+                        />
+                        <button
+                            type="button"
+                            disabled={isReadOnly}
+                            onClick={() => { setSearchEmployee(""); setIsOpenEmployee(!isOpenEmployee) }}
+                            className="pt-7 absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
+                        >
+                            <ChevronDownIcon className="h-6 w-6" />
+                        </button>
+                        {isOpenEmployee && filteredEmployees.length > 0 && (
+                            <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                {filteredEmployees.map((emp) => (
+                                    <li
+                                        key={emp.id}
+                                        onClick={() => handleSelect(emp)}
+                                        className="p-2 cursor-pointer  hover:bg-[#0078d7]  hover:text-white"
+                                    >
+                                        {emp.name}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        {errorRecipient && <p className="text-red-500 text-sm mt-1">{errorRecipient}</p>}
+                    </div>
+                    {/* Contact Select */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">איש קשר</label>
+                        <div className="relative w-full">
+                            <input
+                                type="text"
+
+                                value={newConversation.contactName || ""}
+                                placeholder="בחר איש קשר..."
+                                readOnly
+                                disabled={isReadOnly}
+                                className={inputClass}
+                            // className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500"
+                            />
+                            <button
+                                onClick={() => setOpenContactList()}
+                                disabled={isReadOnly}
+                                className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
+                            >
+                                <Bars3Icon className="h-6 w-6" />
+                            </button>
+                        </div>
+
+                        {/* Contact List Popup */}
+                        {isOpenContactList && (
+                            <ContactsGrid
+                                contacts={contactsList}
+                                onClose={() => { setIsOpenContactList(false) }}
+                                handleSelectContact={handleSelectContact}
+                            ></ContactsGrid>
+                            // <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            //     {contactsList.map((c) => (
+                            //         <li
+                            //             key={c.id}
+                            //             onClick={() => handleSelectContact(c)}
+                            //             className="p-2 cursor-pointer hover:bg-[#0078d7] hover:text-white"
+                            //         >
+                            //             {c.name} - {c.companyName}
+                            //         </li>
+                            //     ))}
+                            // </ul>
+                        )}
+                    </div>
+
+                    {/* Company Info */}
+                    {/* {selectedContact && ( */}
+                    <div className="space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+
+                            <div className=" ">
+                                <label className="block text-sm font-medium  text-gray-700 mb-1">
+                                    חברה:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={newConversation?.companyName}
+                                    className="text-gray-800 w-full px-3 py-2 bg-gray-50  rounded-lg "
+                                    disabled
+                                />
+                            </div>
+                            {/* Project */}
+                            <div className="p-0 rounded">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    אימייל:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={newConversation?.contactEmail}
+                                    className="text-gray-800 w-full px-3 py-2 bg-gray-50  rounded-lg "
+                                    disabled
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+
+                            <div className=" ">
+                                <label className="block text-sm font-medium  text-gray-700 mb-1">
+                                    מספר נייד:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={newConversation?.contactCell}
+                                    className="text-gray-800 w-full px-3 py-2 bg-gray-50  rounded-lg "
+                                    disabled
+                                />
+                            </div>
+                            {/* Project */}
+                            <div className="p-0 rounded">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    מספר טלפון:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={newConversation?.contactPhone}
+                                    className="text-gray-800 w-full px-3 py-2 bg-gray-50  rounded-lg "
+                                    disabled
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    {/* // <div className="space-y-2">
+                        //     <div className="text-sm text-gray-700">
+                        //         <strong>חברה:</strong> {selectedContact.companyName}
+                        //     </div>
+                        //     <div className="text-sm text-gray-700">
+                        //         <strong>אימייל:</strong> {selectedContact.email}
+                        //     </div>
+                        //     <div className="text-sm text-gray-700">
+                        //         <strong>מספר נייד:</strong> {selectedContact.cell}
+                        //     </div>
+                        //     <div className="text-sm text-gray-700">
+                        //         <strong>מספר טלפון:</strong> {selectedContact.phone}
+                        //     </div>
+                        // </div> */}
+                    {/* )} */}
+
+                    {/* Buttons */}
+                    <div className="flex gap-3 pt-4">
+                        {isReadOnly ? (
+                            <>
+                                <button
+                                    onClick={() => { handleEditOrAddClick(0) }}
+                                    className="flex-1 bg-green-500 text-white py-3 px-4 rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    הוסף חדש
+                                </button>
+                                <button
+                                    onClick={() => { handleEditOrAddClick(newConversation.id) }}
+                                    className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                >
+                                    <Edit3 className="w-4 h-4" />
+                                    ערוך שינויים
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={handleCancelClick}
+                                    className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300"
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    onClick={handleSaveClick}
+                                    className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-600"
+                                >
+                                    שמור
+                                </button>
+                            </>
+                        )}
+                    </div>
+
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ConversationModalOpen;

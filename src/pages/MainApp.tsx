@@ -17,6 +17,7 @@ import TaskManager from './tasks/taskList';
 import ProjectHours from './projectHours/ProjectHours';
 import ManagerDataMain from './managerData/managerDataMain';
 import ConversationList from './conversations/ConversationList';
+import MyScheduler from './calander/myCalander';
 const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const[titleName,setTitleName]=useState("");
@@ -48,6 +49,8 @@ React.useEffect(() => {
     '/main/projectHours-List': 'שעות לפרויקטים',
     '/main/conversations-List': 'יומן שיחות',
     '/main/managerDataMain': 'נתונים למנהל',
+    '/main/MyScheduler': 'יומן פגישות',
+
   };
 
   const currentTitle = titleMap[location.pathname] || '';
@@ -86,6 +89,8 @@ useEffect(() => {
           <Link to="/main/managerDataMain">נתונים למנהל</Link>
         </li>
       )}
+          <li><Link to="/main/MyScheduler">יומן פגישות</Link></li>  
+
         </ul>
         {/* Mobile hamburger */}
         <button onClick={toggleMenu} className="hamburger" aria-label="Toggle menu">
@@ -107,8 +112,11 @@ useEffect(() => {
       )}
     
     <li onClick={() => { setMenuOpen(false); handleLogout(); }} className="logout">התנתק</li>
+    <li><Link to="/main/MyScheduler" onClick={() => setMenuOpen(false)}>יומן פגישות</Link></li>
+  
   </ul>
-  )}
+ 
+ )}
 
       {/* Main content h-screen overflow-hidden */}
       <main className="main-content ">
@@ -121,6 +129,7 @@ useEffect(() => {
           <Route path="projectHours-List" element={<ProjectHours />} /> 
           <Route path="conversations-List" element={<ConversationList />} /> 
           <Route path="managerDataMain" element={<ManagerDataMain />} />
+          <Route path="MyScheduler" element={<MyScheduler />} />
 
 
 {/* contacts={dummyData}  */}

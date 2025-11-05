@@ -1,4 +1,4 @@
-import type {  Company, Conversation, PhoneBook, PhoneBookCompany } from "../interface/interfaces";
+import type {  Company, PhoneBook, PhoneBookCompany } from "../interface/interfaces";
 import authService from "./authService";
 export const getPhoneBookCompanyList = async (): Promise<PhoneBookCompany | null> => {
   try {
@@ -194,37 +194,4 @@ const data: number = await response.json();
     console.error("Error update phone book company:", error);
     return 0;
   }
-};
-export const getConversationList = async (): Promise<Conversation[]> => {
-  try {
-    
-const user = authService.getCurrentUser();
-      if (!user) throw new Error('User not authenticated');
-
-     // const date = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-      const requestBody = {
-        database: user.dataBase,
-        employeeID: user.id
-      };
-
-      const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
-      const endpoint = `${dynamicBaseUrl}/phoneBook/GetConversationsByEmployeeAsync`; // Make sure this is correct
-
-
-      const response = await authService.makeAuthenticatedRequest(endpoint, {
-        method: 'POST',
-       body: JSON.stringify(requestBody),
-      });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch phone book data');
-    }
-
-    const data: Conversation[] = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching phone book list:', error);
-    return [];
-  }
-  
 };

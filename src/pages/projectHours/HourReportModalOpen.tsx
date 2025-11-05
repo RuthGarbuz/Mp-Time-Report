@@ -110,7 +110,7 @@ const submitForm = (e: React.FormEvent<HTMLFormElement>) => {
                           type="text"
                           value={selectedProject?.name}
                           onChange={() => setNewReport({...newReport, projectID:selectedProject?.id ?? 0 })}
-                         className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
+                         className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
                          disabled
                         />
                       </div>

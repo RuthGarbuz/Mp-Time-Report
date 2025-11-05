@@ -134,7 +134,7 @@ export default function TaskManager() {
 
   const deleteTaskHandler = async () => {
     if (selectedTaskID === null) return;
-    const taskData = await deleteTask(selectedTaskID);
+    const taskData = await deleteTask(selectedTaskID,"DeleteTaskAsync");
     if (taskData) {
       setTasksList(tasksList.filter(task => task.taskID !== selectedTaskID));
     }
