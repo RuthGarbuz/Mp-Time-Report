@@ -382,7 +382,6 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
 
                                             {(() => {
                                                 const city = citiesList.find((c) => c.id === contact.companyCityID);
-                                                console.log("city", citiesList, city?.name)
                                                 return (
                                                     <>
                                                         <span>

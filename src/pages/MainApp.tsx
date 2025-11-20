@@ -17,7 +17,7 @@ import TaskManager from './tasks/taskList';
 import ProjectHours from './projectHours/ProjectHours';
 import ManagerDataMain from './managerData/managerDataMain';
 import ConversationList from './conversations/ConversationList';
-import MyScheduler from './calander/myCalander';
+import MyScheduler from './meeting/myCalander';
 const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const[titleName,setTitleName]=useState("");
@@ -59,7 +59,6 @@ React.useEffect(() => {
 useEffect(() => {
     const fetchData = async () => {
       const user = authService.getCurrentUser();
-      console.log("Current User:", user);
       setUser(user)
     };
     fetchData();

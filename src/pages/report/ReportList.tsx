@@ -28,6 +28,8 @@ const ReportList = () => {
   const [typeReports, setTypeReports] = useState<TimeHourReportsType[]>([]);
   const [typeReport, setTypeReport] = useState<TimeHourReportsType | null>(null);
   const [editPermision, setEditPermision] = useState(false);
+  const [allowAddReport, setAllowAddReport] = useState(false);
+
 
 
   const [newReport, setNewReport] = useState<TimeRecord>(
@@ -258,12 +260,21 @@ const ReportList = () => {
 
   };
 
- 
-  useEffect(() => {
+   useEffect(() => {
+   
     const permisionEmployee = authService.getCurrentEmployee();
-    if (permisionEmployee) {
+   
+    if (!permisionEmployee) 
+      {
       setEditPermision(permisionEmployee.editPermision);
+      }
+  }, []);
+  useEffect(() => {
+    const permisionUser = authService.getCurrentUser();
+    if (permisionUser) {
+      setAllowAddReport(permisionUser.allowAddReport);
     }
+   
   }, []);
   useEffect(() => {
 
@@ -408,7 +419,8 @@ const ReportList = () => {
         </div>
 
         {/* Add Report Button */}
-        {editPermision && (
+        { editPermision && allowAddReport && (
+          
           <div className="mb-6">
             <button
               onClick={() => {

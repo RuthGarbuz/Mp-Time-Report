@@ -45,6 +45,7 @@ class AuthService {
       urlConnection: data.urlConnection,
       expiresAt: data.expiration,
       seeFinance: data.seeFinance,
+      allowAddReport: data.allowAddReport,
       password: password ,// שמירת הסיסמה
       rememberMe: rememberMe // שמירת מצב זכור אותי
     };

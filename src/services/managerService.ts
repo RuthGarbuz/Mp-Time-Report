@@ -55,7 +55,6 @@ export const getManagerModelData = async (officeId: number,functionName: string)
       throw new Error('Failed to fetch intake data');
     }
     const data = await response.json();
-    console.log('Intake data fetched:', data);
     return data;
   } 
   catch (error) {
