@@ -18,6 +18,7 @@ import ProjectHours from './projectHours/ProjectHours';
 import ManagerDataMain from './managerData/managerDataMain';
 import ConversationList from './conversations/ConversationList';
 import MyScheduler from './meeting/myCalander';
+import MainStart from './mainSart/mainStart';
 const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const[titleName,setTitleName]=useState("");
@@ -76,19 +77,21 @@ useEffect(() => {
 
         {/* Desktop menu */}
         <ul className="desktop-menu">
-          <li onClick={handleLogout} className="logout">התנתק</li>
-          <li><Link to="/main/report-list">רשימת דיווחים</Link></li>
-          <li><Link to="/main/report-time">דיווח נכחות</Link></li>
           <li><Link to="/main/phone-book-List">אלפון</Link></li>
+          <li><Link to="/main/report-time">דיווח נכחות</Link></li>
+          <li><Link to="/main/report-list">רשימת דיווחי נוכחות</Link></li>
           <li><Link to="/main/tasks-List">משימות</Link></li>
-          <li><Link to="/main/projectHours-List">שעות לפרויקטים</Link></li>
           <li><Link to="/main/conversations-List">יומן שיחות</Link></li>  
+          <li><Link to="/main/projectHours-List">שעות לפרויקטים</Link></li>
+          <li><Link to="/main/MyScheduler">יומן פגישות</Link></li>  
+         <li><Link to="/main/HomePage"> דף הבית</Link></li>
+
+          {user?.seeFinance && (<li><Link to="/main/managerDataMain">נתונים למנהל</Link></li>)}
+          <li onClick={handleLogout} className="logout">התנתק</li>
            {user?.seeFinance && (
         <li>
-          <Link to="/main/managerDataMain">נתונים למנהל</Link>
         </li>
       )}
-          <li><Link to="/main/MyScheduler">יומן פגישות</Link></li>  
 
         </ul>
         {/* Mobile hamburger */}
@@ -100,18 +103,19 @@ useEffect(() => {
       {/* Mobile menu */}
      {menuOpen && (
     <ul className="mobile-menu" style={{ direction: 'rtl' }}>
-    <li><Link to="/main/report-time" onClick={() => setMenuOpen(false)}>דיווח נכחות</Link></li>
-    <li><Link to="/main/report-list" onClick={() => setMenuOpen(false)}>רשימת דיווחים</Link></li>
     <li><Link to="/main/phone-book-List" onClick={() => setMenuOpen(false)}>אלפון</Link></li>
+    <li><Link to="/main/report-time" onClick={() => setMenuOpen(false)}>דיווח נכחות</Link></li>
+    <li><Link to="/main/report-list" onClick={() => setMenuOpen(false)}>רשימת דיווחי נוכחות</Link></li>
     <li><Link to="/main/tasks-List" onClick={() => setMenuOpen(false)}>משימות</Link></li>
-    <li><Link to="/main/projectHours-List" onClick={() => setMenuOpen(false)}>שעות לפרויקטים</Link></li>
     <li><Link to="/main/conversations-List" onClick={() => setMenuOpen(false)}>יומן שיחות</Link></li>
+    <li><Link to="/main/projectHours-List" onClick={() => setMenuOpen(false)}>שעות לפרויקטים</Link></li>
+    <li><Link to="/main/MyScheduler" onClick={() => setMenuOpen(false)}>יומן פגישות</Link></li>
+    <li><Link to="/main/HomePage" onClick={() => setMenuOpen(false)}> דף הבית</Link></li>
+
     {user?.seeFinance && (
             <li><Link to="/main/managerDataMain" onClick={() => setMenuOpen(false)}>נתונים למנהל</Link></li>
       )}
-    
     <li onClick={() => { setMenuOpen(false); handleLogout(); }} className="logout">התנתק</li>
-    <li><Link to="/main/MyScheduler" onClick={() => setMenuOpen(false)}>יומן פגישות</Link></li>
   
   </ul>
  
@@ -120,7 +124,9 @@ useEffect(() => {
       {/* Main content h-screen overflow-hidden */}
       <main className="main-content ">
         <Routes>
-          <Route index element={<Navigate to="report-time" replace />} />
+          {/* <Route index element={<Navigate to="report-time" replace />} /> */}
+          <Route index element={<Navigate to="MainStart" replace />} />
+
           <Route path="report-time" element={<ReportTime />} />
           <Route path="report-list" element={<ReportList />} />
           <Route path="phone-book-List" element={<BusinessPhonebook />} />
@@ -129,11 +135,15 @@ useEffect(() => {
           <Route path="conversations-List" element={<ConversationList />} /> 
           <Route path="managerDataMain" element={<ManagerDataMain />} />
           <Route path="MyScheduler" element={<MyScheduler />} />
+          <Route path="HomePage" element={<HomePage />} />
+
 
 
 {/* contacts={dummyData}  */}
           <Route path="home" element={<HomePage />} />
-          <Route path="*" element={<Navigate to="report-time" replace />} />
+          {/* <Route path="*" element={<Navigate to="report-time" replace />} /> */}
+          <Route path="*" element={<Navigate to="HomePage" replace />} />
+
         </Routes>
       </main>
     </div>

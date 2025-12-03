@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Phone, Edit3, Save, X, Mail, User } from "lucide-react";
 import type { City, PhoneBook, Company } from "../../interface/interfaces";
-import { addCompany, addPhoneBookContact, updateCompany, updatePhoneBookContact } from "../../services/phoneBookService";
+import { addCompany, addPhoneBookContact, getPhoneBookCompanyList, updateCompany, updatePhoneBookContact } from "../../services/phoneBookService";
 
 
 
 interface UpdatePhoneBookProps {
     mode: "add" | "update";
     contact: PhoneBook | null;
-    citiesList: City[];
-    companiesList: Company[];
+    // citiesList: City[];
+    // companiesList: Company[];
 
     onClose: () => void;
     onSave: () => void;
@@ -22,8 +22,8 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     onClose,
     onSave,
     //handleAddContact,
-    citiesList,
-    companiesList
+    // citiesList,
+    // companiesList
 }) => {
     const isAddMode = mode === "add";
     const [isEditing, setIsEditing] = useState(false);
@@ -33,6 +33,8 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     const [errorCompany, setErrorCompany] = useState("");
     const [errorMobile, setErrorMobile] = useState("");
 
+  const [companiesList, setCompaniesList] = useState<Company[]>([]);
+  const [citiesList, setCitiesList] = useState<City[]>([]);
 
     const [editData, setEditData] = useState<PhoneBook>({
         id: 0,
@@ -44,8 +46,17 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
         mobile: '',
         email: '',
         selectedCompanyId: 0,
-        companyCityID: 0
+        companyCityID: undefined
     });
+    const getData = async () => {
+    const phoneBookData = await getPhoneBookCompanyList();
+
+    if (phoneBookData) {
+      setCompaniesList(phoneBookData.companies);
+      setCitiesList(phoneBookData.cities);
+    }
+
+  };
     const setCompanyData = async () => {
         if (isAddingCompany && editData.company) {
             // Add new company
@@ -90,10 +101,10 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
             hasError = true;
             setErrorCompany("שם חברה הוא שדה חובה");
         }
-        if (!editData.mobile || editData.mobile.trim() === "") {
-            hasError = true;
-            setErrorMobile("מספר נייד הוא שדה חובה");
-        }
+        // if (!editData.mobile || editData.mobile.trim() === "") {
+        //     hasError = true;
+        //     setErrorMobile("מספר נייד הוא שדה חובה");
+        // }
         return hasError;
     }
     const handleAddContact = async () => {
@@ -140,7 +151,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
         editData.company = '';
         editData.companyAddress = '';
         editData.companyPhone = '';
-        editData.companyCityID = 0;
+        editData.companyCityID = undefined;
     }
     const normalizeForWhatsApp = (raw?: string | null) => {
         if (!raw) return null;
@@ -166,9 +177,11 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
         return digits;
     };
     useEffect(() => {
+       
         console.log("isAddMode", isAddMode)
         setIsEditing(isAddMode)
         if (contact) {
+            getData();
             setEditData(contact);
             setIsAddingCompany(false);
         }

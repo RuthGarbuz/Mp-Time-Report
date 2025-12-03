@@ -18,7 +18,7 @@ type TaskModalProps = {
     errorSubject?: string;
     errorTime?: string;
     errorRecipient?: string;
-    resetNewTaskDetails: () => void;
+    close: () => void;
     addDetailedTask: () => void;
     employeesList: SelectEmployeesList[];
 };
@@ -31,7 +31,7 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
     errorSubject,
     errorTime,
     errorRecipient,
-    resetNewTaskDetails,
+    close,
     addDetailedTask,
     employeesList,
 
@@ -105,7 +105,7 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
                 <div className="relative pt-1 flex items-center justify-center mb-2">
                     <h2 className="text-lg font-semibold text-gray-800 text-center">{title}</h2>
                     <button
-                        onClick={() => { resetNewTaskDetails(); }}
+                        onClick={() => { close(); }}
                         className="absolute left-0  w-8 h-8 flex items-center justify-center"
                     >
                         <X className="w-5 h-5 text-gray-500" />
@@ -373,7 +373,7 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
                     <div className="flex gap-3 pt-4">
                         <button
                             onClick={() => {
-                                resetNewTaskDetails();
+                                close();
                             }}
                             className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                         >

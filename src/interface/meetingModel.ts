@@ -21,6 +21,7 @@ export interface CalendarEventDto {
   indexInSeries?: number | null;
   type: number;
   recurrenceXml?: string | null;
+  employeeId?: number| null;
 }
 export interface CalendarDataModal {
   calendarEventDto:CalendarEventDto;

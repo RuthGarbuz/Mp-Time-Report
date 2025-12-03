@@ -76,32 +76,57 @@
   background: transparent !important;
 }
 
-.fc-event-custom {
+/* .fc-event-custom {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-right: 4px; /* ל־RTL */
+  padding-right: 4px; 
   height: 100%;
   color: white;
   font-size: 12px;
-}
+} */
 
 .recurring-symbol {
   position: absolute;
   top: 2px;
-  left: 2px; /* או right:2px אם צריך ל־RTL */
+  left: 2px; 
   font-size: 14px;
+  pointer-events: none; 
+}
+
+
+.fc-event-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* טקסט בצד ימין, סמלים בצד שמאל */
+  width: 100%;
+  height: 100%;
+  padding-inline: 4px;
+  color: white;
+  position: relative;
+  direction: rtl;
+}
+
+/* הכותרת */
+.event-title {
+  flex: 1; /* תופס את כל השטח הפנוי */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* אזור הסמלים (תמיד בשמאל!) */
+.event-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  left: 4px;     /* לקבע לשמאל */
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: none; /* שלא יפריע לגרירה */
 }
 
-.recurring-symbol.exception::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
- border-top: 2px solid red;
-  transform: rotate(-45deg);
-}
+
+

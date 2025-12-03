@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Check, Edit2, Trash2, Clock } from 'lucide-react';
+import {  Check, Edit2, Trash2, Clock } from 'lucide-react';
 import { deleteTask, getTasksList, insertTask, saveCompletedTask, updateTask } from '../../services/TaskService';
 import type {  SelectEmployeesList, Task } from '../../interface/interfaces';
 import { Priority } from '../../enum';
@@ -145,18 +145,14 @@ export default function TaskManager() {
   const startEdit = (id: any) => {
     const task = tasksList.find(task => task.taskID === id);
     if (task) {
-      
+      resetError();
       setNewTaskDetails(task);
       setEditingId(id);
       setShowAddModal(true)
     }
   };
   const openNewTask = () => {
-    setNewTaskDetails(prev => ({
-      ...prev,
-      priorityID: 0,
-      subject: '',
-    }))
+   resetNewTaskDetails();
     setEmployeList();
     setShowAddModal(true)
   }
@@ -312,7 +308,8 @@ export default function TaskManager() {
 
         {/* Add New Task - Quick */}
         <div className="mb-6">
-          <div className="text-gray-800 flex gap-2 mb-2 flex-wrap">
+{/* addquickTask  dont delete this code!*/}
+          {/* <div className="text-gray-800 flex gap-2 mb-2 flex-wrap">
             <input
               type="text"
               value={newTaskDetails.subject}
@@ -352,14 +349,14 @@ export default function TaskManager() {
             >
               <Plus size={20} />
             </button>
-          </div>
+          </div> */}
 
           {/* כפתור הוספה מפורטת */}
           <button
             onClick={() => openNewTask()}
             className="w-full py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:from-green-600 hover:to-teal-600 transition-colors font-medium"
           >
-            הוספת משימה מפורטת
+           + הוספת משימה חדשה
           </button>
         </div>
 
@@ -433,7 +430,7 @@ export default function TaskManager() {
                     <span className={`px-2 py-1 rounded-full text-xs border ${getPriorityColor(task.priorityID)}`}>
                       {Priority[task.priorityID]}
                     </span>
-                    {task.projectID && (
+                    {task.projectID>0&& (
                       <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-200">
                         {task.projectName}
                       </span>
@@ -500,7 +497,7 @@ export default function TaskManager() {
           errorSubject={errorSubject}
           errorTime={errorTime}
           errorRecipient={errorRecipient}
-          resetNewTaskDetails={resetNewTaskDetails}
+          close={() => setShowAddModal(false)}
           addDetailedTask={addDetailedTask}
           employeesList={employeesList}
         />

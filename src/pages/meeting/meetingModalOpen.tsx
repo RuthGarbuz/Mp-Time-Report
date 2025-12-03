@@ -1,31 +1,37 @@
 import { useEffect, useState } from 'react';
 
-import { X, Calendar, Clock, MapPin, Link2, FileText, Bell, Repeat } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Link2, FileText, Bell, Repeat, ChevronDownIcon } from 'lucide-react';
 import type { CalendarDataModal, CalendarEventDto, CalendarPartData, Global } from '../../interface/meetingModel';
-import type { Project } from '../../interface/interfaces';
+import type { Project, SelectEmployeesList } from '../../interface/interfaces';
 import { getProjectsList } from '../../services/TaskService';
 import ProjectFilter from '../shared/projectsFilter';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import meetingService from '../../services/meetingService';
+import employeeService from '../../services/employeeService';
+import ConfirmModal from '../shared/confirmDeleteModal';
 
 
 interface MeetingModalProps {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
+    checkRrecurrenceChild: (recurrenceId?: string) => boolean;
     onClose: () => void;
     event?: CalendarDataModal;
     isRecurrence?: boolean;
-
+    userID?: number;
 }
 
 export default function AddMeetingModal(
     {
         isOpen,
         setIsOpen,
+        checkRrecurrenceChild,
         onClose,
         event,
-        isRecurrence
+        isRecurrence,
+        userID
     }: MeetingModalProps) {
+    let initialForm = event;
     const [form, setForm] = useState<CalendarDataModal | undefined>(event);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [isSaving, setIsSaving] = useState(false);
@@ -37,7 +43,47 @@ export default function AddMeetingModal(
     const [citiesList, setCitiesList] = useState<Global[] | null>(null);
     const [statuseList, setStatuseList] = useState<Global[] | null>(null);
     const [categoryList, setCategoryList] = useState<Global[] | null>(null);
-   
+    const [employeesList, setEmployeesList] = useState<SelectEmployeesList[]>([]);
+
+    const [searchEmployee, setSearchEmployee] = useState("");
+    const [isOpenEmployee, setIsOpenEmployee] = useState(false);
+    const [isDeleteAllExeptions, setIsDeleteAllExeptions] = useState(false);
+
+    const filteredEmployees = employeesList.filter((emp) =>
+        emp.name?.toLowerCase().includes(searchEmployee.toLowerCase())
+    );
+
+    const handleSelect = (emp: SelectEmployeesList) => {
+        updateForm('employeeId', emp.id || userID);
+
+        setSearchEmployee(emp.name ? emp.name : "");
+        setIsOpenEmployee(false);
+    };
+    const updateEmployee = () => {
+        if (form?.calendarEventDto.employeeId == null || form?.calendarEventDto.employeeId == 0) {
+            updateForm('employeeId', userID);
+        }
+    }
+    const handleBeforeSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!hasChanges()) {
+            onClose();
+            return;
+        }
+        
+        if (form?.calendarEventDto.recurrenceId 
+        && form?.calendarEventDto.type === 1) {
+            const hasChild=checkRrecurrenceChild(form?.calendarEventDto.recurrenceId);
+            if (hasChild) {
+            setIsDeleteAllExeptions(true);
+            return;
+            }
+        }
+            handleSubmit();
+    }
+    const hasChanges = () => {
+        return JSON.stringify(form) !== JSON.stringify(initialForm);
+    };
     const setOpenProjectList = async () => {
         const projectsData = await getProjectsList();
         if (projectsData) {
@@ -46,10 +92,17 @@ export default function AddMeetingModal(
         setIsOpenProject(true);
     }
     useEffect(() => {
+        console.log('MeetingModal event:', event);
         const init = async () => {
 
             try {
                 setForm(event);
+                const employeeData: SelectEmployeesList[] = await employeeService.getEmployeesList();
+                if (employeeData) {
+                    const empName = employeeData.find(emp => emp.id === event?.calendarEventDto.employeeId);
+                    setSearchEmployee(empName?.name ?? "");
+                    setEmployeesList(employeeData);
+                }
                 const storedData = localStorage.getItem("meetingDataLists");
 
                 if (storedData) {
@@ -59,17 +112,17 @@ export default function AddMeetingModal(
                     setCategoryList(parsedData?.categoryList || null);
                     return; // ✅ already loaded, no need to fetch again
                 }
+                else {
+                    // Otherwise, fetch from API
+                    const dataList = await meetingService.getMeetingDataLists();
 
-                // Otherwise, fetch from API
-                const dataList = await meetingService.getMeetingDataLists();
-
-                // Save in state
-                setCitiesList(dataList?.citiesList || null);
-                setStatuseList(dataList?.statuseList || null);
-                setCategoryList(dataList?.categoryList || null);
-                // Save to localStorage for next time
-                localStorage.setItem("meetingDataLists", JSON.stringify(dataList));
-
+                    // Save in state
+                    setCitiesList(dataList?.citiesList || null);
+                    setStatuseList(dataList?.statuseList || null);
+                    setCategoryList(dataList?.categoryList || null);
+                    // Save to localStorage for next time
+                    localStorage.setItem("meetingDataLists", JSON.stringify(dataList));
+                }
             } catch (err) {
                 console.error("Error initializing modal:", err);
             }
@@ -78,9 +131,7 @@ export default function AddMeetingModal(
     }, [event]);
     const formatDate = (dateStr: string) => {
         if (!dateStr) return "";
-
         const d = new Date(dateStr); // קורא UTC → הופך ל־LOCAL אוטומטית
-
         const year = d.getFullYear();
         const month = String(d.getMonth() + 1).padStart(2, "0");
         const day = String(d.getDate()).padStart(2, "0");
@@ -103,18 +154,7 @@ export default function AddMeetingModal(
     // helper: Combine date + time into ISO string
     const combineDateTime = (dateStr: string, timeStr: string) => {
         if (!dateStr || !timeStr) return '';
-        //return new Date(`${dateStr}T${timeStr}:00`).toISOString();
         return `${dateStr}T${timeStr}:00`;
-        //     if (!dateStr || !timeStr) return '';
-
-        // const [year, month, day] = dateStr.split('-').map(Number);
-        // const [hour, minute] = timeStr.split(':').map(Number);
-
-        // // יוצר תאריך מקומי
-        // const d = new Date(year, month - 1, day, hour, minute, 0);
-
-        // // שמירה כ-UTC עם Z
-        // return d.toISOString();
     };
     const handleOk = () => {
         if (selectedProject) {
@@ -150,21 +190,24 @@ export default function AddMeetingModal(
             const start = new Date(`2000-01-01T${startTime}`);
             const end = new Date(`2000-01-01T${endTime}`);
 
-            if (start >= end) {
-                newErrors.time = 'שעת ההתחלה חייבת להיות קטנה משעת הסיום';
+            const diffMs = end.getTime() - start.getTime();
+
+            const fiveMinutes = 5 * 60 * 1000;
+
+            if (diffMs < fiveMinutes) {
+                newErrors.time = 'שעת הסיום חייבת להיות לפחות 5 דקות אחרי שעת ההתחלה';
             }
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = async (e: React.MouseEvent) => {
-          e.preventDefault();
+    const handleSubmit = async () => {
+        if (isSaving) return;
 
-    if (isSaving) return; 
-    setIsSaving(true);
+        setIsSaving(true);
         let isInserted = false;
-        e.preventDefault();
+
         if (validateForm()) {
             let data: any
             if (form?.calendarEventDto.id && form.calendarEventDto.id > 0 && form.calendarEventDto.type !== 4) {
@@ -180,12 +223,12 @@ export default function AddMeetingModal(
                 await meetingService.insertUpdateMeetingsData(form!, "InsertMeetingDataAsync") :
                 await meetingService.insertUpdateMeetingsData(form!, "UpdateMeetingDataAsync");
             if (!data) {
-                alert('הפגישה נוספה בהצלחה!');
+                alert('הפגישה נכשלה בהוספה!');
             }
             onClose();
             // setIsOpen(false);
         }
-    setIsSaving(false);
+        setIsSaving(false);
 
     };
     const updateForm = (field: keyof CalendarEventDto | keyof CalendarPartData, value: any) => {
@@ -203,14 +246,7 @@ export default function AddMeetingModal(
             } : prev);
         }
     };
-    // const updateForm = (field: keyof typeof form, value: any) => {
-    //     const key = field as keyof typeof form;
-    //     const keyStr = String(key);
-    //     setForm(prev => ({ ...prev, [key]: value }));
-    //     if (errors[keyStr]) {
-    //         setErrors(prev => ({ ...prev, [keyStr]: '' }));
-    //     }
-    // };
+
 
     const toggleRecurrenceDay = (day: string) => setForm(prev => prev ? ({
         ...prev,
@@ -241,6 +277,29 @@ export default function AddMeetingModal(
     };
     if (!isOpen) return null;
 
+    function setDateChanged(e: React.ChangeEvent<HTMLInputElement>) {
+        const newDate = e.target.value;
+        if (newDate == "") return;
+        const timePart = formatTime(form?.calendarEventDto.start || new Date().toISOString());
+        updateForm('start', combineDateTime(newDate, timePart));
+        const timeEndPart = formatTime(form?.calendarEventDto.end || new Date().toISOString());
+        updateForm('end', combineDateTime(newDate, timeEndPart));
+        if (form?.calendarEventDto.type == 1) {
+            const timeRulePart = formatTime(form?.calendarEventDto.rRule?.dtStart || form?.calendarEventDto.start || new Date().toISOString());
+
+            updateForm('rRule', { ...form?.calendarEventDto.rRule, dtStart: combineDateTime(newDate, timeRulePart) })
+        }
+    }
+const updateHours = (isFullDay:boolean) => {
+    if(!isFullDay){
+        updateForm('start', combineDateTime(formatDate(form?.calendarEventDto.start || new Date().toISOString()), "08:00"));
+         updateForm('end', combineDateTime(formatDate(form?.calendarEventDto.start || new Date().toISOString()), "08:30"));
+    } 
+    else{
+        updateForm('start', formatDate(form?.calendarEventDto.start || new Date().toISOString()));
+        updateForm('end', formatDate(form?.calendarEventDto.start || new Date().toISOString()));
+    } 
+}
     return (
 
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir="rtl">
@@ -383,11 +442,11 @@ export default function AddMeetingModal(
 
                         <input
                             type="date"
+                             //disabled={form?.calendarEventDto.type === 3&& initialForm?.calendarEventDto.allDay }
                             value={formatDate(form?.calendarEventDto.start || new Date().toISOString())}
                             onChange={(e) => {
-                                const newDate = e.target.value;
-                                const timePart = formatTime(form?.calendarEventDto.start || new Date().toISOString());
-                                updateForm('start', combineDateTime(newDate, timePart));
+                                setDateChanged(e);
+
                             }}
                             className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right ${errors.date ? 'border-red-500' : 'border-gray-300'
                                 }`}
@@ -403,8 +462,9 @@ export default function AddMeetingModal(
                             type="checkbox"
                             id="fullDay"
                             checked={form?.calendarEventDto.allDay}
-                            onChange={(e) => updateForm('allDay', e.target.checked)}
+                            onChange={(e) =>{ updateHours(e.target.checked); updateForm('allDay', e.target.checked)}}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                           // disabled={form?.calendarEventDto.type === 1}
                         />
                         <label htmlFor="fullDay" className="mr-2 text-sm text-gray-700">
                             יום שלם
@@ -419,39 +479,39 @@ export default function AddMeetingModal(
                                     שעת התחלה
                                 </label>
 
-                          <input
-  type="time"
-  value={formatTime(form?.calendarEventDto.start || new Date().toISOString())}
-  onChange={(e) => {
-    const newStartTime = e.target.value;
+                                <input
+                                    type="time"
+                                    value={formatTime(form?.calendarEventDto.start || new Date().toISOString())}
+                                    onChange={(e) => {
+                                        const newStartTime = e.target.value;
 
-    const startDate = formatDate(form?.calendarEventDto.start || new Date().toISOString());
-    const endDate = formatDate(form?.calendarEventDto.end || form?.calendarEventDto.start|| new Date().toISOString());
+                                        const startDate = formatDate(form?.calendarEventDto.start || new Date().toISOString());
+                                        const endDate = formatDate(form?.calendarEventDto.end || form?.calendarEventDto.start || new Date().toISOString());
 
-    // עדכון שעת ההתחלה
-    updateForm("start", combineDateTime(startDate, newStartTime));
+                                        // עדכון שעת ההתחלה
+                                        updateForm("start", combineDateTime(startDate, newStartTime));
 
-    // --- לוגיקה לתיקון אם זמן ההתחלה >= זמן הסיום ---
-    const currentEndTime = formatTime(form?.calendarEventDto.end || form?.calendarEventDto.start|| new Date().toISOString());
+                                        // --- לוגיקה לתיקון אם זמן ההתחלה >= זמן הסיום ---
+                                        const currentEndTime = formatTime(form?.calendarEventDto.end || form?.calendarEventDto.start || new Date().toISOString());
 
-    const [sH, sM] = newStartTime.split(":").map(Number);
-    const [eH, eM] = currentEndTime.split(":").map(Number);
+                                        const [sH, sM] = newStartTime.split(":").map(Number);
+                                        const [eH, eM] = currentEndTime.split(":").map(Number);
 
-    const startMinutes = sH * 60 + sM;
-    const endMinutes = eH * 60 + eM;
+                                        const startMinutes = sH * 60 + sM;
+                                        const endMinutes = eH * 60 + eM;
 
-    if (startMinutes >= endMinutes && startDate === endDate) {
-      // הוספת שעה בצורה בטוחה
-      const newEndMinutes = (startMinutes + 30) % (24 * 60);
-      const newEndH = String(Math.floor(newEndMinutes / 60)).padStart(2, "0");
-      const newEndM = String(newEndMinutes % 60).padStart(2, "0");
-      const correctedEndTime = `${newEndH}:${newEndM}`;
+                                        if (startMinutes >= endMinutes) {
+                                            // הוספת שעה בצורה בטוחה
+                                            const newEndMinutes = (startMinutes + 30) % (24 * 60);
+                                            const newEndH = String(Math.floor(newEndMinutes / 60)).padStart(2, "0");
+                                            const newEndM = String(newEndMinutes % 60).padStart(2, "0");
+                                            const correctedEndTime = `${newEndH}:${newEndM}`;
 
-      updateForm("end", combineDateTime(endDate, correctedEndTime));
-    }
-  }}
-  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
-/>
+                                            updateForm("end", combineDateTime(endDate, correctedEndTime));
+                                        }
+                                    }}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
+                                />
                             </div>
 
                             <div>
@@ -464,7 +524,7 @@ export default function AddMeetingModal(
                                     value={formatTime(form?.calendarEventDto.end || '')}
                                     onChange={(e) => {
                                         const newTime = e.target.value;
-                                        const datePart = formatDate(form?.calendarEventDto.end || form?.calendarEventDto.start || new Date().toISOString());
+                                        const datePart = formatDate(form?.calendarEventDto.start || new Date().toISOString());
                                         updateForm('end', combineDateTime(datePart, newTime));
                                     }}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
@@ -504,7 +564,48 @@ export default function AddMeetingModal(
                             </button>
                         </div>
                     </div>
+                    <div className="relative w-full">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            עובד<span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={searchEmployee}
+                            disabled={form?.calendarEventDto.type === 3}
+                            onChange={(e) => {
+                                setSearchEmployee(e.target.value);
+                                setIsOpenEmployee(true);
+                            }}
+                            // onFocus={() => setIsOpenEmployee(true)}
+                            placeholder="בחר עובד..."
 
+                            className="w-full  px-3 py-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                             disabled:bg-gray-100 disabled:cursor-not-allowed"
+                        />
+                        <button
+                            type="button"
+                            disabled={form?.calendarEventDto.type === 3}
+                            onClick={() => { setIsOpenEmployee(!isOpenEmployee), setSearchEmployee(""); }}
+                            className="pt-7 absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
+                        >
+                            <ChevronDownIcon className="h-6 w-6" />
+                        </button>
+                        {isOpenEmployee && filteredEmployees.length > 0 && (
+                            <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                                {filteredEmployees.map((emp) => (
+                                    <li
+                                        key={emp.id}
+                                        onClick={() => handleSelect(emp)}
+                                        className="p-2 cursor-pointer  hover:bg-[#0078d7]  hover:text-white"
+                                    >
+                                        {emp.name}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+
+                        {/* {errorRecipient && <p className="text-red-500 text-sm mt-1">{errorRecipient}</p>} */}
+                    </div>
                     {/* פגישה חזורית */}
                     {form?.calendarEventDto.type !== 3 && (
                         <div className="border-t pt-4">
@@ -517,8 +618,7 @@ export default function AddMeetingModal(
                                         updateForm('type', isChecked ? 1 : 0);
 
                                         if (isChecked && !form?.calendarEventDto.rRule) {
-                                            // initialize rRule when turning on recurrence
-                                            updateForm('rRule', { freq: 'daily', dtStart: form?.calendarEventDto.start || new Date().toISOString(), range: 2,count:1,interval:1,byweekdays:['SU']    });
+                                            updateForm('rRule', { freq: 'daily', dtStart: form?.calendarEventDto.start || new Date().toISOString(), range: 2, count: 1, interval: 1, byweekdays: ['SU'] });
                                         }
                                     }}
                                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 ml-2" />
@@ -822,7 +922,7 @@ export default function AddMeetingModal(
                             ביטול
                         </button>
                         <button
-                            onClick={handleSubmit}
+                            onClick={(e) => { updateEmployee(); handleBeforeSubmit(e); }}
                             className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             שמור פגישה
@@ -839,6 +939,21 @@ export default function AddMeetingModal(
                     setSelectedProject={setSelectedProject}
                     handleOk={handleOk}
                     onClose={() => setIsOpenProject(false)}
+                />
+            )}
+            {isDeleteAllExeptions && (
+                <ConfirmModal
+                    message="שינוי פגישה מחזורית ימחק את כל החריגות שלה. האם אתה בטוח שברצונך להמשיך?"
+                    okText="כן"
+                    cancelText="לא"
+                    onOk={async () => {
+                        handleSubmit();
+                        setIsDeleteAllExeptions(false);
+                    }}
+                    onCancel={() => {
+                        setIsDeleteAllExeptions(false)
+                        setIsOpen(false)
+                    }}
                 />
             )}
         </div>

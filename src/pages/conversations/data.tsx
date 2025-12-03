@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Clock, User, X } from "lucide-react";
-import type { Conversation, SelectEmployeesList } from "../../interface/interfaces";
+import type { Conversation } from "../../interface/interfaces";
 
 
 
@@ -9,7 +9,6 @@ import type { Conversation, SelectEmployeesList } from "../../interface/interfac
 type TaskModalProps = {
     isOpen: boolean;
     editingId: number;
-    employeesList: SelectEmployeesList[];
    callObject: Conversation | null;
   onClose: () => void;
 
@@ -20,15 +19,9 @@ const ConversationModalOpen: React.FC<TaskModalProps> = ({
 onClose,
     isOpen,
     editingId,
-   // setNewTaskDetails,
-   employeesList,
-
-
-
 }) => {
     if (!isOpen) return null;
-    const [searchEmployee, setSearchEmployee] = useState("");
-        const [isOpenEmployee, setIsOpenEmployee] = useState(false);
+
             const [selectedCall, setselectedCall] = useState<Conversation | null>(null);
     const [title, setTitle] = useState('');
 

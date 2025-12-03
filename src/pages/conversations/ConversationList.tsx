@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 
-import { Edit2, Trash2, Clock, Plus, Check, Search, X } from 'lucide-react';
+import { Trash2, Check, Search, X } from 'lucide-react';
 import EmployeeProfileCard from '../shared/employeeProfileCard';
 import type { Conversation, ConversationData, Employee, SelectEmployeesList } from '../../interface/interfaces';
 import timeRecordService from '../../services/timeRecordService';
 import ConversationModalOpen from './conversationModalOpen';
 import employeeService from '../../services/employeeService';
-import { deleteTask, saveCompletedTask, getConversationList, GetConversationsByID, insertConverstion, updateConverstion } from '../../services/TaskService';
+import { deleteTask, saveCompletedTask, getConversationList, GetConversationsByID } from '../../services/TaskService';
 import ConfirmModal from '../shared/confirmDeleteModal';
 
 

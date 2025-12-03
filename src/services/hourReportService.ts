@@ -41,13 +41,13 @@ const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
   }
 
 
- async getFullHourReportProjectData(id:number):Promise<HourReport | null>
+ async getFullHourReportProjectData(id:number):Promise<HourReportModal | null>
 { 
   try{
  const user = authService.getCurrentUser();
           if (!user) throw new Error('User not authenticated');
      const requestBody = {
-        HourReportID: id,
+        ID: id,
         database: user.dataBase,
       };
 const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
@@ -63,15 +63,11 @@ const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
         const error = await response.text();
         throw new Error(error || 'Failed to get employee data');
       }
-      const data: HourReport = await response.json();
+      const data: HourReportModal = await response.json();
      
       //const timeRepordData: TimeRecord[] = JSON.parse(data);
       return data
-      //   return {
-      //   success: true,
-      //   message: 'Employee fetched successfully',
-      //   data: data,
-      // };
+   
     } catch (error) {
       console.error('Get employee error:', error);
       throw error;
@@ -79,7 +75,35 @@ const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
   
 }
 
+async deleteHourReport(TimeRecordID: number): Promise<boolean> {
+  try {
+     const user = authService.getCurrentUser(); 
+    if (!user) throw new Error("User not authenticated");
 
+    const dynamicBaseUrl = user.urlConnection;
+    const endpoint = `${dynamicBaseUrl}/hourReports/DeleteProjectHourReportAsync`; 
+    const requestBody = {
+      Database: user.dataBase,
+      ID:TimeRecordID
+    };
+
+    const response = await authService.makeAuthenticatedRequest(endpoint, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to Delete Task");
+    }
+const data = await response.json();
+if(data===false) throw new Error("Failed to Delete task");
+    return true;
+ } 
+ catch (error) {
+    console.error("Error Deleteing task:", error);
+    return false;
+  }
+}
 }
 export const getHourReportStepsModal= async (projectID:number)=>{ 
   try {
@@ -137,7 +161,7 @@ export const getHourReportStepsModal= async (projectID:number)=>{
 //     return null
 //   } 
 // }
-export const insertProjectHourReport= async (hourReportModal:HourReportModal):Promise<number|null>=>{  
+export const insertProjectHourReport= async (hourReportModal:HourReportModal,functionName:string):Promise<number|null>=>{  
   try {
     const user = authService.getCurrentUser();
     if (!user) throw new Error("User not authenticated");
@@ -147,7 +171,7 @@ export const insertProjectHourReport= async (hourReportModal:HourReportModal):Pr
     };
 
     const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
-    const endpoint = `${dynamicBaseUrl}/hourReports/InsertProjectHourReportAsync`; // Make sure this is correct
+    const endpoint = `${dynamicBaseUrl}/hourReports/${functionName}`; // Make sure this is correct
 
     const response = await authService.makeAuthenticatedRequest(endpoint, {
       method: "POST",
@@ -194,5 +218,6 @@ export const getStepsList= async (projectID:number)=>{
     return null
   } 
 }
+
 const houreReportService = new HourReportsService();
 export default houreReportService;

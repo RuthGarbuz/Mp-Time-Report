@@ -71,7 +71,7 @@ const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
   combined.setMilliseconds(0);
   return combined.toISOString();
 };
-async insertTimeRecord(timeRecords:TimeRecord){
+async insertTimeRecord(timeRecords:TimeRecord,functionName:string){
 try{
  const user = authService.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
@@ -81,9 +81,11 @@ try{
 
  const location = localStorage.getItem('location') || '';
     const requestBody = {
+
       database: user.dataBase,
+      id: timeRecords.id || 0,
       employeeID: user.id,
-      dateTime: timeRecords.date.toISOString(), // כולל תאריך מלא עם שעה 00:00
+      dateTime: timeRecords.date, 
       startTime: timeRecords.clockInTime,
       endTime: timeRecords.clockOutTime,
       dayPart:null,
@@ -91,11 +93,11 @@ try{
       timeHourReportsTypeID: timeRecords.typeID,
       timeHourReportMethodID: 3,
       location:location,
-      type: 'insertTimeRecord'
+      // type: 'insertTimeRecord'
       };
     console.log("requestBody", requestBody)
         const dynamicBaseUrl = user.urlConnection;
-        const endpoint = `${dynamicBaseUrl}/TimeRecords/InsertTimeRecordDataAsync`;
+        const endpoint = `${dynamicBaseUrl}/TimeRecords/${functionName}`; // Make sure this is correct
  
         const response = await authService.makeAuthenticatedRequest(endpoint, {
           method: 'POST',
@@ -119,19 +121,47 @@ catch (error) {
       return null;
     }
 }
+
+async deleteTimeRecord(TimeRecordID: number): Promise<boolean> {
+  try {
+     const user = authService.getCurrentUser();
+    if (!user) throw new Error("User not authenticated");
+
+    const dynamicBaseUrl = user.urlConnection;
+    const endpoint = `${dynamicBaseUrl}/TimeRecords/DeleteTimeRecordDataAsync`; 
+    const requestBody = {
+      Database: user.dataBase,
+      ID:TimeRecordID
+    };
+
+    const response = await authService.makeAuthenticatedRequest(endpoint, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to Delete Task");
+    }
+const data = await response.json();
+if(data===false) throw new Error("Failed to Delete task");
+    return true;
+ } 
+ catch (error) {
+    console.error("Error Deleteing task:", error);
+    return false;
+  }
+}
   // Get employee data from localStorage
   getEmployee(): Employee | null {
     try {
       const employeeData = localStorage.getItem(this.employeeKey);
       if (!employeeData) return null;
-      console.log(employeeData);
 
       const employee: Employee = JSON.parse(employeeData);
       if (employee.expiresAt && new Date(employee.expiresAt) < new Date()) {
         this.clearEmployee();
         return null;
       }
-      console.log(employee);
       return employee;
     } catch (error) {
       console.error('Error getting employee data:', error);

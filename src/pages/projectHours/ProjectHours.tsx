@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Clock, Calendar, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2 } from 'lucide-react';
 import type { Contract, Employee, HourReport, HourReportModal, Project, Step, SubContract } from '../../interface/interfaces';
 import "tailwindcss";
 import React from 'react';
@@ -9,6 +9,7 @@ import ProjectFilter from '../shared/projectsFilter';
 import { getProjectsList } from '../../services/TaskService';
 import HourReportModalOpen from './HourReportModalOpen';
 import EmployeeProfileCard from '../shared/employeeProfileCard';
+import ConfirmModal from '../shared/confirmDeleteModal';
 //import HebrewDatePicker from 'react-hebrew-datepicker';
 const ProjectHours = () => {
   const rowRef = useRef<HTMLDivElement>(null);
@@ -32,8 +33,7 @@ const ProjectHours = () => {
   const [contracts, setContracts] = useState<Contract[] | null>(null);
   const [subContracts, setSubContracts] = useState<SubContract[] | null>(null);
   const [steps, setSteps] = useState<Step[] | null>(null);
-  let reportingType="";
-  let calculateclockOutTime = "";
+  const[calculateclockOutTime,setCalculateclockOutTime] = useState("");
 
   const [projectsList, setProjectsList] = useState<Project[]>(
     [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
@@ -45,7 +45,6 @@ const ProjectHours = () => {
   const [newReport, setNewReport] = useState<HourReportModal>(
     {
       id: 0,
-      name: "",
       date: new Date(),
       clockInTime: undefined,
       clockOutTime: undefined,
@@ -64,7 +63,7 @@ const ProjectHours = () => {
   );
 
   const initNewReport = async () => {
-    console.log('initNew')
+ setErrorMessage(null);
     if (selectedProject?.hoursReportMethodID === 5) {
       const HourReportStepsData = await getHourReportStepsModal(selectedProject?.id ?? 0);
       if (HourReportStepsData) {
@@ -98,16 +97,12 @@ const ProjectHours = () => {
       setContracts(null)
     }
     
-    calculateclockOutTime = ""
-    if (employee?.minutesHoursAmount) {
-      calculateclockOutTime = addTime("08:00", employee.minutesHoursAmount)
-    }
+ 
     setNewReport({
       id: 0,
-      name: "",
       date: currentDay,
-      clockInTime: "08:00",
-      clockOutTime: calculateclockOutTime,
+      clockInTime: undefined,
+      clockOutTime: undefined,
       notes: "",
       total: employee?.minutesHoursAmount,
       projectID: selectedProject?.id ?? 0,
@@ -128,7 +123,13 @@ const ProjectHours = () => {
     return hours * 60 + minutes;
   };
 
-
+ function toLocalISOString(date: Date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+   
+    return `${d}-${m}-${y}`;
+  }
   const validateOverlappingReports = (reports: HourReport[]): string[] => {
     const errors: string[] = [];
     for (let i = 0; i < reports.length; i++) {
@@ -141,7 +142,9 @@ const ProjectHours = () => {
       const endA = timeToMinutes(reportA.clockOutTime);
 
       for (let j = i + 1; j < reports.length; j++) {
+
         const reportB = reports[j];
+        if(reportA.id === reportB.id) continue;
         if (!reportB.clockInTime || !reportB.clockOutTime) continue;
         if (reportB.clockInTime === "-" || reportB.clockOutTime === "-") continue;
 
@@ -151,7 +154,7 @@ const ProjectHours = () => {
         const isOverlap = startA < endB && startB < endA;
 
         if (isOverlap) {
-          errors.push(`יש דיווחים מתאריך ${currentDay.toDateString()} שחופפים בשעות`);
+          errors.push(`יש דיווחים מתאריך ${toLocalISOString(currentDay)} שחופפים בשעות`);
           return errors;
         }
       }
@@ -211,43 +214,47 @@ const ProjectHours = () => {
   };
 
   // כשמאשרים מחיקה
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete !== null) {
-      setReports(prev => prev.filter(item => item.id !== itemToDelete));
-      setFilteredReports(prev => prev?.filter(item => item.id !== itemToDelete) || []);
+    try {
+      await hourReportService.deleteHourReport(itemToDelete); // שליחה לשרת
+      const storedTimeRecord = await hourReportService.getHourReportProjectData(currentDay);
+      setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
+    } catch (error) {
+      console.error('Error adding new report:', error);
+    }
     }
     setIsConfirmOpen(false);
     setItemToDelete(null);
   };
+  // const confirmDelete = () => {
+  //   if (itemToDelete !== null) {
+  //     hg
+  //     setReports(prev => prev.filter(item => item.id !== itemToDelete));
+  //     setFilteredReports(prev => prev?.filter(item => item.id !== itemToDelete) || []);
+  //   }
+  //   setIsConfirmOpen(false);
+  //   setItemToDelete(null);
+  // };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Always prevent default first
 
 
-    if (reportingType === 'time-range') {
+    if (newReport.clockInTime) {
       
       const totalHours = calculateTotalHours(newReport.clockInTime ?? "", newReport.clockOutTime ?? "");
       newReport.total = totalHours;
     }
-    if (editingReportId !== null) {
-      setReports(prevReports =>
-        prevReports.map(report =>
-          report.id === editingReportId
-            ? { ...report, ...newReport, id: editingReportId }
-            : report
-        )
-      );
-      setEditingReportId(null);
-    } else {
-      const newId = reports.length + 1;//get from update server and set newReportList
+  
 
       const newItem = {
-        id: newId,
+        id: newReport.id,
         clockInTime: newReport.clockInTime || '',
         clockOutTime: newReport.clockOutTime || '',
         total: newReport.total || '',
-        projectName: newReport.name || '',
+        projectName: projectsList.find(p => p.id === newReport.projectID)?.name || '',
       };
       const newUpdateReports = [...reports, newItem]
       const validateError = validateOverlappingReports(newUpdateReports)
@@ -255,19 +262,23 @@ const ProjectHours = () => {
       if (validateError.length !== 0) {
         setErrorMessage(validateError);
         return;
-      } else {
-        setErrorMessage(null);
+      } 
+      let updateReport:any=null
+      if(editingReportId)
+      {
+      setEditingReportId(null);
+
+updateReport=await insertProjectHourReport(newReport,"UpdateProjectHourReportAsync")
       }
-      const insertedReport = await insertProjectHourReport(newReport)
-      if (insertedReport && insertedReport > 0) {
-        setNewReport({ ...newReport, id: insertedReport })
+      else{
+updateReport=await insertProjectHourReport(newReport,"InsertProjectHourReportAsync")
+      }
+     
+      if (updateReport) {
         getHourReportsList()
       }
 
-    }
-
     // ✅ Close only after successful handling
-
     setIsModalOpen(false);
   };
 
@@ -298,6 +309,11 @@ const ProjectHours = () => {
     if (permisionEmployee) {
       setEditPermision(permisionEmployee.editPermision);
       setEmployee(permisionEmployee);
+         setCalculateclockOutTime("")
+    if (permisionEmployee?.minutesHoursAmount) {
+      setCalculateclockOutTime(addTime("08:00", permisionEmployee.minutesHoursAmount))
+    }
+
     }
   }, []);
   useEffect(() => {
@@ -337,9 +353,17 @@ const ProjectHours = () => {
     );
   }
 
-  function onUpdateClick(id: number) {
-
+  async function onUpdateClick(id: number) {
+ setErrorMessage(null);
+ let updateReport =await hourReportService.getFullHourReportProjectData(id);
+if(!updateReport) return;
+updateReport.date=currentDay;
+    setNewReport(updateReport);
     setEditingReportId(id);
+     const projectsData = await getProjectsList();
+    if (projectsData) {
+     setSelectedProject(projectsData.find((p: { id: number | undefined; }) => p.id === updateReport.projectID) || null);
+    }
     // setError(null)
     setIsModalOpen(true);
   }
@@ -466,7 +490,7 @@ const ProjectHours = () => {
               >
                 {/* Project */}
                 <div className="w-[40%] text-center">
-                  <span className={`font-mono text-xs md:text-base text-blue-600 font-semibold`}>
+                  <span className={` text-xs md:text-base text-blue-600 font-semibold`}>
                     {report.projectName ?? 'כללי'}
                   </span>
                 </div>
@@ -475,65 +499,89 @@ const ProjectHours = () => {
 
                 {/* clockInTime Time */}
 
-                <div className="w-[20%] text-center font-mono">
+                <div className="w-[20%] text-center ">
                   <div className="flex items-center justify-center gap-1">
                     <Clock className="w-3 h-3 text-green-500 hidden md:block" />
-                    <span className={`font-mono text-xs md:text-base ${report.clockInTime === '-' ? 'text-gray-400' : 'text-green-600 font-semibold'}`}>
+                    <span className={` text-xs md:text-base ${report.clockInTime === '-' ? 'text-gray-400' : 'text-green-600 font-semibold'}`}>
                       {report.clockInTime}
                     </span>
                   </div>
                 </div>
 
                 {/* Clock Out */}
-                <div className="w-[20%] text-center font-mono">
+                <div className="w-[20%] text-center ">
                   <div className="flex items-center justify-center gap-1">
                     <Clock className="w-3 h-3 text-red-500 hidden md:block" />
-                    <span className={`font-mono text-xs md:text-base ${report.clockOutTime === '-' ? 'text-gray-400' : 'text-red-600 font-semibold'}`}>
+                    <span className={` text-xs md:text-base ${report.clockOutTime === '-' ? 'text-gray-400' : 'text-red-600 font-semibold'}`}>
                       {report.clockOutTime}
                     </span>
                   </div>
                 </div>
 
                 {/* Total */}
-                <div className="w-[20%] text-center font-mono text-blue-600 font-semibold">
-                  <span className={`font-mono text-xs md:text-base text-blue-600 font-semibold`}>
+                <div className="w-[20%] text-center  text-blue-600 font-semibold">
+                  <span className={` text-xs md:text-base text-blue-600 font-semibold`}>
                     {report.total ?? '00:00'}
                   </span>
                 </div>
                 {/* Total Hours */}
                 {/* <div className="text-center">
-                  <span className={`font-mono text-xs md:text-base font-bold px-1 md:px-2 py-1 rounded-lg ${report.total === '00:00'
+                  <span className={` text-xs md:text-base font-bold px-1 md:px-2 py-1 rounded-lg ${report.total === '00:00'
                       ? 'text-gray-400 bg-gray-100'
                       : 'text-blue-600 bg-blue-100'
                     }`}>
                     {report.total === 'NaN:NaN' ? '00:00' : report.total}
                   </span>
                 </div> */}
-                {contextMenuRowId === -900 && (//report.id 
-                  <div className="absolute top-1 right-1 flex flex-col gap-1 z-10">
-                    <button
-                      onClick={() => {
-                        if (report.id !== undefined) onDeleteClick(report.id);
-                        setContextMenuRowId(null);
-                      }}
-                      className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow"
-                    >
-                      מחק
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (report.id !== undefined) {
-                          //   setModalTitle('עדכון דיווח מתאריך: ' + report.date);
+                {contextMenuRowId ===report.id && ( 
+                   <div className=" top-2 left-1 flex  gap-1 z-10">
+                  <button
+                    onClick={() => {
+                       if (report.id !== undefined) {
+                          //setModalTitle('עדכון דיווח מתאריך: ' + report.date);
                           onUpdateClick(report.id);
                         }
                         setContextMenuRowId(null);
-                      }}
-                      className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded shadow"
-                    >
-                      עדכון
-                    </button>
-                  </div>
+                    }
+                    }
+                    className=" text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => { 
+                      if (report.id !== undefined) onDeleteClick(report.id);
+                      setContextMenuRowId(null);
+                     }}
+                    className=" text-red-500 hover:text-red-700 rounded-xl transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                  // <div className="absolute top-1 right-1 flex flex-col gap-1 z-10">
+                  //   <button
+                  //     onClick={() => {
+                  //       if (report.id !== undefined) onDeleteClick(report.id);
+                  //       setContextMenuRowId(null);
+                  //     }}
+                  //     className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow"
+                  //   >
+                  //     מחק
+                  //   </button>
+
+                  //   <button
+                  //     onClick={() => {
+                  //       if (report.id !== undefined) {
+                  //         //   setModalTitle('עדכון דיווח מתאריך: ' + report.date);
+                  //         onUpdateClick(report.id);
+                  //       }
+                  //       setContextMenuRowId(null);
+                  //     }}
+                  //     className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded shadow"
+                  //   >
+                  //     עדכון
+                  //   </button>
+                  // </div>
                 )}
               </div>
 
@@ -570,6 +618,7 @@ const ProjectHours = () => {
 
       {isModalOpen && (
         <HourReportModalOpen
+         title={newReport.id ? "עדכון דיווח" : "הוספת דיווח חדש"}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           newReport={newReport}
@@ -580,7 +629,7 @@ const ProjectHours = () => {
           steps={steps}
           selectedProject={selectedProject || undefined}
           currentDay={currentDay}
-          calculateclockOutTime={() => calculateclockOutTime}
+          calculateclockOutTime={ calculateclockOutTime}
           errorMessage={errorMessage ? errorMessage.join(', ') : ""}
         />
       )}
@@ -598,30 +647,21 @@ const ProjectHours = () => {
         />
       )}
       {isConfirmOpen && (
-        <div className="fixed inset-0  bg-opacity-40 backdrop-blur-sm backdrop-saturate-150 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-lg p-6 max-w-sm w-full text-center">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">אישור מחיקה</h2>
-            <p className="text-sm text-gray-600 mb-6">האם הנך בטוח שברצונך למחוק את הדיווח?</p>
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => {
-                  setIsConfirmOpen(false);
-                  setItemToDelete(null);
-                }}
-                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition"
-              >
-                ביטול
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg transition"
-              >
-                אישור מחיקה
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          <ConfirmModal
+    message="האם הנך בטוח שברצונך למחוק דיווח זה?"
+    onOk={() => {
+       confirmDelete();
+    }}
+    onCancel={() => {
+      setIsConfirmOpen(false);
+      setItemToDelete(null);
+    }}
+    okText="מחק"
+    cancelText="ביטול"
+  />
+         
+        )}
+      
     </div>
 
   );

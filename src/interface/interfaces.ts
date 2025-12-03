@@ -81,7 +81,6 @@ export interface Step{
 }
 export interface HourReportModal{
   id: number;
-  name: string;
   date: Date;
   clockInTime?: string;
   clockOutTime?: string;
@@ -93,6 +92,7 @@ export interface HourReportModal{
   stepID?: number;
   hourReportMethodID:number;
   employeeId:number;
+  projectName?: string;
   // contractsList:Contract[];
   // subContractsList:SubContract[];
   // stepsList:Step[];

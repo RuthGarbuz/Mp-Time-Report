@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-import { Search, X, Check, User } from 'lucide-react';
+import {  X, Check } from 'lucide-react';
 import type { Contact } from '../../interface/interfaces';
 
 type ConversationModalProps = {

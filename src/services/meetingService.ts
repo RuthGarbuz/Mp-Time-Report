@@ -37,15 +37,16 @@ class MeetingService {
       return [];
     }
   }
-
-  async getMeetingsData(meeting:CalendarEventDto): Promise<CalendarDataModal|null>{
+  
+  async getMeetingsData(meetingID:string): Promise<CalendarPartData|null>{
     try {
+console.log('Event click data:', meetingID);
     
       const user = authService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
       const requestBody = {
-        ID: meeting.id,
+        ID: Number(meetingID),
         database: user.dataBase
       };
 
@@ -63,8 +64,7 @@ class MeetingService {
         throw new Error(error || 'Failed to get meeting data');
       }
        const data: CalendarPartData = await response.json();
-       const dataModal:CalendarDataModal={calendarEventDto:meeting,calendarPartData:data};
-    return dataModal;
+    return data;
       } catch (error) {
       console.error('Get meeting error:', error);
       throw error;

@@ -8,8 +8,7 @@ export default function BusinessPhonebook() {
   const [selectedContact, setSelectedContact] = useState<PhoneBook | null>(null);
 
   const [contactsList, setContactsList] = useState<PhoneBook[]>([]);
-  const [companiesList, setCompaniesList] = useState<Company[]>([]);
-  const [citiesList, setCitiesList] = useState<City[]>([]);
+ 
 
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,8 +46,7 @@ export default function BusinessPhonebook() {
 
     if (phoneBookData) {
       setContactsList(phoneBookData.phoneBooks);
-      setCompaniesList(phoneBookData.companies);
-      setCitiesList(phoneBookData.cities);
+    
     }
 
   };
@@ -196,8 +194,7 @@ export default function BusinessPhonebook() {
           contact={selectedContact}
           onClose={() => { setSelectedContact(null); }}
           onSave={() => { setSelectedContact(null), getData() }}
-          citiesList={citiesList}
-          companiesList={companiesList}
+      
 
         //handleAddContact={handleAddContact}
         />
@@ -212,9 +209,9 @@ export default function BusinessPhonebook() {
           contact={newContact}
           onClose={() => { setIsAddModalOpen(false) }}
           onSave={() => { setIsAddModalOpen(false), getData() }}
-          citiesList={citiesList}
+
           //handleAddContact={handleAddContact}
-          companiesList={companiesList}
+        
         />
 
       )}

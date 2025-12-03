@@ -1,9 +1,10 @@
 import { X } from "lucide-react";
 import type { Contract, Project, Step, SubContract } from "../../interface/interfaces";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ErrorMessage from "../shared/errorMessage";
 
 interface Props {
+    title: string;
  isOpen: boolean;
   onClose: () => void;
   newReport: any;
@@ -14,11 +15,12 @@ interface Props {
   steps: Step[] | null;
   selectedProject?: Project;
   currentDay: Date;
-  calculateclockOutTime: () => string;
+  calculateclockOutTime: string;
   errorMessage:string | null;
 }
 
 export default function HourReportModalOpen({
+  title,
   isOpen,
   onClose,
   newReport,
@@ -33,8 +35,26 @@ export default function HourReportModalOpen({
   calculateclockOutTime
 }: Props) {
   const [error, setError] = useState<string | null>(null);
-  const [reportingType,setReportingType]=useState('time-range');
+  const [reportingType,setReportingType]=useState('total');
   if (!isOpen) return null;
+   useEffect(() => {
+  
+      const fetchData = async () => {
+        try {
+         if(newReport.clockInTime && newReport.clockOutTime){
+          setReportingType('time-range');
+         }
+         else{
+          setReportingType('total');
+         }
+        } catch (error) {
+          console.error('Failed to fetch time records:', error);
+          ([]);
+        }
+      };
+  
+      fetchData();
+    }, [currentDay]);
   const validateTimes = (clockInTime: string, clockOutTime: string) => {
     if (clockInTime && clockOutTime && clockOutTime < clockInTime) {
       setError("שעת יציאה לא יכולה להיות לפני שעת כניסה");
@@ -60,9 +80,7 @@ else{
 setNewReport((prev: any) => ({
       ...prev,
       clockInTime: "08:00",
-      clockOutTime: typeof calculateclockOutTime === 'function' 
-                      ? calculateclockOutTime() 
-                      : calculateclockOutTime
+      clockOutTime: calculateclockOutTime
     }));
 }
 
@@ -84,7 +102,7 @@ const submitForm = (e: React.FormEvent<HTMLFormElement>) => {
               <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
                 {/* Header */}
                 <div className="relative pt-1 flex items-center justify-center mb-2">
-                  <h2 className="text-lg font-semibold text-gray-800 text-center"> דיווח שעות לפרויקט</h2>
+                  <h2 className="text-lg font-semibold text-gray-800 text-center"> {title}</h2>
                   <button
                     onClick={() => onClose()}
                     className="absolute left-0  w-8 h-8 flex items-center justify-center"

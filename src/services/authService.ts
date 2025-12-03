@@ -2,7 +2,6 @@
 const API_BASE_URL = 'http://localhost:5003/api'
 //const API_BASE_URL = 'https://mpweba.master-plan.co.il/GlobalWebAPI/api'
 
-
 //const API_BASE_URL = "https://mpwebapp.master-plan.co.il/GlobalWebAPI/api";
 
 //onst API_BASE_URL = 'http://localhost:5003/api';http://5.144.49.24/GlobalWebAPI/api/Auth/login

@@ -1,21 +1,18 @@
 // ReportModal.tsx
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import ErrorMessage from "../shared/errorMessage";
 
 interface ReportModalProps {
   isOpen: boolean;
   title: string;
   newReport: any;
   setNewReport: (data: any) => void;
-  typeReport: any;
-  setTypeReport: (type: any) => void;
   typeReports: any[];
- // error: string | null;
   closeModal: () => void;
   handleSubmit: (e: React.FormEvent) => void;
   currentWeek: Date;
-  //validateTimes: (clockIn: string, clockOut: string) => void;
- // calculateTotalHours: (clockIn: string, clockOut: string) => string;
+    errorMessage:string | null;
 }
 
 export default function ReportModal({
@@ -23,12 +20,11 @@ export default function ReportModal({
   title,
   newReport,
   setNewReport,
-  typeReport,
-  setTypeReport,
   typeReports,
   closeModal,
   handleSubmit,
-  currentWeek
+  currentWeek,
+  errorMessage
 }: ReportModalProps) {
     const [error, setError] = useState<string | null>(null);
   if (!isOpen) return null;
@@ -48,7 +44,6 @@ export default function ReportModal({
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     const total = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-    //setNewReport({ ...newReport, total: total });
     return total;
   };
    const onClose = () => {
@@ -84,6 +79,7 @@ const timeToMinutes = (time: string): number => {
 
 
 useEffect(() => {
+  console.log("newReport", newReport);
   if (newReport.clockInTime && newReport.clockOutTime && newReport.typeID !== 3) {
     const total = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
     setNewReport((prev: any) => ({ ...prev, total }));
@@ -109,6 +105,7 @@ useEffect(() => {
    
                  {/* Modal Content */}
                  <form onSubmit={submitForm} >
+                      {errorMessage&&(<ErrorMessage validateError={String(errorMessage)} />)}
                    {/* Date Field */}
                    <div>
                      <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -116,8 +113,8 @@ useEffect(() => {
                      </label>
                      <input
                        type="date"
-                       value={currentWeek ? currentWeek.toISOString().split("T")[0] : ""}
-                       onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
+                       value={newReport.date ? newReport.date : ""}
+                       onChange={(e) => setNewReport({ ...newReport, date: e.target.value })}
                        min={start.toISOString().split("T")[0]}
                        max={end.toISOString().split("T")[0]}
                        className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
@@ -132,11 +129,10 @@ useEffect(() => {
                      </label>
                      <select
                        className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                       value={typeReport?.id || ""}
+                        value={newReport.typeID || ""}
                        onChange={(e) => {
                          const selectedId = Number(e.target.value);
-                         const selected = typeReports.find((t) => t.id === selectedId) || null;
-                         setTypeReport(selected);
+                         setNewReport({ ...newReport, typeID: selectedId })
                          //setHousrForFreeDay();
                        }}
                      >
@@ -198,7 +194,7 @@ useEffect(() => {
                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                          סה"כ שעות
                        </label>
-                       <div className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg font-mono text-lg font-bold text-blue-600">
+                       <div className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg  text-lg font-bold text-blue-600">
                          {calculateTotalHours(newReport.clockInTime, newReport.clockOutTime)}
                        </div>
                      </div>
@@ -231,7 +227,6 @@ useEffect(() => {
                      </button>
                      <button
                        type="submit"
-                       // onClick={() => setIsModalOpen(false)}
                        className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                      >
                        שמור דיווח

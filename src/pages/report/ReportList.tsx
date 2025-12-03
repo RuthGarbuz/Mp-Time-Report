@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Clock, Calendar, Plus} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2} from 'lucide-react';
 import type { Employee, TimeHourReportsType, TimeRecord } from '../../interface/interfaces';
-//import { X }from "lucide-react";
 import "tailwindcss";
 import { TimeType } from '../../enum';
 import React from 'react';
@@ -13,7 +12,6 @@ import ReportModal from './createUpdateReportModal';
 const ReportList = () => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [editingReportId, setEditingReportId] = useState<number | null>(null);
-  //const [modalTitle, setModalTitle] = useState<string>();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [contextMenuRowId, setContextMenuRowId] = useState<number | null>(null);
@@ -26,10 +24,9 @@ const ReportList = () => {
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [typeReports, setTypeReports] = useState<TimeHourReportsType[]>([]);
-  const [typeReport, setTypeReport] = useState<TimeHourReportsType | null>(null);
   const [editPermision, setEditPermision] = useState(false);
   const [allowAddReport, setAllowAddReport] = useState(false);
-
+const [errorMessage, setErrorMessage] = useState<string[] | null>(null);
 
 
   const [newReport, setNewReport] = useState<TimeRecord>(
@@ -44,12 +41,13 @@ const ReportList = () => {
   );
   //setHousrForFreeDay();
   const initNewReport = (): void => {
+    setErrorMessage(null);
     let calculateclockOutTime = ""
     if (employee?.minutesHoursAmount) {
       calculateclockOutTime = addTime("08:00", employee.minutesHoursAmount)
     }
     setNewReport({
-      date: new Date(),
+      date:formatDateOnly(currentWeek) as unknown as Date,
       type: TimeType.Regular,
       typeID: 5,
       clockInTime: "08:00",
@@ -76,7 +74,13 @@ const ReportList = () => {
     }
     return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
   }
-
+ function toLocalISOString(date: Date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+   
+    return `${d}-${m}-${y}`;
+  }
   const validateOverlappingReports = (reports: TimeRecord[]): string[] => {
     const errors: string[] = [];
     for (let i = 0; i < reports.length; i++) {
@@ -91,6 +95,7 @@ const ReportList = () => {
 
       for (let j = i + 1; j < reports.length; j++) {
         const reportB = reports[j];
+        if(reportB.id===reportA.id) continue; 
         const dateB = toDateString(reportB.date);
         if (dateA !== dateB) continue;
         if (!reportB.clockInTime || !reportB.clockOutTime) continue;
@@ -102,7 +107,7 @@ const ReportList = () => {
         const isOverlap = startA < endB && startB < endA;
 
         if (isOverlap) {
-          errors.push(`יש דיווחים מתאריך ${reportA.date} שחופפים בשעות`);
+          errors.push(`יש דיווחים מתאריך ${toLocalISOString(new Date(reportA.date))} שחופפים בשעות`);
         }
       }
     }
@@ -181,17 +186,31 @@ const ReportList = () => {
   };
 
   // כשמאשרים מחיקה
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (itemToDelete !== null) {
-      setReports(prev => prev.filter(item => item.id !== itemToDelete));
-      setFilteredReports(prev => prev?.filter(item => item.id !== itemToDelete) || []);
+    try {
+      await timeRecordService.deleteTimeRecord(itemToDelete); // שליחה לשרת
+      const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
+      setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
+    } catch (error) {
+      console.error('Error adding new report:', error);
+    }
     }
     setIsConfirmOpen(false);
     setItemToDelete(null);
   };
+  const handleUpdateRecord = async () => {
+try {
+      await timeRecordService.insertTimeRecord(newReport,"UpdateTimeRecordDataAsync"); // שליחה לשרת
+      const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
+      setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
+    } catch (error) {
+      console.error('Error adding new report:', error);
+    }
+  }
   const handleAddNewRecord = async () => {
     try {
-      await timeRecordService.insertTimeRecord(newReport); // שליחה לשרת
+      await timeRecordService.insertTimeRecord(newReport,"InsertTimeRecordDataAsync"); // שליחה לשרת
       const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
       setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
     } catch (error) {
@@ -206,28 +225,22 @@ const ReportList = () => {
     if (!newReport.clockInTime || !newReport.clockOutTime) {
       return 0;
     }
-    // const totalHours = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
-    // newReport.total = totalHours;
-    newReport.typeID = typeReport?.id ?? 0;
-    if (editingReportId !== null) {
-      setReports(prevReports =>
-        prevReports.map(report =>
-          report.id === editingReportId
-            ? { ...report, ...newReport, id: editingReportId }
-            : report
-        )
-      );
-      setEditingReportId(null);
-    } else {
-      const newId = reports.length + 1;
-      const newUpdateReports = [...reports, { ...newReport, id: newId }]
-      const validateError = validateOverlappingReports(newUpdateReports)
+    const newUpdateReports = [...reports, { ...newReport}]
+    const validateError = validateOverlappingReports(newUpdateReports)
       if (validateError.length !== 0) {
-        alert(validateError);
+        setErrorMessage(validateError);
+        //alert(validateError);
         return;
       }
+    // const totalHours = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
+    // newReport.total = totalHours;
+    if (editingReportId !== null) {
+          handleUpdateRecord()
+
+      setEditingReportId(null);
+    } else {
+      
       handleAddNewRecord()
-      setTypeReport(typeReports.find((t) => t.id === 5) || null)
     }
 
     // ✅ Close only after successful handling
@@ -237,7 +250,7 @@ const ReportList = () => {
   // Reset form when closing modal
   const closeModal = () => {
    
-    setTypeReport(typeReports.find((t) => t.id === 5) || null)
+    //setTypeReport(typeReports.find((t) => t.id === 5) || null)
     setIsModalOpen(false)
   };
 
@@ -259,12 +272,16 @@ const ReportList = () => {
     filterReport(reports);//newDay,
 
   };
-
+function formatDateOnly(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
    useEffect(() => {
    
     const permisionEmployee = authService.getCurrentEmployee();
-   
-    if (!permisionEmployee) 
+    if (permisionEmployee) 
       {
       setEditPermision(permisionEmployee.editPermision);
       }
@@ -277,7 +294,6 @@ const ReportList = () => {
    
   }, []);
   useEffect(() => {
-
     const storedEmployee = timeRecordService.getEmployee();
     if (storedEmployee) {
       setEmployee(storedEmployee);
@@ -310,7 +326,6 @@ const ReportList = () => {
       try {
         const list: TimeHourReportsType[] = JSON.parse(json);
         setTypeReports(list);
-        setTypeReport(list.find((item) => item.id == 5) || null)
       } catch (e) {
         console.error("Failed to parse localStorage:", e);
       }
@@ -349,11 +364,13 @@ const ReportList = () => {
   }
 
   function onUpdateClick(id: number) {
+    setErrorMessage(null);
     const updateReport = reports.find(report => report.id === id);
     setNewReport({
+      id: updateReport ? updateReport.id : undefined,
       date: updateReport ? updateReport.date : new Date(),
       type: updateReport ? updateReport.type : TimeType.Regular,
-      typeID: 5,
+      typeID:updateReport ? updateReport.typeID :5,
       clockInTime: updateReport ? updateReport.clockInTime : '',
       clockOutTime: updateReport ? updateReport.clockOutTime : '',
       notes: updateReport ? updateReport.notes : ''
@@ -505,82 +522,96 @@ const ReportList = () => {
 
                 {/* clockInTime Time */}
 
-                <div className="w-[20%] text-center font-mono">
+                <div className="w-[20%] text-center ">
                   <div className="flex items-center justify-center gap-1">
                     <Clock className="w-3 h-3 text-green-500 hidden md:block" />
-                    <span className={`font-mono text-xs md:text-base ${report.clockInTime === '-' ? 'text-gray-400' : 'text-green-600 font-semibold'}`}>
+                    <span className={` text-xs md:text-base ${report.clockInTime === '-' ? 'text-gray-400' : 'text-green-600 font-semibold'}`}>
                       {report.clockInTime}
                     </span>
                   </div>
                 </div>
 
                 {/* Clock Out */}
-                <div className="w-[20%] text-center font-mono">
+                <div className="w-[20%] text-center ">
                   <div className="flex items-center justify-center gap-1">
                     <Clock className="w-3 h-3 text-red-500 hidden md:block" />
-                    <span className={`font-mono text-xs md:text-base ${report.clockOutTime === '-' ? 'text-gray-400' : 'text-red-600 font-semibold'}`}>
+                    <span className={` text-xs md:text-base ${report.clockOutTime === '-' ? 'text-gray-400' : 'text-red-600 font-semibold'}`}>
                       {report.clockOutTime}
                     </span>
                   </div>
                 </div>
 
                 {/* Total */}
-                <div className="w-[20%] text-center font-mono text-blue-600 font-semibold">
-                  <span className={`font-mono text-xs md:text-base text-blue-600 font-semibold`}>
+                <div className="w-[20%] text-center  text-blue-600 font-semibold">
+                  <span className={` text-xs md:text-base text-blue-600 font-semibold`}>
                     {report.total ?? '00:00'}
                   </span>
                 </div>
                 {/* Total Hours */}
-                {/* <div className="text-center">
-                  <span className={`font-mono text-xs md:text-base font-bold px-1 md:px-2 py-1 rounded-lg ${report.total === '00:00'
-                      ? 'text-gray-400 bg-gray-100'
-                      : 'text-blue-600 bg-blue-100'
-                    }`}>
-                    {report.total === 'NaN:NaN' ? '00:00' : report.total}
-                  </span>
-                </div> */}
-                {contextMenuRowId === -900 && (//report.id 
-                  <div className="absolute top-1 right-1 flex flex-col gap-1 z-10">
-                    <button
-                      onClick={() => {
-                        if (report.id !== undefined) onDeleteClick(report.id);
-                        setContextMenuRowId(null);
-                      }}
-                      className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow"
-                    >
-                      מחק
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (report.id !== undefined) {
+               
+                {contextMenuRowId ===report.id  && (//report.id 
+                 <div className=" top-1 left-1 flex gap-1 z-10">
+                  <button
+                    onClick={() => {
+                       if (report.id !== undefined) {
                           //setModalTitle('עדכון דיווח מתאריך: ' + report.date);
                           onUpdateClick(report.id);
                         }
                         setContextMenuRowId(null);
-                      }}
-                      className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded shadow"
-                    >
-                      עדכון
-                    </button>
-                  </div>
+                    }
+                    }
+                    className=" text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={() => { 
+                      if (report.id !== undefined) onDeleteClick(report.id);
+                      setContextMenuRowId(null);
+                     }}
+                    className="text-red-500 hover:text-red-700 rounded-xl transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+                  // <div className="absolute top-1 right-1 flex flex-col gap-1 z-10">
+                  //   <button
+                  //     onClick={() => {
+                  //       if (report.id !== undefined) onDeleteClick(report.id);
+                  //       setContextMenuRowId(null);
+                  //     }}
+                  //     className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow"
+                  //   >
+                  //     מחק
+                  //   </button>
+
+                  //   <button
+                  //     onClick={() => {
+                  //       if (report.id !== undefined) {
+                  //         //setModalTitle('עדכון דיווח מתאריך: ' + report.date);
+                  //         onUpdateClick(report.id);
+                  //       }
+                  //       setContextMenuRowId(null);
+                  //     }}
+                  //     className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded shadow"
+                  //   >
+                  //     עדכון
+                  //   </button>
+                  // </div>
                 )}
               </div>
-
             ))}
-
           </div>
-
         </div>
         {isConfirmOpen && (
           <ConfirmModal
-    message="האם הנך בטוח שברצונך למחוק משימה זו?"
+    message="האם הנך בטוח שברצונך למחוק דיווח זה?"
     onOk={() => {
-     setIsConfirmOpen(false);
-                    setItemToDelete(null);
+       confirmDelete();
     }}
     onCancel={() => {
-      confirmDelete
+      setIsConfirmOpen(false);
+      setItemToDelete(null);
     }}
     okText="מחק"
     cancelText="ביטול"
@@ -620,165 +651,16 @@ const ReportList = () => {
       {isModalOpen && (
         <ReportModal
         isOpen={isModalOpen}
-        title={"הוספת דיווח חדש"}
+        title={newReport.id ? "עדכון דיווח" : "הוספת דיווח חדש"}
         newReport={newReport}
         setNewReport={setNewReport}
-        typeReport={typeReport}
-        setTypeReport={setTypeReport}
         typeReports={typeReports}
         closeModal={closeModal}
         handleSubmit={handleSubmit}
         currentWeek={currentWeek}
+         errorMessage={errorMessage ? errorMessage.join(', ') : ""}
       />
-        // <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        //   <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
-        //     {/* Header */}
-        //     <div className="relative pt-1 flex items-center justify-center mb-2">
-        //       <h2 className="text-lg font-semibold text-gray-800 text-center">{modalTitle}</h2>
-        //       <button
-        //         onClick={closeModal}
-        //         className="absolute left-0  w-8 h-8 flex items-center justify-center"
-        //       >
-        //         <X className="w-5 h-5 text-gray-500" />
-        //       </button>
-
-        //     </div>
-        //     {/* Scrollable body */}
-        //     <div className="p-4 space-y-3 overflow-y-auto">
-
-
-        //       {/* Modal Content */}
-        //       <form onSubmit={handleSubmit} >
-        //         {/* Date Field */}
-        //         <div>
-        //           <label className="block text-sm font-semibold text-gray-700 mb-2">
-        //             תאריך הדיווח
-        //           </label>
-        //           <input
-        //             type="date"
-        //             value={newReport.date ? newReport.date.toISOString().split("T")[0] : ""}
-        //             onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
-        //             className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-        //             required
-        //           />
-        //         </div>
-  
-        //         {/* Report Type */}
-        //         <div>
-        //           <label className="block text-sm font-semibold text-gray-700 mb-2">
-        //             סוג הדיווח
-        //           </label>
-        //           <select
-        //             className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-        //             value={typeReport?.id || ""}
-        //             onChange={(e) => {
-        //               const selectedId = Number(e.target.value);
-        //               const selected = typeReports.find((t) => t.id === selectedId) || null;
-        //               setTypeReport(selected);
-        //               //setHousrForFreeDay();
-        //             }}
-        //           >
-        //             {typeReports.map((type) => (
-        //               <option key={type.id} value={type.id}>
-        //                 {type.name}
-        //               </option>
-        //             ))}
-        //           </select>
-
-        //         </div>
-
-        //         {/* clockInTime and clockOutTime Times */}
-        //         <div className="grid grid-cols-2 gap-4">
-        //           <div>
-        //             <label className="block text-sm font-semibold text-gray-700 mb-2">
-        //               שעת כניסה
-        //             </label>
-        //             <input
-        //               type="time"
-        //               value={newReport.clockInTime}
-        //               onChange={(e) => setNewReport({ ...newReport, clockInTime: e.target.value })}
-        //               onBlur={() => {
-        //                 if (newReport.clockInTime && newReport.clockOutTime) {
-        //                   validateTimes(newReport.clockInTime, newReport.clockOutTime)
-        //                 }
-        //               }
-        //               }
-        //               className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-        //               disabled={newReport.typeID === 3}
-        //             />
-        //           </div>
-        //           <div>
-        //             <label className="block text-sm font-semibold text-gray-700 mb-2">
-        //               שעת יציאה
-        //             </label>
-        //             <input
-        //               type="time"
-        //               value={newReport.clockOutTime}
-        //               onChange={(e) =>
-        //                 setNewReport({ ...newReport, clockOutTime: e.target.value })}
-        //               onBlur={() => {
-        //                 if (newReport.clockInTime && newReport.clockOutTime) {
-        //                   validateTimes(newReport.clockInTime, newReport.clockOutTime)
-        //                 }
-        //               }
-        //               }
-        //               className={`text-black w-full px-4 py-3 border rounded-lg transition-all duration-200 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
-        //                 } focus:border-transparent`}
-        //             // disabled={newReport.type === 'חופש'}
-        //             />
-        //             {error && <p className="text-red-600 text-sm">{error}</p>}
-        //           </div>
-        //         </div>
-
-        //         {/* Total Hours Display */}
-        //         {newReport.clockInTime && newReport.clockOutTime && newReport.typeID !== 3 && (
-        //           <div>
-        //             <label className="block text-sm font-semibold text-gray-700 mb-2">
-        //               סה"כ שעות
-        //             </label>
-        //             <div className="w-full px-4 py-3 bg-gray-100 border border-gray-300 rounded-lg font-mono text-lg font-bold text-blue-600">
-        //               {calculateTotalHours(newReport.clockInTime, newReport.clockOutTime)}
-        //             </div>
-        //           </div>
-        //         )}
-
-        //         {/* Notes */}
-        //         <div>
-        //           <label className="block text-sm font-semibold text-gray-700 mb-2">
-        //             הערות
-        //           </label>
-        //           <textarea
-
-        //             value={newReport.notes}
-        //             onChange={(e) => setNewReport({ ...newReport, notes: e.target.value })}
-        //             className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-        //             rows={3}
-        //             placeholder="הערות נוספות (אופציונלי)"
-        //           />
-        //         </div>
-
-        //         {/* Submit Buttons */}
-        //         <div className="flex gap-3 pt-4">
-
-        //           <button
-        //             type="button"
-        //             onClick={closeModal}
-        //             className="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-xl font-medium hover:bg-gray-300 transition-colors"
-        //           >
-        //             ביטול
-        //           </button>
-        //           <button
-        //             type="submit"
-        //             // onClick={() => setIsModalOpen(false)}
-        //             className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        //           >
-        //             שמור דיווח
-        //           </button>
-        //         </div>
-        //       </form>
-        //     </div>
-        //   </div>
-        // </div>
+       
       )}
     </div>
   );
