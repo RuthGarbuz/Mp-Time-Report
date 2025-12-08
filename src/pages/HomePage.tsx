@@ -5,7 +5,9 @@ import type { Employee, PhoneBook } from '../interface/interfaces';
 import type { CalendarDataModal } from '../interface/meetingModel';
 import AddMeetingModal from './meeting/meetingModalOpen';
 import UpdatePhoneBook from './phoneBook/UpdatePhoneBook';
-import authService from '../services/authService';
+import CreateUpdateTaskModal from './tasks/createUpdateTaskModal';
+import HourReportModalOpen from './projectHours/HourReportModalOpen';
+import employeeService from '../services/employeeService';
 interface MenuItem {
   id: string;
   label: string;
@@ -17,26 +19,44 @@ const HomePage = () => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-   const [showMeetingModal, setShowMeetingModal] = useState(false);
-   const [showTaskModal, setShowTaskModal] = useState(false);
-   const [showContactModal, setShowContactModal] = useState(false);
-  
-     const [employee, setEmployee] = useState<Employee | null>(null);
-      const [selectedEvent, setSelectedEvent] = useState<CalendarDataModal | null>(null);
-      const [newContact, setNewContact] = useState<PhoneBook | null>(null);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showHourReportModal, setShowHourReportModal] = useState(false);
+
+  const [employee, setEmployee] = useState<Employee | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarDataModal | null>(null);
+  const [newContact, setNewContact] = useState<PhoneBook | null>(null);
   const navigate = useNavigate();
+  useEffect(() => {
+    const fetchEmployee = async () => {
+      try {
+        const result = await employeeService.getEmployee();
+        const empData = result.data;
+        if (empData) {
+          setEmployee(empData);
+        }
+       
+      } catch (error) {
+        console.error('Failed to fetch employee:', error);
+      }
+    };
+
+    fetchEmployee();
+  }, []);
+
   useEffect(() => {
     setIsVisible(true);
   }, []);
-  useEffect(() => {
-      const storedEmployee = authService.getCurrentEmployee();
-      if (storedEmployee) {
-        setEmployee(storedEmployee);
-      } else {
-        setEmployee(null);
-      }
-  
-    }, []);
+  // useEffect(() => {
+  //     const storedEmployee = authService.getCurrentEmployee();
+  //     if (storedEmployee) {
+  //       setEmployee(storedEmployee);
+  //     } else {
+  //       setEmployee(null);
+  //     }
+
+  //   }, []);
   const menuItems: MenuItem[] = [
     { id: '1', label: 'דיווח נכחות', icon: '✓', color: 'from-green-500 to-green-600', route: '/main/report-time' },
     { id: '2', label: 'הוסף+ איש קשר/חברה', icon: '👤', color: 'from-blue-500 to-blue-600', route: '/add-contact' },
@@ -46,96 +66,95 @@ const HomePage = () => {
   ];
   const handleClick = (item: MenuItem) => {
     switch (item.id) {
-case '1':
+      case '1':
         navigate("/main/report-time");
         break;
-    
-    case '2':
+      case '2':
         openPhoneBook();
         setShowContactModal(true);
         break;
-    case '3':
-        navigate("/add-project-hours");
+      case '3':
+        setShowHourReportModal(true);
         break;
-    case '4':
-        navigate("/add-task");
+      case '4':
+        setShowTaskModal(true);
         break;
-    case '5':
+      case '5':
         openMeeting();
         setShowMeetingModal(true);
         break;
-  }
-};
+    }
+  };
   const handleTouchStart = (id: string) => {
     setActiveItem(id);
   };
   const handleTouchEnd = () => {
     setActiveItem(null);
   };
-   const openMeeting =() => {
-          const newEvent: CalendarDataModal = {
-          
-                calendarEventDto: {
-                  id: 0, // generate temporary unique id
-                  parentId: null,
-                  title: "חדשה", // default title
-                  start: new Date().toISOString(),
-                  end: new Date().toISOString(),
-                  rRule: null,
-                  exDate: null,
-                  allDay: true,
-                  indexInSeries: null,
-                  type: 0, // 0 = regular meeting (you can change)
-                  recurrenceXml: null,
-                  employeeId: employee ? employee.id : 0,
-                },
-                calendarPartData: {
-                  cityID: null,
-                  projectID: null,
-                  projectName: null,
-                  statusID: null,
-                  categoryID: null,
-                  description: "",
-                  hasReminder: false,
-                  reminderTime: null,
-                  location: "",
-                  meetingLink: "",
-                  isPrivate: false,
-          
-                },
-              };
-              setSelectedEvent(newEvent);
-     
-      }
-      const functionToFix = (): any => {
-      return false;
+  const openMeeting = () => {
+    const newEvent: CalendarDataModal = {
+
+      calendarEventDto: {
+        id: 0, // generate temporary unique id
+        parentId: null,
+        title: "חדשה", // default title
+        start: new Date().toISOString(),
+        end: new Date().toISOString(),
+        rRule: null,
+        exDate: null,
+        allDay: true,
+        indexInSeries: null,
+        type: 0, // 0 = regular meeting (you can change)
+        recurrenceXml: null,
+        employeeId: employee ? employee.id : 0,
+      },
+      calendarPartData: {
+        cityID: null,
+        projectID: null,
+        projectName: null,
+        statusID: null,
+        categoryID: null,
+        description: "",
+        hasReminder: false,
+        reminderTime: null,
+        location: "",
+        meetingLink: "",
+        isPrivate: false,
+
+      },
+    };
+    setSelectedEvent(newEvent);
+
+  }
+  const functionToFix = (): any => {
+    return false;
+  }
+  const openPhoneBook = () => {
+
+    let newContact: PhoneBook = {
+      id: 0,
+      firstName: '',
+      lastName: '',
+      company: '',
+      companyAddress: '',
+      companyPhone: '',
+      mobile: '',
+      email: '',
+      selectedCompanyId: 0,
+      companyCityID: 0
     }
-   const openPhoneBook =() => {
-         
-            let  newContact:PhoneBook={
-          id: 0,
-          firstName: '',
-          lastName: '',
-          company: '',
-          companyAddress: '',
-          companyPhone: '',
-          mobile: '',
-          email: '',
-          selectedCompanyId: 0,
-          companyCityID: 0
-        }
-        setNewContact(newContact);
-          }
+    setNewContact(newContact);
+  }
   return (
-     <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
-          <div className="max-w-6xl mx-auto h-full flex flex-col">
-    
-            {/* Employee Profile Section */}
-            <EmployeeProfileCard
-            employee={employee!}
-            ></EmployeeProfileCard>
-    
-      {/* <div className="max-w-4xl mx-auto px-6 py-6"> */}
+    <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
+      <div className="max-w-6xl mx-auto h-full flex flex-col">
+
+        {/* Employee Profile Section */}
+        <EmployeeProfileCard
+          employee={employee!}
+        ></EmployeeProfileCard>
+
+        {/* <div className="max-w-4xl mx-auto px-6 py-6"> */}
         <div className="grid grid-cols-2 gap-4 md:gap-6">
           {menuItems.map((item, index) => (
             <button
@@ -171,7 +190,7 @@ case '1':
         </div>
         <div className="mt-12 flex justify-center">
           <button
-            onClick={() => console.log('Logging out...')}
+            onClick={() => navigate('/login')}
             className="flex items-center gap-2 px-8 py-3 bg-white border-2 border-red-500 text-red-500 rounded-full font-semibold hover:bg-red-500 hover:text-white transition-all duration-300 shadow-md hover:shadow-lg"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,19 +200,19 @@ case '1':
           </button>
         </div>
       </div>
-       {showMeetingModal && (
-              <AddMeetingModal
-                isOpen={showMeetingModal}
-                setIsOpen={setShowMeetingModal}
-                onClose={() => { setShowMeetingModal(false); }}
-                event={selectedEvent??undefined}
-                isRecurrence={false}
-                userID={employee ? employee.id : 0}
-                checkRrecurrenceChild={functionToFix}
-              />
-            )}
+      {showMeetingModal && (
+        <AddMeetingModal
+          isOpen={showMeetingModal}
+          setIsOpen={setShowMeetingModal}
+          onClose={() => { setShowMeetingModal(false); }}
+          event={selectedEvent ?? undefined}
+          isRecurrence={false}
+          userID={employee ? employee.id : 0}
+          checkRrecurrenceChild={functionToFix}
+        />
+      )}
 
-             {showContactModal && (
+      {showContactModal && (
         <UpdatePhoneBook
           mode='add'
           contact={newContact}
@@ -201,6 +220,27 @@ case '1':
           onSave={() => { setShowContactModal(false) }}
         />
       )}
+      {/* Add Task Modal */}
+      {showTaskModal && (
+        <CreateUpdateTaskModal
+          isOpen={showTaskModal}
+          editingId={0}
+          taskDetails={null!}
+          close={() => { setShowTaskModal(false) }}
+        />
+      )}
+      {showHourReportModal && (
+        <HourReportModalOpen
+          title={"הוספת דיווח חדש"}
+          isOpen={showHourReportModal}
+          onClose={() => { setShowHourReportModal(false); }}
+          report={null}
+          employee={employee!}
+          currentDay={new Date()}
+          editingReportId={0}
+        />
+      )}
+
     </div>
   );
 };

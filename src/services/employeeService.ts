@@ -14,7 +14,7 @@ class EmployeeService {
         id: user.id,
         database: user.dataBase
       };
-
+console.log("requestBodyEmployee",requestBody);
       const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
       const endpoint = `${dynamicBaseUrl}/employees/GetEmployeeDataAsync`; // Make sure this is correct
 

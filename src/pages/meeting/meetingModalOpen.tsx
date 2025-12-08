@@ -303,7 +303,7 @@ const updateHours = (isFullDay:boolean) => {
     return (
 
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir="rtl">
-            <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+            <div className="text-gray-800 bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
                 {/* Header */}
                 <div className="relative pt-1 flex items-center justify-center mb-2">
                     <h2 className="text-lg font-semibold text-gray-800 text-center">{getMeetingTitle()}</h2>

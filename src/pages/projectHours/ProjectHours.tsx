@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2 } from 'lucide-react';
-import type { Contract, Employee, HourReport, HourReportModal, Project, Step, SubContract } from '../../interface/interfaces';
+import type {  Employee, HourReport, HourReportModal, Project } from '../../interface/interfaces';
 import "tailwindcss";
-import React from 'react';
-import hourReportService, { getHourReportStepsModal, getStepsList, insertProjectHourReport } from '../../services/hourReportService';
+import hourReportService from '../../services/hourReportService';
 import authService from '../../services/authService';
-import ProjectFilter from '../shared/projectsFilter';
 import { getProjectsList } from '../../services/TaskService';
 import HourReportModalOpen from './HourReportModalOpen';
 import EmployeeProfileCard from '../shared/employeeProfileCard';
@@ -14,7 +12,6 @@ import ConfirmModal from '../shared/confirmDeleteModal';
 const ProjectHours = () => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [editingReportId, setEditingReportId] = useState<number | null>(null);
-  // const [modalTitle, setModalTitle] = useState<string>();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [contextMenuRowId, setContextMenuRowId] = useState<number | null>(null);
@@ -25,19 +22,9 @@ const ProjectHours = () => {
   const [filteredReports, setFilteredReports] = useState<HourReport[] | null>(null);
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string[] | null>(null);
-  //const [error, setError] = useState<string | null>(null);
   const [editPermision, setEditPermision] = useState(false);
-  const [isOpenProject, setIsOpenProject] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [contracts, setContracts] = useState<Contract[] | null>(null);
-  const [subContracts, setSubContracts] = useState<SubContract[] | null>(null);
-  const [steps, setSteps] = useState<Step[] | null>(null);
-  const[calculateclockOutTime,setCalculateclockOutTime] = useState("");
 
-  const [projectsList, setProjectsList] = useState<Project[]>(
-    [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
-  );
 
 
 
@@ -50,135 +37,27 @@ const ProjectHours = () => {
       clockOutTime: undefined,
       notes: "",
       total: undefined,
-      projectID: selectedProject?.id ?? 0,
+      projectID: 0,
       contractID: 0,
       subContractID: 0,
       stepID: 0,
-      hourReportMethodID: selectedProject?.hoursReportMethodID ?? 0,
+      hourReportMethodID: 0,
       employeeId: employee?.id ? Number(employee.id) : 0,
-      // contractsList: [],
-      // subContractsList: [],
-      // stepsList: []
+
     }
   );
 
-  const initNewReport = async () => {
- setErrorMessage(null);
-    if (selectedProject?.hoursReportMethodID === 5) {
-      const HourReportStepsData = await getHourReportStepsModal(selectedProject?.id ?? 0);
-      if (HourReportStepsData) {
-        if (HourReportStepsData.contractsList) {
-
-          setContracts(HourReportStepsData.contractsList);
-        }
-        if (HourReportStepsData.subContractsList) {
-          setSubContracts(HourReportStepsData.subContractsList);
-        }
-        if (HourReportStepsData.stepsList.length > 0) {
-          console.log('stepsList', HourReportStepsData.stepsList)
-
-          setSteps(HourReportStepsData.stepsList);
-        }
-      }
-    }
-    else if (selectedProject?.hoursReportMethodID === 3) {
-      setSubContracts(null)
-      setContracts(null)
-      setSteps(null)
-
-    }
-    else if (selectedProject) {
-      let StepList = await getStepsList(selectedProject?.id ?? 0);
-      if (StepList && StepList.length > 0) {
-        console.log('stepsList4', StepList)
-        setSteps(StepList);
-      }
-      setSubContracts(null)
-      setContracts(null)
-    }
-    
- 
-    setNewReport({
-      id: 0,
-      date: currentDay,
-      clockInTime: undefined,
-      clockOutTime: undefined,
-      notes: "",
-      total: employee?.minutesHoursAmount,
-      projectID: selectedProject?.id ?? 0,
-      contractID: 0,
-      subContractID: 0,
-      stepID: 0,
-      hourReportMethodID: selectedProject?.hoursReportMethodID ?? 0,
-      employeeId: employee?.id ? Number(employee.id) : 0,
-    
-    })
-  }
+  
   const [reports, setReports] = useState<HourReport[]>([]);
 
 
 
-  const timeToMinutes = (time: string): number => {
-    const [hours, minutes] = time.split(":").map(Number);
-    return hours * 60 + minutes;
-  };
-
- function toLocalISOString(date: Date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-   
-    return `${d}-${m}-${y}`;
-  }
-  const validateOverlappingReports = (reports: HourReport[]): string[] => {
-    const errors: string[] = [];
-    for (let i = 0; i < reports.length; i++) {
-      const reportA = reports[i];
-
-      if (!reportA.clockInTime || !reportA.clockOutTime) continue;
-      if (reportA.clockInTime === "-" || reportA.clockOutTime === "-") continue;
-
-      const startA = timeToMinutes(reportA.clockInTime);
-      const endA = timeToMinutes(reportA.clockOutTime);
-
-      for (let j = i + 1; j < reports.length; j++) {
-
-        const reportB = reports[j];
-        if(reportA.id === reportB.id) continue;
-        if (!reportB.clockInTime || !reportB.clockOutTime) continue;
-        if (reportB.clockInTime === "-" || reportB.clockOutTime === "-") continue;
-
-        const startB = timeToMinutes(reportB.clockInTime);
-        const endB = timeToMinutes(reportB.clockOutTime);
-
-        const isOverlap = startA < endB && startB < endA;
-
-        if (isOverlap) {
-          errors.push(`יש דיווחים מתאריך ${toLocalISOString(currentDay)} שחופפים בשעות`);
-          return errors;
-        }
-      }
-    }
-
-    return errors;
-  };
   const filterReport = (reportData: HourReport[]) => {
 
     setTotalTime(getTotalTime(reportData));
     setFilteredReports(reportData);
   }
 
-
-  const calculateTotalHours = (clockInTime: string, clockOutTime: string) => {
-    if (clockInTime === '-' || clockOutTime === '-') return '00:00';
-
-    const clockInTimeMinutes = timeToMinutes(clockInTime);
-    const clockOutTimeMinutes = timeToMinutes(clockOutTime);
-    const totalMinutes = clockOutTimeMinutes - clockInTimeMinutes;
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-  };
   const getTotalTime = (reports: HourReport[]): string => {
     let totalMinutes = 0;
 
@@ -206,6 +85,7 @@ const ProjectHours = () => {
     return `${formattedHours}:${formattedMinutes}`;
   };
 
+
   // Format date for display
 
   const onDeleteClick = (id: number) => {
@@ -216,70 +96,16 @@ const ProjectHours = () => {
   // כשמאשרים מחיקה
   const confirmDelete = async () => {
     if (itemToDelete !== null) {
-    try {
-      await hourReportService.deleteHourReport(itemToDelete); // שליחה לשרת
-      const storedTimeRecord = await hourReportService.getHourReportProjectData(currentDay);
-      setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
-    } catch (error) {
-      console.error('Error adding new report:', error);
-    }
+      try {
+        await hourReportService.deleteHourReport(itemToDelete); // שליחה לשרת
+        const storedTimeRecord = await hourReportService.getHourReportProjectData(currentDay);
+        setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
+      } catch (error) {
+        console.error('Error adding new report:', error);
+      }
     }
     setIsConfirmOpen(false);
     setItemToDelete(null);
-  };
-  // const confirmDelete = () => {
-  //   if (itemToDelete !== null) {
-  //     hg
-  //     setReports(prev => prev.filter(item => item.id !== itemToDelete));
-  //     setFilteredReports(prev => prev?.filter(item => item.id !== itemToDelete) || []);
-  //   }
-  //   setIsConfirmOpen(false);
-  //   setItemToDelete(null);
-  // };
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault(); // Always prevent default first
-
-
-    if (newReport.clockInTime) {
-      
-      const totalHours = calculateTotalHours(newReport.clockInTime ?? "", newReport.clockOutTime ?? "");
-      newReport.total = totalHours;
-    }
-  
-
-      const newItem = {
-        id: newReport.id,
-        clockInTime: newReport.clockInTime || '',
-        clockOutTime: newReport.clockOutTime || '',
-        total: newReport.total || '',
-        projectName: projectsList.find(p => p.id === newReport.projectID)?.name || '',
-      };
-      const newUpdateReports = [...reports, newItem]
-      const validateError = validateOverlappingReports(newUpdateReports)
-
-      if (validateError.length !== 0) {
-        setErrorMessage(validateError);
-        return;
-      } 
-      let updateReport:any=null
-      if(editingReportId)
-      {
-      setEditingReportId(null);
-
-updateReport=await insertProjectHourReport(newReport,"UpdateProjectHourReportAsync")
-      }
-      else{
-updateReport=await insertProjectHourReport(newReport,"InsertProjectHourReportAsync")
-      }
-     
-      if (updateReport) {
-        getHourReportsList()
-      }
-
-    // ✅ Close only after successful handling
-    setIsModalOpen(false);
   };
 
 
@@ -309,10 +135,7 @@ updateReport=await insertProjectHourReport(newReport,"InsertProjectHourReportAsy
     if (permisionEmployee) {
       setEditPermision(permisionEmployee.editPermision);
       setEmployee(permisionEmployee);
-         setCalculateclockOutTime("")
-    if (permisionEmployee?.minutesHoursAmount) {
-      setCalculateclockOutTime(addTime("08:00", permisionEmployee.minutesHoursAmount))
-    }
+
 
     }
   }, []);
@@ -321,7 +144,7 @@ updateReport=await insertProjectHourReport(newReport,"InsertProjectHourReportAsy
     const fetchData = async () => {
       try {
         getHourReportsList()
-        initNewReport()
+        //initNewReport()
       } catch (error) {
         console.error('Failed to fetch time records:', error);
         setReports([]);
@@ -339,6 +162,8 @@ updateReport=await insertProjectHourReport(newReport,"InsertProjectHourReportAsy
   const getHourReportsList = async () => {
     const storedTimeRecord = await hourReportService.getHourReportProjectData(currentDay);
     setReports(storedTimeRecord ?? []);
+    setIsModalOpen(false);
+    setEditingReportId(null);
   }
 
   // Add loading state while employee data is being fetched
@@ -354,57 +179,20 @@ updateReport=await insertProjectHourReport(newReport,"InsertProjectHourReportAsy
   }
 
   async function onUpdateClick(id: number) {
- setErrorMessage(null);
- let updateReport =await hourReportService.getFullHourReportProjectData(id);
-if(!updateReport) return;
-updateReport.date=currentDay;
+    let updateReport = await hourReportService.getFullHourReportProjectData(id);
+    if (!updateReport) return;
+    updateReport.date = currentDay;
     setNewReport(updateReport);
     setEditingReportId(id);
-     const projectsData = await getProjectsList();
+    const projectsData = await getProjectsList();
     if (projectsData) {
-     setSelectedProject(projectsData.find((p: { id: number | undefined; }) => p.id === updateReport.projectID) || null);
+      setSelectedProject(projectsData.find((p: { id: number | undefined; }) => p.id === updateReport.projectID) || null);
     }
     // setError(null)
     setIsModalOpen(true);
   }
-  function addTime(clockInTimeTime: string, duration: string): string {
-    const [clockInTimeHours, clockInTimeMinutes] = clockInTimeTime.split(':').map(Number);
-    const [durationHours, durationMinutes] = duration.split(':').map(Number);
 
-    let totalMinutes = clockInTimeMinutes + durationMinutes;
-    let totalHours = clockInTimeHours + durationHours;
 
-    if (totalMinutes >= 60) {
-      totalMinutes -= 60;
-      totalHours += 1;
-    }
-
-    // Handle overflow beyond 24 hours if needed
-    totalHours = totalHours % 24;
-
-    const clockOutTimeHoursStr = String(totalHours).padStart(2, '0');
-    const clockOutTimeMinutesStr = String(totalMinutes).padStart(2, '0');
-
-    return `${clockOutTimeHoursStr}:${clockOutTimeMinutesStr}`;
-  }
-  const setOpenProjectList = async () => {
-    const projectsData = await getProjectsList();
-    if (projectsData) {
-      setProjectsList(projectsData as Project[]);
-    }
-    setIsOpenProject(true);
-  }
-  const handleOk = async () => {
-    if (selectedProject) {
-      // setError(null)
-      await initNewReport()
-      setErrorMessage(null)
-      setIsModalOpen(true)
-      setIsOpenProject(false);
-
-    }
-
-  };
 
 
   return (
@@ -414,7 +202,7 @@ updateReport.date=currentDay;
 
         {/* Employee Profile Section */}
         <EmployeeProfileCard
-        employee={employee}
+          employee={employee}
         ></EmployeeProfileCard>
 
         {/* Week Navigation */}
@@ -449,7 +237,8 @@ updateReport.date=currentDay;
           <div className="mb-6">
             <button
               onClick={() => {
-                setOpenProjectList();
+                setIsModalOpen(true);
+                //  setOpenProjectList();
               }}
               className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
             >
@@ -524,64 +313,33 @@ updateReport.date=currentDay;
                     {report.total ?? '00:00'}
                   </span>
                 </div>
-                {/* Total Hours */}
-                {/* <div className="text-center">
-                  <span className={` text-xs md:text-base font-bold px-1 md:px-2 py-1 rounded-lg ${report.total === '00:00'
-                      ? 'text-gray-400 bg-gray-100'
-                      : 'text-blue-600 bg-blue-100'
-                    }`}>
-                    {report.total === 'NaN:NaN' ? '00:00' : report.total}
-                  </span>
-                </div> */}
-                {contextMenuRowId ===report.id && ( 
-                   <div className=" top-2 left-1 flex  gap-1 z-10">
-                  <button
-                    onClick={() => {
-                       if (report.id !== undefined) {
+               
+                {contextMenuRowId === report.id && (
+                  <div className=" top-2 left-1 flex  gap-1 z-10">
+                    <button
+                      onClick={() => {
+                        if (report.id !== undefined) {
                           //setModalTitle('עדכון דיווח מתאריך: ' + report.date);
                           onUpdateClick(report.id);
                         }
                         setContextMenuRowId(null);
-                    }
-                    }
-                    className=" text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => { 
-                      if (report.id !== undefined) onDeleteClick(report.id);
-                      setContextMenuRowId(null);
-                     }}
-                    className=" text-red-500 hover:text-red-700 rounded-xl transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                  // <div className="absolute top-1 right-1 flex flex-col gap-1 z-10">
-                  //   <button
-                  //     onClick={() => {
-                  //       if (report.id !== undefined) onDeleteClick(report.id);
-                  //       setContextMenuRowId(null);
-                  //     }}
-                  //     className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow"
-                  //   >
-                  //     מחק
-                  //   </button>
-
-                  //   <button
-                  //     onClick={() => {
-                  //       if (report.id !== undefined) {
-                  //         //   setModalTitle('עדכון דיווח מתאריך: ' + report.date);
-                  //         onUpdateClick(report.id);
-                  //       }
-                  //       setContextMenuRowId(null);
-                  //     }}
-                  //     className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded shadow"
-                  //   >
-                  //     עדכון
-                  //   </button>
-                  // </div>
+                      }
+                      }
+                      className=" text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (report.id !== undefined) onDeleteClick(report.id);
+                        setContextMenuRowId(null);
+                      }}
+                      className=" text-red-500 hover:text-red-700 rounded-xl transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                
                 )}
               </div>
 
@@ -618,50 +376,35 @@ updateReport.date=currentDay;
 
       {isModalOpen && (
         <HourReportModalOpen
-         title={newReport.id ? "עדכון דיווח" : "הוספת דיווח חדש"}
+          title={newReport.id ? "עדכון דיווח" : "הוספת דיווח חדש"}
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          newReport={newReport}
-          setNewReport={setNewReport}
-          handleSubmit={handleSubmit}
-          contracts={contracts}
-          subContracts={subContracts}
-          steps={steps}
-          selectedProject={selectedProject || undefined}
+          onClose={() => { getHourReportsList(); }}
+          report={newReport}
+          employee={employee}
+          project={selectedProject!}
+
           currentDay={currentDay}
-          calculateclockOutTime={ calculateclockOutTime}
-          errorMessage={errorMessage ? errorMessage.join(', ') : ""}
+          editingReportId={editingReportId!}
         />
       )}
 
 
-      {/* מודאל */}
-      {isOpenProject && (
-        <ProjectFilter
-          isOpen={isOpenProject}
-          projectsList={projectsList}
-          selectedProject={selectedProject}
-          setSelectedProject={setSelectedProject}
-          handleOk={handleOk}
-          onClose={() => setIsOpenProject(false)}
-        />
-      )}
       {isConfirmOpen && (
-          <ConfirmModal
-    message="האם הנך בטוח שברצונך למחוק דיווח זה?"
-    onOk={() => {
-       confirmDelete();
-    }}
-    onCancel={() => {
-      setIsConfirmOpen(false);
-      setItemToDelete(null);
-    }}
-    okText="מחק"
-    cancelText="ביטול"
-  />
-         
-        )}
-      
+        <ConfirmModal
+          message="האם הנך בטוח שברצונך למחוק דיווח זה?"
+          onOk={() => {
+            confirmDelete();
+          }}
+          onCancel={() => {
+            setIsConfirmOpen(false);
+            setItemToDelete(null);
+          }}
+          okText="מחק"
+          cancelText="ביטול"
+        />
+
+      )}
+
     </div>
 
   );

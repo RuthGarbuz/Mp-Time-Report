@@ -18,7 +18,6 @@ import ProjectHours from './projectHours/ProjectHours';
 import ManagerDataMain from './managerData/managerDataMain';
 import ConversationList from './conversations/ConversationList';
 import MyScheduler from './meeting/myCalander';
-import MainStart from './mainSart/mainStart';
 const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const[titleName,setTitleName]=useState("");
@@ -45,7 +44,7 @@ React.useEffect(() => {
     '/main/report-time': 'דיווח נוכחות',
     '/main/report-list': 'רשימת דיווחים',
     '/main/phone-book-List': 'אלפון',
-    '/main/home': 'דף הבית',
+    '/main/HomePage': 'דף הבית',
     '/main/tasks-List': 'משימות',
     '/main/projectHours-List': 'שעות לפרויקטים',
     '/main/conversations-List': 'יומן שיחות',
@@ -125,7 +124,7 @@ useEffect(() => {
       <main className="main-content ">
         <Routes>
           {/* <Route index element={<Navigate to="report-time" replace />} /> */}
-          <Route index element={<Navigate to="MainStart" replace />} />
+          <Route index element={<Navigate to="HomePage" replace />} />
 
           <Route path="report-time" element={<ReportTime />} />
           <Route path="report-list" element={<ReportList />} />
@@ -140,7 +139,7 @@ useEffect(() => {
 
 
 {/* contacts={dummyData}  */}
-          <Route path="home" element={<HomePage />} />
+          <Route path="HomePage" element={<HomePage />} />
           {/* <Route path="*" element={<Navigate to="report-time" replace />} /> */}
           <Route path="*" element={<Navigate to="HomePage" replace />} />
 

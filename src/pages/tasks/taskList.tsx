@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import {  Check, Edit2, Trash2, Clock } from 'lucide-react';
-import { deleteTask, getTasksList, insertTask, saveCompletedTask, updateTask } from '../../services/TaskService';
-import type {  SelectEmployeesList, Task } from '../../interface/interfaces';
+import { Check, Edit2, Trash2, Clock } from 'lucide-react';
+import { deleteTask, getTasksList, saveCompletedTask } from '../../services/TaskService';
+import type { Task } from '../../interface/interfaces';
 import { Priority } from '../../enum';
 import authService from '../../services/authService';
 import ConfirmModal from '../shared/confirmDeleteModal';
 import CreateUpdateTaskModal from './createUpdateTaskModal';
-import employeeService from '../../services/employeeService';
 
 export default function TaskManager() {
   const [tasksList, setTasksList] = useState<Task[]>([]);
@@ -18,14 +17,10 @@ export default function TaskManager() {
   const [fromDate, setFromDate] = useState<Date>(new Date());
   const [toDate, setToDate] = useState<Date>(new Date());
   // const [openError, setOpenError] = useState(false)
-  const [errorSubject, setErrorSubject] = useState("");
-  const [errorTime, setErrorTime] = useState("");
-  const [errorRecipient, setErrorRecipient] = useState("");
+
 
   const [activeTab, setActiveTab] = useState('received'); // 'received' or 'sent'  
-  const [employeesList, setEmployeesList] = useState<SelectEmployeesList[]>(
-    [{ id: 0, name: 'Loading...' }]
-  );
+
 
   // נתוני משימה חדשה מפורטים
   const [userID, setUserID] = useState(0);
@@ -45,13 +40,8 @@ export default function TaskManager() {
     organizerID: 0,
     recipientID: 0
   });
-  const resetError = () => {
-    setErrorSubject("");
-    setErrorTime("");
-    setErrorRecipient("");
-  }
+
   const resetNewTaskDetails = () => {
-    resetError();
     setShowAddModal(false);
     setEditingId(0);
     setNewTaskDetails({
@@ -74,52 +64,7 @@ export default function TaskManager() {
 
 
 
-  const addDetailedTask = async () => {
-    resetError();
-    let hasError = false;
-    if (newTaskDetails.startDate > newTaskDetails.dueDate ||
-      (newTaskDetails.startDate === newTaskDetails.dueDate &&
-        newTaskDetails.startTime > newTaskDetails.dueTime)
-    ) {
-      setErrorTime("תאריך/שעה לא תקין");
-      hasError = true;
-      // setOpenError(true)
-      // תאריך ושעה תקינים
-    }
-    if (!newTaskDetails.subject) {
-      setErrorSubject("נדרש נושא המשימה");
-      hasError = true;
-    }
-    if (!newTaskDetails.recipientID) {
 
-      setErrorRecipient("נדרש מקבל המשימה");
-      hasError = true;
-    }
-    if (hasError) {
-      return;
-    }
-    if (editingId) {
-      const success = await updateTask(newTaskDetails);
-      if (success) {
-        // setTasksList(tasksList.map(task =>
-        //   task.taskID === editingId ? { ...newTaskDetails } : task
-        // ));
-      }
-    }
-    else {
-      const taskData = await insertTask(newTaskDetails);
-      if (taskData > 0) {
-
-      }
-    }
-    // if (newTaskDetails?.subject.trim()) {
-
-    const tasks = await getTasksList(fromDate, toDate, activeTab);
-    if (tasks) {
-      setTasksList(tasks)
-    }
-    resetNewTaskDetails();
-  };
 
   const toggleTask = async (id: any) => {
     const updateCompletedTask = tasksList.find(task => task.taskID === id);
@@ -134,7 +79,7 @@ export default function TaskManager() {
 
   const deleteTaskHandler = async () => {
     if (selectedTaskID === null) return;
-    const taskData = await deleteTask(selectedTaskID,"DeleteTaskAsync");
+    const taskData = await deleteTask(selectedTaskID, "DeleteTaskAsync");
     if (taskData) {
       setTasksList(tasksList.filter(task => task.taskID !== selectedTaskID));
     }
@@ -145,18 +90,16 @@ export default function TaskManager() {
   const startEdit = (id: any) => {
     const task = tasksList.find(task => task.taskID === id);
     if (task) {
-      resetError();
       setNewTaskDetails(task);
       setEditingId(id);
       setShowAddModal(true)
     }
   };
   const openNewTask = () => {
-   resetNewTaskDetails();
-    setEmployeList();
+    resetNewTaskDetails();
     setShowAddModal(true)
   }
- 
+
 
   const thisWeek = new Date();
   thisWeek.setDate(thisWeek.getDate() + 7);
@@ -176,13 +119,13 @@ export default function TaskManager() {
       setToDate(new Date());
     }
   })
-  const setEmployeList = async () => {
-    const employeesData = await employeeService.getEmployeesList();
-    if (employeesData) {
-      setEmployeesList(employeesData as SelectEmployeesList[]);
+
+  const refreshData = async () => {
+    const tasks = await getTasksList(fromDate, toDate, activeTab);
+    if (tasks) {
+      setTasksList(tasks)
     }
   }
- 
   useEffect(() => {
     const fetchData = async () => {
       const taskData = await getTasksList(fromDate, toDate, activeTab);
@@ -213,7 +156,7 @@ export default function TaskManager() {
   };
 
 
-  
+
   return (
     <div className=" text-gray-800 min-h-screen bg-gradient-to-br from-purple-600 via-purple-500 to-pink-500 p-4" dir="rtl">
 
@@ -225,8 +168,8 @@ export default function TaskManager() {
           <button
             onClick={() => setActiveTab("sent")}
             className={`relative flex-1 px-4 py-2 font-semibold transition-colors ${activeTab === "sent"
-                ? "bg-gradient-to-r from-purple-600 to-pink-500 text-transparent bg-clip-text"
-                : "text-gray-500"
+              ? "bg-gradient-to-r from-purple-600 to-pink-500 text-transparent bg-clip-text"
+              : "text-gray-500"
               }`}
           >
             משימות ששלחתי
@@ -238,8 +181,8 @@ export default function TaskManager() {
           <button
             onClick={() => setActiveTab("received")}
             className={`relative flex-1 px-4 py-2 font-semibold transition-colors ${activeTab === "received"
-                ? "bg-gradient-to-r from-purple-600 to-pink-500 text-transparent bg-clip-text"
-                : "text-gray-500"
+              ? "bg-gradient-to-r from-purple-600 to-pink-500 text-transparent bg-clip-text"
+              : "text-gray-500"
               }`}
           >
             משימות שקיבלתי
@@ -308,7 +251,7 @@ export default function TaskManager() {
 
         {/* Add New Task - Quick */}
         <div className="mb-6">
-{/* addquickTask  dont delete this code!*/}
+          {/* addquickTask  dont delete this code!*/}
           {/* <div className="text-gray-800 flex gap-2 mb-2 flex-wrap">
             <input
               type="text"
@@ -356,7 +299,7 @@ export default function TaskManager() {
             onClick={() => openNewTask()}
             className="w-full py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:from-green-600 hover:to-teal-600 transition-colors font-medium"
           >
-           + הוספת משימה חדשה
+            + הוספת משימה חדשה
           </button>
         </div>
 
@@ -410,7 +353,7 @@ export default function TaskManager() {
                   {task.isCompleted && <Check size={16} />}
                 </button>
 
-               
+
                 <div className="flex-1">
                   <div className={`font-medium mb-1 ${task.isCompleted
                     ? 'text-gray-500 line-through'
@@ -430,7 +373,7 @@ export default function TaskManager() {
                     <span className={`px-2 py-1 rounded-full text-xs border ${getPriorityColor(task.priorityID)}`}>
                       {Priority[task.priorityID]}
                     </span>
-                    {task.projectID>0&& (
+                    {task.projectID > 0 && (
                       <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-200">
                         {task.projectName}
                       </span>
@@ -492,14 +435,8 @@ export default function TaskManager() {
         <CreateUpdateTaskModal
           isOpen={showAddModal}
           editingId={editingId}
-          newTaskDetails={newTaskDetails}
-          setNewTaskDetails={setNewTaskDetails}
-          errorSubject={errorSubject}
-          errorTime={errorTime}
-          errorRecipient={errorRecipient}
-          close={() => setShowAddModal(false)}
-          addDetailedTask={addDetailedTask}
-          employeesList={employeesList}
+          taskDetails={newTaskDetails}
+          close={() => { setShowAddModal(false); refreshData(); }}
         />
       )}
     </div>

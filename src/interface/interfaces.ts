@@ -53,6 +53,14 @@ export interface TimeRecord  {
   notes: string;
   total?: string;
 };
+export interface CheckHoursOverlapQuery {
+  projectID: number;
+  employeeID: number;
+  date: Date;        // ISO string כמו מה-API: "2025-01-12T00:00:00"
+  clockInTime?: string | null;
+  clockOutTime?: string | null;
+  hourReportID?: number | null;
+}
 export interface HourReport  {
   id: number;
   clockInTime?: string;

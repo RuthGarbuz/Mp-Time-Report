@@ -1,4 +1,4 @@
-import type { HourReport, HourReportModal, HourReportStepsModal, Step } from "../interface/interfaces";
+import type { CheckHoursOverlapQuery, HourReport, HourReportModal, HourReportStepsModal, Step } from "../interface/interfaces";
 import authService from "./authService";
 
 class HourReportsService{
@@ -101,6 +101,35 @@ if(data===false) throw new Error("Failed to Delete task");
  } 
  catch (error) {
     console.error("Error Deleteing task:", error);
+    return false;
+  }
+}
+async CheckHoursOverlapAsync(hourReportCheck: CheckHoursOverlapQuery): Promise<boolean> {
+  try {
+     const user = authService.getCurrentUser(); 
+    if (!user) throw new Error("User not authenticated");
+
+    const dynamicBaseUrl = user.urlConnection;
+    const endpoint = `${dynamicBaseUrl}/hourReports/CheckHoursOverlapAsync`; 
+    const requestBody = {
+      database: user.dataBase,
+      checkHourOverlap:hourReportCheck
+    };
+
+    const response = await authService.makeAuthenticatedRequest(endpoint, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to check hours overlap");
+    }
+const data = await response.json();
+if(data===false) throw new Error("Failed to check hours overlap");
+    return true;
+ } 
+ catch (error) {
+    console.error("Error checking hours overlap:", error);
     return false;
   }
 }

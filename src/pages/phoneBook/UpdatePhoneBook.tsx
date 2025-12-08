@@ -8,12 +8,8 @@ import { addCompany, addPhoneBookContact, getPhoneBookCompanyList, updateCompany
 interface UpdatePhoneBookProps {
     mode: "add" | "update";
     contact: PhoneBook | null;
-    // citiesList: City[];
-    // companiesList: Company[];
-
     onClose: () => void;
     onSave: () => void;
-    //handleAddContact?: () => void;
 }
 
 const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
@@ -21,9 +17,6 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     contact,
     onClose,
     onSave,
-    //handleAddContact,
-    // citiesList,
-    // companiesList
 }) => {
     const isAddMode = mode === "add";
     const [isEditing, setIsEditing] = useState(false);
@@ -178,7 +171,6 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     };
     useEffect(() => {
        
-        console.log("isAddMode", isAddMode)
         setIsEditing(isAddMode)
         if (contact) {
             getData();

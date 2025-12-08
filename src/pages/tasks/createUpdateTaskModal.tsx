@@ -3,52 +3,126 @@ import { ChevronDownIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import { X } from "lucide-react";
 import { Priority } from "../../enum";
 import ProjectFilter from "../shared/projectsFilter";
-import { getProjectsList } from "../../services/TaskService";
+import { getProjectsList, insertTask, updateTask } from "../../services/TaskService";
 import type { Project, SelectEmployeesList, Task } from "../../interface/interfaces";
-
-
-
-//type Employee = { id: number; name: string };
+import employeeService from "../../services/employeeService";
 
 type TaskModalProps = {
     isOpen: boolean;
     editingId: number;
-    newTaskDetails: Task;
-    setNewTaskDetails: React.Dispatch<React.SetStateAction<Task>>;
-    errorSubject?: string;
-    errorTime?: string;
-    errorRecipient?: string;
+    taskDetails: Task;
     close: () => void;
-    addDetailedTask: () => void;
-    employeesList: SelectEmployeesList[];
 };
 
 const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
     isOpen,
     editingId,
-    newTaskDetails,
-    setNewTaskDetails,
-    errorSubject,
-    errorTime,
-    errorRecipient,
+    taskDetails,
     close,
-    addDetailedTask,
-    employeesList,
-
-
-
 }) => {
     if (!isOpen) return null;
     const [searchEmployee, setSearchEmployee] = useState("");
     const [isOpenEmployee, setIsOpenEmployee] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [title, setTitle] = useState('');
-
+  const [errorSubject, setErrorSubject] = useState("");
+  const [errorTime, setErrorTime] = useState("");
+  const [errorRecipient, setErrorRecipient] = useState("");
     const [projectsList, setProjectsList] = useState<Project[]>(
         [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
     );
     const [isOpenProject, setIsOpenProject] = useState(false);
+      const [employeesList, setEmployeesList] = useState<SelectEmployeesList[]>(
+    [{ id: 0, name: 'Loading...' }]
+  );
+    const [newTaskDetails, setNewTaskDetails] = useState<Task>({
+    taskID: 0,
+    subject: '',
+    description: '',
+    isCompleted: false,
+    isClosed: false,
+    priorityID: 2,
+    startDate: new Date().toISOString().split('T')[0],
+    startTime: '09:00',
+    dueDate: new Date().toISOString().split('T')[0],
+    dueTime: '10:00',
+    projectID: 0,
+    projectName: '',
+    organizerID: 0,
+    recipientID: 0
+  });
+      const resetError = () => {
+    setErrorSubject("");
+    setErrorTime("");
+    setErrorRecipient("");
+  }
+   const hasChanges = () => {
+        return JSON.stringify(taskDetails) !== JSON.stringify(newTaskDetails);
+    };
+const addDetailedTask = async () => {
+    if (!hasChanges()) {
+            close();
+            return;
+        }
+    resetError();
+    let hasError = false;
+    if (newTaskDetails.startDate > newTaskDetails.dueDate ||
+      (newTaskDetails.startDate === newTaskDetails.dueDate &&
+        newTaskDetails.startTime > newTaskDetails.dueTime)
+    ) {
+      setErrorTime("תאריך/שעה לא תקין");
+      hasError = true;
+      // setOpenError(true)
+      // תאריך ושעה תקינים
+    }
+    if (!newTaskDetails.subject) {
+      setErrorSubject("נדרש נושא המשימה");
+      hasError = true;
+    }
+    if (!newTaskDetails.recipientID) {
 
+      setErrorRecipient("נדרש מקבל המשימה");
+      hasError = true;
+    }
+    if (hasError) {
+      return;
+    }
+    if (editingId) {
+      const success = await updateTask(newTaskDetails);
+      if (success) {
+        // setTasksList(tasksList.map(task =>
+        //   task.taskID === editingId ? { ...newTaskDetails } : task
+        // ));
+      }
+    }
+    else {
+      const taskData = await insertTask(newTaskDetails);
+      if (taskData > 0) {
+
+      }
+    }
+    close();
+    // if (newTaskDetails?.subject.trim()) {
+
+
+    //resetNewTaskDetails();
+  };
+    const setEmployeList = async () => {
+      const employeesData: SelectEmployeesList[] = await employeeService.getEmployeesList();
+      if (employeesData) {
+        setEmployeesList(employeesData as SelectEmployeesList[]);
+      }
+      if (editingId) {
+                    const empName = employeesData.find(emp => emp.id ===(taskDetails!=null? taskDetails.recipientID:newTaskDetails.recipientID));
+                    setSearchEmployee(empName?.name ?? "");
+                    setTitle("עריכת משימה")
+                }
+                else {
+                    setSearchEmployee("");
+                    setTitle("הוספת משימה חדשה")
+
+                }
+    }
     const setOpenProjectList = async () => {
         const projectsData = await getProjectsList();
         if (projectsData) {
@@ -82,16 +156,12 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
     useEffect(() => {
         const fetchData = async () => {
             try {
-                if (editingId) {
-                    const empName = employeesList.find(emp => emp.id === newTaskDetails.recipientID);
-                    setSearchEmployee(empName?.name ?? "");
-                    setTitle("עריכת משימה")
+                if(taskDetails){
+                    setNewTaskDetails(taskDetails);
+                  
                 }
-                else {
-                    setSearchEmployee("");
-                    setTitle("הוספת משימה חדשה")
-
-                }
+                  setEmployeList();
+                
             } catch (error) {
                 console.error("Error loading data:", error);
             }
@@ -99,8 +169,8 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
         fetchData();
     }, []);
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir="rtl">
+            <div className="text-gray-800 bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
                 {/* Header */}
                 <div className="relative pt-1 flex items-center justify-center mb-2">
                     <h2 className="text-lg font-semibold text-gray-800 text-center">{title}</h2>
@@ -380,7 +450,7 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
                             ביטול
                         </button>
                         <button
-                            onClick={addDetailedTask}
+                            onClick={() => {addDetailedTask(); }}
                             // disabled={!newTaskDetails?.subject.trim()}
                             className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >

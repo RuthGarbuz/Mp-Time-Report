@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Phone, Plus, Search, X } from 'lucide-react';
 import { getPhoneBookCompanyList } from '../../services/phoneBookService';
-import type { City, Company, PhoneBook } from '../../interface/interfaces';
+import type { PhoneBook } from '../../interface/interfaces';
 import UpdatePhoneBook from './UpdatePhoneBook';
 
 export default function BusinessPhonebook() {
   const [selectedContact, setSelectedContact] = useState<PhoneBook | null>(null);
 
   const [contactsList, setContactsList] = useState<PhoneBook[]>([]);
- 
+
 
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +46,7 @@ export default function BusinessPhonebook() {
 
     if (phoneBookData) {
       setContactsList(phoneBookData.phoneBooks);
-    
+
     }
 
   };
@@ -159,12 +159,10 @@ export default function BusinessPhonebook() {
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-purple-500 via-pink-300 to-pink-500 font-sans p-4" dir="rtl">
-      {/*old // <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50  font-sans p-4" dir="rtl"> */}
-      <div className="bg-white shadow-md rounded-full mb-4">
-
-        <div className="relative">
-
+    <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
+      <div className="max-w-6xl mx-auto h-full flex flex-col">
+        {/* <div className="relative"> */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative w-full ">
           <input
             type="text"
             placeholder="חפש לפי שם או חברה..."
@@ -175,151 +173,150 @@ export default function BusinessPhonebook() {
           {searchTerm ? (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute left-3 top-4 text-gray-400 hover:text-red-500"
+              className="absolute  left-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
             >
               <X size={18} />
             </button>
           ) : (
-            <Search className="absolute left-3 top-4 text-gray-400" size={20} />
+            <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           )}
         </div>
-      </div>
+        {/* </div> */}
 
-      {/* Add Contact Modal */}
-      {/* Contact Modal */}
-      {selectedContact && (
+        {/* Add Contact Modal */}
+        {/* Contact Modal */}
+        {selectedContact && (
 
-        <UpdatePhoneBook
-          mode='update'
-          contact={selectedContact}
-          onClose={() => { setSelectedContact(null); }}
-          onSave={() => { setSelectedContact(null), getData() }}
-      
+          <UpdatePhoneBook
+            mode='update'
+            contact={selectedContact}
+            onClose={() => { setSelectedContact(null); }}
+            onSave={() => { setSelectedContact(null), getData() }}
 
-        //handleAddContact={handleAddContact}
-        />
-      )}
-
-
-
-      {/* Add Contact Modal */}
-      {isAddModalOpen && (
-        <UpdatePhoneBook
-          mode='add'
-          contact={newContact}
-          onClose={() => { setIsAddModalOpen(false) }}
-          onSave={() => { setIsAddModalOpen(false), getData() }}
 
           //handleAddContact={handleAddContact}
-        
-        />
-
-      )}
+          />
+        )}
 
 
-      <div
-        ref={listRef}
-        onScroll={handleScroll}
-        className="h-[calc(100vh-180px)] overflow-y-auto rounded-2xl shadow-2xl bg-white/10"
-      >
-        {/* <div className="bg-white/30 backdrop-blur-lg p-6 rounded-3xl shadow-xl mb-8"> */}
-        <div className="grid grid-cols-1  shadow-xl rounded-2xl ">
-          {/* <div className="grid gap-3"> */}
-          {/* "bg-white p-4 rounded-xl shadow-sm flex justify-between items-center" */}
-          {visibleContacts.map((contact, index) => (
-            <div key={index}
-              className="backdrop-blur-lg border-b border-white/20 py-6  mx-4 text-white flex justify-between items-center"
-              onClick={() => {
-                //setUpdate(true),
-                setSelectedContact(contact)
-              }
-                //
-              }
-            >
-              {/* <div className="flex justify-between items-center"> */}
-              <div>
-                <div className="text-lg font-semibold text-gray-800">{contact.firstName} {contact.lastName}</div>
-                <div className="text-sm text-gray-500">{contact.company}</div>
-                <div className="text-sm flex items-center gap-2">
-                  {contact.mobile || contact.companyPhone ? (
-                    <>
-                      <a
-                        href={`tel:${contact.mobile || contact.companyPhone}`}
-                        className="text-blue-600 hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {contact.mobile || contact.companyPhone}
-                      </a>
-                      {contact.mobile && (() => {
-                        const waNum = normalizeForWhatsApp(contact.mobile);
-                        if (!waNum) return null;
 
-                        return (
-                          <a
-                            href={`https://wa.me/${waNum}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            title="שלח ב־WhatsApp"
-                          >
-                            <img
-                              src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-                              alt="WhatsApp"
-                              className="w-5 h-5"
-                            />
-                          </a>
-                        );
-                      })()}
+        {/* Add Contact Modal */}
+        {isAddModalOpen && (
+          <UpdatePhoneBook
+            mode='add'
+            contact={newContact}
+            onClose={() => { setIsAddModalOpen(false) }}
+            onSave={() => { setIsAddModalOpen(false), getData() }}
 
-                    </>
-                  ) : (
-                    <span className="text-gray-500">אין מספר</span>
-                  )}
+          //handleAddContact={handleAddContact}
+
+          />
+
+        )}
+
+
+        <div
+          ref={listRef}
+          onScroll={handleScroll}
+          className="h-[calc(100vh-180px)] overflow-y-auto rounded-2xl shadow-2xl bg-white/10"
+        >
+          <div className="bg-white rounded-3xl shadow-2xl p-2 ">
+         
+            {visibleContacts.map((contact, index) => (
+              <div key={index}
+                className="backdrop-blur-lg border-b border-white/20 py-6  mx-4 text-white flex justify-between items-center"
+                onClick={() => {
+                 
+                  setSelectedContact(contact)
+                }
+                 
+                }
+              >
+         
+                <div>
+                  <div className="text-lg font-semibold text-gray-800">{contact.firstName} {contact.lastName}</div>
+                  <div className="text-sm text-gray-500">{contact.company}</div>
+                  <div className="text-sm flex items-center gap-2">
+                    {contact.mobile || contact.companyPhone ? (
+                      <>
+                        <a
+                          href={`tel:${contact.mobile || contact.companyPhone}`}
+                          className="text-blue-600 hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {contact.mobile || contact.companyPhone}
+                        </a>
+                        {contact.mobile && (() => {
+                          const waNum = normalizeForWhatsApp(contact.mobile);
+                          if (!waNum) return null;
+
+                          return (
+                            <a
+                              href={`https://wa.me/${waNum}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              title="שלח ב־WhatsApp"
+                            >
+                              <img
+                                src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                                alt="WhatsApp"
+                                className="w-5 h-5"
+                              />
+                            </a>
+                          );
+                        })()}
+
+                      </>
+                    ) : (
+                      <span className="text-gray-500">אין מספר</span>
+                    )}
+                  </div>
+
+                </div>
+                <div className="flex">
+                  <button
+
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      callContact(contact.companyPhone ?? '')
+                    }
+                    }
+                    className="bg-green-500 hover:bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+                    title="התקשר"
+                  >
+                    <Phone size={18} />
+                  </button>
+
                 </div>
 
               </div>
-              <div className="flex">
-                <button
+            ))}
+            {visibleCount < filteredContacts.length && (
+              <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
+            )}
+          </div>
+        </div>
 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    callContact(contact.companyPhone ?? '')
-                  }
-                  }
-                  className="bg-green-500 hover:bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
-                  title="התקשר"
-                >
-                  <Phone size={18} />
-                </button>
 
-              </div>
+        {/* Floating Add Button - Fixed Position */}
+        <div className="fixed bottom-20 right-6 z-40 group">
+          <button
 
-            </div>
-          ))}
-          {visibleCount < filteredContacts.length && (
-            <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
-          )}
+            onClick={() => {
+              setIsAddModalOpen(true)
+            }}
+            className="bg-gradient-to-r from-green-400 to-green-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+          <span className="absolute right-16 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+            הוסף איש קשר
+          </span>
         </div>
       </div>
 
-
-      {/* Floating Add Button - Fixed Position */}
-      <div className="fixed bottom-20 right-6 z-40 group">
-        <button
-
-          onClick={() => {
-            setIsAddModalOpen(true)
-          }}
-          className="bg-gradient-to-r from-green-400 to-green-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-        <span className="absolute right-16 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-          הוסף איש קשר
-        </span>
-      </div>
     </div>
-    // </div>
   );
 }
 
