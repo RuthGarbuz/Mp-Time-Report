@@ -9,7 +9,8 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'robots.txt','logo.png'],
+      // includeAssets: ['favicon.svg', 'robots.txt','logo.png'],
+       includeAssets: ['favicon.ico', 'logo.png', 'robots.txt', 'red-logo-192.png', 'red-logo-512.png'],
      manifest: {
     name: "MasterPlan",
     short_name: "MP",
@@ -20,17 +21,31 @@ export default defineConfig({
     lang: "en",
     scope: "/",
     icons: [
-      {
-        src: "/red-logo-192.png",
-        sizes: "192x192",
-        type: "image/png"
-      },
-      {
-        src: "/red-logo-512.png",
-        sizes: "512x512",
-        type: "image/png"
-      }
-    ]
+          {
+            src: "/red-logo-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "/red-logo-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "/red-logo-192.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable"
+          },
+          {
+            src: "/red-logo-512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable"
+          }
+        ]
   }
 
     })

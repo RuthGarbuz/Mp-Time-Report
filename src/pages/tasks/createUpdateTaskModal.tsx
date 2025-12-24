@@ -1,17 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { ChevronDownIcon, Bars3Icon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { X } from "lucide-react";
 import { Priority } from "../../enum";
-import ProjectFilter from "../shared/projectsFilter";
 import { getProjectsList, insertTask, updateTask } from "../../services/TaskService";
-import type { Project, SelectEmployeesList, Task } from "../../interface/interfaces";
+import type { Project } from "../../interface/project";
+import type { SelectEmployeesList } from "../../interface/MaimModel";
+import type { Task } from "../../interface/TaskModel";
 import employeeService from "../../services/employeeService";
+import AutoComplete from "../shared/autoCompleteInput";
 
 type TaskModalProps = {
     isOpen: boolean;
     editingId: number;
     taskDetails: Task;
     close: () => void;
+    employee?: any;
 };
 
 const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
@@ -19,10 +22,9 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
     editingId,
     taskDetails,
     close,
+    employee
 }) => {
     if (!isOpen) return null;
-    const [searchEmployee, setSearchEmployee] = useState("");
-    const [isOpenEmployee, setIsOpenEmployee] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [title, setTitle] = useState('');
   const [errorSubject, setErrorSubject] = useState("");
@@ -31,7 +33,6 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
     const [projectsList, setProjectsList] = useState<Project[]>(
         [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
     );
-    const [isOpenProject, setIsOpenProject] = useState(false);
       const [employeesList, setEmployeesList] = useState<SelectEmployeesList[]>(
     [{ id: 0, name: 'Loading...' }]
   );
@@ -48,9 +49,19 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
     dueTime: '10:00',
     projectID: 0,
     projectName: '',
-    organizerID: 0,
-    recipientID: 0
+    organizerID:employee?.id?? 0,
+    recipientID: employee?.id?? 0
   });
+   const [selectedEmployee, setSelectedEmployee] = useState<SelectEmployeesList | null>(null);
+  // ...existing code...
+
+  const handleEmployeeSelect = (emp: SelectEmployeesList) => {
+    setSelectedEmployee(emp);
+    setNewTaskDetails((prev) => ({
+      ...prev,
+      recipientID: emp.id ?? 0,
+    }));
+  };
       const resetError = () => {
     setErrorSubject("");
     setErrorTime("");
@@ -114,43 +125,25 @@ const addDetailedTask = async () => {
       }
       if (editingId) {
                     const empName = employeesData.find(emp => emp.id ===(taskDetails!=null? taskDetails.recipientID:newTaskDetails.recipientID));
-                    setSearchEmployee(empName?.name ?? "");
+                    setSelectedEmployee(empName ?? null);
                     setTitle("עריכת משימה")
                 }
                 else {
-                    setSearchEmployee("");
+                    setSelectedEmployee(null);
                     setTitle("הוספת משימה חדשה")
 
                 }
     }
-    const setOpenProjectList = async () => {
-        const projectsData = await getProjectsList();
-        if (projectsData) {
-            setProjectsList(projectsData as Project[]);
-        }
-        setIsOpenProject(true);
-    }
-    const filteredEmployees = employeesList.filter((emp) =>
-        emp.name?.toLowerCase().includes(searchEmployee.toLowerCase())
-    );
+   
 
-    const handleSelect = (emp: SelectEmployeesList) => {
-        setNewTaskDetails((prev) => ({
-            ...prev,
-            recipientID: emp.id ? emp.id : 0,
-        }));
-        setSearchEmployee(emp.name ? emp.name : "");
-        setIsOpenEmployee(false);
-    };
-    const handleOk = () => {
-        if (selectedProject) {
+    const handleProjectSelect = (project:Project) => {
+      setSelectedProject(project);
             setNewTaskDetails((prev: any) => ({
                 ...prev,
-                projectID: selectedProject.id,
-                projectName: selectedProject.name
+                projectID: project.id,
+                projectName: project.name
             }));
-        }
-        setIsOpenProject(false);
+       
     };
 
     useEffect(() => {
@@ -161,6 +154,10 @@ const addDetailedTask = async () => {
                   
                 }
                   setEmployeList();
+                   const projectsData = await getProjectsList();
+        if (projectsData) {
+            setProjectsList(projectsData as Project[]);
+        }
                 
             } catch (error) {
                 console.error("Error loading data:", error);
@@ -168,6 +165,9 @@ const addDetailedTask = async () => {
         };
         fetchData();
     }, []);
+     useEffect(() => {
+        setSelectedProject(newTaskDetails.projectID ? projectsList!.find(p => p.id === newTaskDetails.projectID) || null : null);
+    }, [projectsList]);
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir="rtl">
             <div className="text-gray-800 bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
@@ -203,7 +203,7 @@ const addDetailedTask = async () => {
                             }
                             placeholder="הכנס תיאור מפורט למשימה..."
                             rows={3}
-                            className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             dir="rtl"
                         />
                         {errorSubject && <p className="text-red-500 text-sm mt-1">{errorSubject}</p>}
@@ -225,7 +225,7 @@ const addDetailedTask = async () => {
                                     }))
                                 }
                                 placeholder="הכנס כותרת למשימה..."
-                                className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 dir="rtl"
                             />
                         </div>)}
@@ -234,9 +234,9 @@ const addDetailedTask = async () => {
                         {/* <div className="flex flex-wrap gap-2 w-full"> */}
 
                             {/* <div className="flex-1 min-w-[120px] sm:min-w-0"> */}
-                            <div className="grid grid-cols-1 [@media(min-width:350px)]:grid-cols-2 gap-3 w-full">
+                           <div className="grid grid-cols-1 [@media(min-width:350px)]:grid-cols-2 gap-3 w-full mt-2">
   {/* תאריך התחלה */}
-  <div>
+ <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     תאריך התחלה
                                 </label>
@@ -254,12 +254,12 @@ const addDetailedTask = async () => {
                                             return updated;
                                         });
                                     }}
-                                    className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                             </div>
 
                             {/* שעת התחלה */}
-                             <div>
+                               <div className=" mr-4 min-w-0">
                             {/* <div className="flex-1 min-w-[90px] sm:min-w-0"> */}
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     שעת התחלה
@@ -291,7 +291,7 @@ const addDetailedTask = async () => {
                                             return updated;
                                         });
                                     }}
-                                    className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                             </div>
                         </div>
@@ -301,23 +301,33 @@ const addDetailedTask = async () => {
                 ">
                             <div className="flex-1 min-w-[120px] sm:min-w-0"> */}
                             <div className="grid grid-cols-1 [@media(min-width:350px)]:grid-cols-2 gap-3 w-full mt-2">
-  <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    תאריך סיום
-                                </label>
-                                <input
-                                    type="date"
-                                    value={newTaskDetails.dueDate}
-                                    onChange={(e) =>
-                                        setNewTaskDetails((prev) => ({
-                                            ...prev,
-                                            dueDate: e.target.value,
-                                        }))
-                                    }
-                                    className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                                />
-                            </div>
- <div>
+<div className="mb-0 sm:mb-0">
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+        תאריך סיום
+    </label>
+    <input
+        type="date"
+        value={newTaskDetails.dueDate}
+        onChange={(e) => {
+            const dateValue = e.target.value; // format: yyyy-MM-dd
+            setNewTaskDetails((prev) => ({
+                ...prev,
+                dueDate: dateValue,
+            }))
+        }}
+        onBlur={(e) => {
+            // Format display as dd/MM/yyyy when losing focus
+            const dateValue = e.target.value;
+            if (dateValue) {
+                const [year, month, day] = dateValue.split('-');
+                e.target.setAttribute('data-display', `${day}/${month}/${year}`);
+            }
+        }}
+        className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+        style={{ colorScheme: 'light' }}
+    />
+</div>
+<div className="mb-0 sm:mb-0 mr-4">
                             {/* <div className="flex-1 min-w-[90px] sm:min-w-0"> */}
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     שעת סיום
@@ -331,7 +341,7 @@ const addDetailedTask = async () => {
                                             dueTime: e.target.value,
                                         }))
                                     }
-                                    className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                 />
                             </div>
                         </div>
@@ -353,7 +363,7 @@ const addDetailedTask = async () => {
                                         priorityID: Number(e.target.value),
                                     }))
                                 }
-                                className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
+                                className="w-full p-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent appearance-none"
                             >
                                 {/* <option value="">בחר עדיפות</option> */}
                                 <option value={Priority.נמוכה} className="hover:bg-purple-100">
@@ -377,99 +387,61 @@ const addDetailedTask = async () => {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             מקבל<span className="text-red-500">*</span>
                         </label>
-                        <input
-                            type="text"
-                            value={searchEmployee}
-                            onChange={(e) => {
-                                setSearchEmployee(e.target.value);
-                                setIsOpenEmployee(true);
-                            }}
-                            // onFocus={() => setIsOpenEmployee(true)}
-                            placeholder="בחר מקבל..."
-
-                            className={`w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent${errorRecipient ? "border-red-500" : "border-gray-300"
-                                }`}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => { setIsOpenEmployee(!isOpenEmployee), setSearchEmployee(""); }}
-                            className="pt-7 absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
-                        >
-                            <ChevronDownIcon className="h-6 w-6" />
-                        </button>
-                        {isOpenEmployee && filteredEmployees.length > 0 && (
-                            <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                {filteredEmployees.map((emp) => (
-                                    <li
-                                        key={emp.id}
-                                        onClick={() => handleSelect(emp)}
-                                        className="p-2 cursor-pointer  hover:bg-[#0078d7]  hover:text-white"
-                                    >
-                                        {emp.name}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-
+<AutoComplete
+    items={employeesList}
+    selectedItem={selectedEmployee}
+    onSelect={handleEmployeeSelect}
+    getItemId={(emp) => emp.id ?? 0}
+    getItemLabel={(emp) => emp.name ?? ""}
+    placeholder="בחר מקבל..."
+    height={2}
+/>
+                       
                         {errorRecipient && <p className="text-red-500 text-sm mt-1">{errorRecipient}</p>}
                     </div>
                     {/* פרויקט */}
 
-                    <div>
+                        <div className="relative w-full"
+                        >
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             פרויקט
                         </label>
-                        <div className="relative w-full"
-                        >
-                            <input
-                                type="text"
-                                value={newTaskDetails.projectName}
-                                placeholder="בחר פרויקט..."
-                                readOnly
-                                className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
-
-                            {/* כפתור קטן בצד ימין */}
-                            <button
-                                type="button"
-                                onClick={() => setOpenProjectList()}
-                                className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
-                            >
-                                <Bars3Icon className="h-6 w-6" />
-                            </button>
+                        
+                            <AutoComplete
+                                    items={projectsList}
+                                    selectedItem={selectedProject}
+                                    onSelect={(project) => {
+                                        handleProjectSelect(project);
+                                        // update your state with project.id
+                                    }}
+                                    getItemId={(project: any) => project.id}
+                                    getItemLabel={(project: any) => project.name}
+                                    placeholder="בחר פרויקט..."
+                                    height={2}
+                                />
+                           
                         </div>
-                    </div>
                     {/* כפתורי פעולה */}
                     <div className="flex gap-3 pt-4">
                         <button
                             onClick={() => {
                                 close();
                             }}
-                            className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                            className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                         >
                             ביטול
                         </button>
                         <button
                             onClick={() => {addDetailedTask(); }}
                             // disabled={!newTaskDetails?.subject.trim()}
-                            className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 py-2 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {title.includes("עריכת") ? "שמור שינויים" : "הוסף משימה"}
                         </button>
                     </div>
                 </div>
             </div>
-            {/* מודאל */}
-            {isOpenProject && (
-                <ProjectFilter
-                    isOpen={isOpenProject}
-                    projectsList={projectsList}
-                    selectedProject={selectedProject}
-                    setSelectedProject={setSelectedProject}
-                    handleOk={handleOk}
-                    onClose={() => setIsOpenProject(false)}
-                />
-            )}
+            
         </div>
 
 

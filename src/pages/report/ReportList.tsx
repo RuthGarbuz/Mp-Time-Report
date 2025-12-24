@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2} from 'lucide-react';
-import type { Employee, TimeHourReportsType, TimeRecord } from '../../interface/interfaces';
+import type { Employee, TimeHourReportsType } from '../../interface/TimeHourModel';
+import type { TimeRecord } from '../../interface/HourReportModal';
 import "tailwindcss";
 import { TimeType } from '../../enum';
 import React from 'react';
@@ -9,6 +10,7 @@ import timeRecordService from '../../services/timeRecordService';
 import EmployeeProfileCard from '../shared/employeeProfileCard';
 import ConfirmModal from '../shared/confirmDeleteModal';
 import ReportModal from './createUpdateReportModal';
+import { useModal } from '../ModalContextType';
 const ReportList = () => {
   const rowRef = useRef<HTMLDivElement>(null);
   const [editingReportId, setEditingReportId] = useState<number | null>(null);
@@ -27,7 +29,7 @@ const ReportList = () => {
   const [editPermision, setEditPermision] = useState(false);
   const [allowAddReport, setAllowAddReport] = useState(false);
 const [errorMessage, setErrorMessage] = useState<string[] | null>(null);
-
+const { openModal, closeModal } = useModal();
 
   const [newReport, setNewReport] = useState<TimeRecord>(
     {
@@ -245,19 +247,20 @@ try {
 
     // ✅ Close only after successful handling
     setIsModalOpen(false);
+    closeModal();
   };
  
   // Reset form when closing modal
-  const closeModal = () => {
+  const closeReportModal = () => {
    
     //setTypeReport(typeReports.find((t) => t.id === 5) || null)
     setIsModalOpen(false)
+    closeModal();
   };
 
 
 
   const navigateWeek = (direction: 'prev' | 'next' | 'today') => {
-
     let newDay: Date;
 
     if (direction !== 'today') {
@@ -318,6 +321,7 @@ function formatDateOnly(d: Date): string {
   }, [currentWeek]);
 
   useEffect(() => {
+    closeModal();
     filterReport(reports);//currentWeek,
   }, [reports]);
   useEffect(() => {
@@ -377,6 +381,7 @@ function formatDateOnly(d: Date): string {
     });
     setEditingReportId(id);
     setIsModalOpen(true);
+    openModal();
   }
   function addTime(clockInTimeTime: string, duration: string): string {
     const [clockInTimeHours, clockInTimeMinutes] = clockInTimeTime.split(':').map(Number);
@@ -444,6 +449,7 @@ function formatDateOnly(d: Date): string {
                // setError(null)
                 initNewReport()
                 setIsModalOpen(true)
+                openModal();
               }}
               className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
             >
@@ -548,8 +554,7 @@ function formatDateOnly(d: Date): string {
                   </span>
                 </div>
                 {/* Total Hours */}
-               
-                {contextMenuRowId ===report.id  && (//report.id 
+                {contextMenuRowId ===report.id &&editPermision && allowAddReport && (//report.id 
                  <div className=" top-1 left-1 flex gap-1 z-10">
                   <button
                     onClick={() => {
@@ -599,6 +604,7 @@ function formatDateOnly(d: Date): string {
                   //   </button>
                   // </div>
                 )}
+            
               </div>
             ))}
           </div>
@@ -655,7 +661,7 @@ function formatDateOnly(d: Date): string {
         newReport={newReport}
         setNewReport={setNewReport}
         typeReports={typeReports}
-        closeModal={closeModal}
+        closeModal={closeReportModal}
         handleSubmit={handleSubmit}
         currentWeek={currentWeek}
          errorMessage={errorMessage ? errorMessage.join(', ') : ""}

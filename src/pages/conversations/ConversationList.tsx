@@ -1,20 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { Trash2, Check, Search, X } from 'lucide-react';
 import EmployeeProfileCard from '../shared/employeeProfileCard';
-import type { Conversation, ConversationData, Employee, SelectEmployeesList } from '../../interface/interfaces';
+import type { Conversation, ConversationData } from '../../interface/ConversationModel';
+import type { Employee } from '../../interface/TimeHourModel';
 import timeRecordService from '../../services/timeRecordService';
 import ConversationModalOpen from './conversationModalOpen';
-import employeeService from '../../services/employeeService';
 import { deleteTask, saveCompletedTask, getConversationList, GetConversationsByID } from '../../services/TaskService';
 import ConfirmModal from '../shared/confirmDeleteModal';
+import { useModal } from '../ModalContextType';
 
 
 
 const ConversationList: React.FC = () => {
-    const [employeesList, setEmployeesList] = useState<SelectEmployeesList[]>(
-        [{ id: 0, name: 'Loading...' }]
-    );
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedCallID, setSelectedCallID] = useState<number | null>(null);
     const [conversationData, setConversationData] = useState<ConversationData>(
@@ -36,13 +34,15 @@ const ConversationList: React.FC = () => {
             projectName: ''
         }
     );
-
+  const listRef = useRef<HTMLDivElement | null>(null);
     const [showAddModal, setShowAddModal] = useState(false);
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [callEntries, setCallEntries] = useState<Conversation[]>([]);
+       const { openModal, closeModal } = useModal();
     const resetData = () => {
         setShowAddModal(false);
+        closeModal();
         setSelectedCallID(0);
         setConversationData({
             id: 0,
@@ -62,6 +62,14 @@ const ConversationList: React.FC = () => {
             projectName: ''
         });
     }
+    const handleScroll = () => {
+    if (!listRef.current) return;
+    // const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+
+    // if (scrollTop + clientHeight >= scrollHeight - 50) {
+    //   setVisibleCount((prev) => Math.min(prev + 20, filteredContacts.length));
+    // }
+  };
  const filteredTasks = callEntries.filter((call) => {
     const term = searchTerm.trim().toLowerCase();
     return (
@@ -79,6 +87,7 @@ const ConversationList: React.FC = () => {
         }
         setShowDeleteModal(false)
         setSelectedCallID(null)
+        closeModal();
     };
     const saveConversation = async () => {
         
@@ -100,6 +109,9 @@ const ConversationList: React.FC = () => {
 
         }
     };
+    useEffect(() => {
+    closeModal();
+  }, []);
     useEffect(() => {
         const fetchData = async () => {
             const conversationData = await getConversationList();
@@ -134,13 +146,8 @@ const ConversationList: React.FC = () => {
             </div>
         );
     }
-    const setEmployeList = async () => {
-        const employeesData = await employeeService.getEmployeesList();
-        if (employeesData) {
-            setEmployeesList(employeesData as SelectEmployeesList[]);
-        }
-    }
-    const openModal = async (ID: number) => {
+  
+    const openConversationModal = async (ID: number) => {
         if (ID == 0) {
             resetData();
         }
@@ -150,8 +157,9 @@ const ConversationList: React.FC = () => {
                 setConversationData(conversationData);
             }
         }
-        await setEmployeList();
+     
         setShowAddModal(true);
+        openModal();
     }
 
     return (
@@ -174,11 +182,12 @@ const ConversationList: React.FC = () => {
         <div className="relative">
 
           <input
+            // ref={(input) => input?.focus()}
             type="text"
             placeholder="חפש לפי נושא שיחה..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="text-gray-600 w-full pr-10 pl-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="text-gray-600 w-full pr-4 pl-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           {searchTerm ? (
             <button
@@ -194,13 +203,16 @@ const ConversationList: React.FC = () => {
       </div>
                     {/* Call Entries */}
 
-                    <div className="space-y-3">
+                    <div
+                     ref={listRef}
+          onScroll={handleScroll}
+                     className="space-y-3 overflow-y-auto">
                         {filteredTasks.map((call, index) => (
                             <div
                                 key={index}
                                 onClick={() => {
                                     setSelectedCallID(call.id);
-                                    openModal(call.id ?? 0);
+                                    openConversationModal(call.id ?? 0);
                                 }}
                                 className={`flex items-start gap-3 p-4 border rounded-2xl transition-all ${call.isClosed
                                     ? 'bg-gray-50 border-gray-200'
@@ -208,18 +220,24 @@ const ConversationList: React.FC = () => {
                                     }`}
                             >
                                 {/* Checkbox */}
-                                <button
-                                    onClick={(e:any) => { 
-                                        e.stopPropagation();
-                                        toggleTask(call.id);
-                                    }}
-                                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${call.isClosed
-                                        ? 'bg-green-500 border-green-500 text-white'
-                                        : 'border-gray-300 hover:border-green-400'
-                                        }`}
-                                >
-                                    {call.isClosed && <Check size={16} />}
-                                </button>
+                                <div className="relative group">
+                                    <button
+                                        onClick={(e:any) => { 
+                                            e.stopPropagation();
+                                            toggleTask(call.id);
+                                        }}
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors mt-1 flex-shrink-0 ${call.isClosed
+                                            ? 'bg-green-500 border-green-500 text-white'
+                                            : 'border-gray-300 hover:border-green-400'
+                                            }`}
+                                    >
+                                        {call.isClosed && <Check size={16} />}
+                                    </button>
+                                    <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-0.5 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                        סגירה
+                                    </span>
+                                </div>
+                                
                                 {/* <div className="w-6 h-6 border-2 border-gray-300 rounded-lg flex-shrink-0 mt-1"></div> */}
 
                                 {/* Call Info */}
@@ -256,16 +274,22 @@ const ConversationList: React.FC = () => {
     >
       <Edit2 size={16} />
     </button> */}
-                                    <button
-                                        onClick={(e:React.MouseEvent<HTMLButtonElement>) => {
-                                            e.stopPropagation();
-                                            setSelectedCallID(call.id);
-                                            setShowDeleteModal(true);
-                                        }}
-                                        className="p-2 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="relative group">
+                                        <button
+                                            onClick={(e:React.MouseEvent<HTMLButtonElement>) => {
+                                                e.stopPropagation();
+                                                setSelectedCallID(call.id);
+                                                setShowDeleteModal(true);
+                                                openModal();
+                                            }}
+                                            className="p-2 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                        {/* <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                            מחק
+                                        </span> */}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -284,9 +308,7 @@ const ConversationList: React.FC = () => {
                         setNewConversation={setConversationData}
                         resetNewConversation={resetData}
                         saveConversation={saveConversation}
-                        employeesList={employeesList}
                         userID={employee.id??0}
-
                     />
 
                 )}
@@ -298,10 +320,12 @@ const ConversationList: React.FC = () => {
                             deleteTaskHandler();
                             setShowDeleteModal(false);
                             setSelectedCallID(null);
+                            closeModal();
                         }}
                         onCancel={() => {
                             setShowDeleteModal(false);
                             setSelectedCallID(null);
+                            closeModal();
                         }}
                         okText="מחק"
                         cancelText="ביטול"

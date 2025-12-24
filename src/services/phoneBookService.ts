@@ -1,4 +1,4 @@
-import type {  Company, PhoneBook, PhoneBookCompany } from "../interface/interfaces";
+import type { Company, PhoneBook, PhoneBookCompany } from "../interface/PhoneBookModel";
 import authService from "./authService";
 export const getPhoneBookCompanyList = async (): Promise<PhoneBookCompany | null> => {
   try {

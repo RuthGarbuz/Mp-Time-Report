@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, } from 'recharts';
-import type { ManagerCardModalProps, ProjectAnalyses, StatusCategory } from '../../interface/interfaces';
+import type { ManagerCardModalProps, ProjectAnalyses, StatusCategory } from '../../interface/ManagerAnalisesModel';
 
 const ProjectAnalysesDashboard: React.FC<ManagerCardModalProps> = ({ isOpen, onClose, managerDataCard, officeName }) => {
   const [statusData, setStatusData] = useState<StatusCategory[]>([]);

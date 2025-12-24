@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { Project } from "../../interface/interfaces";
+import type { Project } from "../../interface/project";
 
 
 
@@ -35,6 +35,7 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
 
         {/* חיפוש */}
        <input
+              // ref={(input) => input?.focus()}
               type="text"
               placeholder="חיפוש..."
               value={searchProject}

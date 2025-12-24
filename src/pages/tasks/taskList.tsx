@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Check, Edit2, Trash2, Clock } from 'lucide-react';
 import { deleteTask, getTasksList, saveCompletedTask } from '../../services/TaskService';
-import type { Task } from '../../interface/interfaces';
+import type { Task } from '../../interface/TaskModel';
 import { Priority } from '../../enum';
 import authService from '../../services/authService';
 import ConfirmModal from '../shared/confirmDeleteModal';
 import CreateUpdateTaskModal from './createUpdateTaskModal';
+import { useModal } from '../ModalContextType';
 
 export default function TaskManager() {
   const [tasksList, setTasksList] = useState<Task[]>([]);
@@ -20,7 +21,7 @@ export default function TaskManager() {
 
 
   const [activeTab, setActiveTab] = useState('received'); // 'received' or 'sent'  
-
+const { openModal, closeModal } = useModal();
 
   // נתוני משימה חדשה מפורטים
   const [userID, setUserID] = useState(0);
@@ -43,6 +44,7 @@ export default function TaskManager() {
 
   const resetNewTaskDetails = () => {
     setShowAddModal(false);
+    closeModal();
     setEditingId(0);
     setNewTaskDetails({
       taskID: 0,
@@ -85,6 +87,7 @@ export default function TaskManager() {
     }
     setShowDeleteModal(false)
     setSelectedTaskID(null)
+    closeModal();
   };
 
   const startEdit = (id: any) => {
@@ -92,12 +95,14 @@ export default function TaskManager() {
     if (task) {
       setNewTaskDetails(task);
       setEditingId(id);
-      setShowAddModal(true)
+      setShowAddModal(true);
+      openModal();
     }
   };
   const openNewTask = () => {
     resetNewTaskDetails();
-    setShowAddModal(true)
+    setShowAddModal(true);
+    openModal();
   }
 
 
@@ -143,6 +148,9 @@ export default function TaskManager() {
       resetNewTaskDetails();
     }
   }, [userID]);
+    useEffect(() => {
+    closeModal();
+  }, []);
   const completedCount = tasksList.filter(task => task.isCompleted).length;
   const totalCount = tasksList.length;
 
@@ -398,7 +406,7 @@ export default function TaskManager() {
                     <Edit2 size={16} />
                   </button>
                   <button
-                    onClick={() => { setSelectedTaskID(task.taskID); setShowDeleteModal(true); }}
+                    onClick={() => { setSelectedTaskID(task.taskID); setShowDeleteModal(true); openModal(); }}
                     className="p-2 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
                   >
                     <Trash2 size={16} />
@@ -419,10 +427,12 @@ export default function TaskManager() {
             deleteTaskHandler();
             setShowDeleteModal(false);
             setSelectedTaskID(null);
+            closeModal();
           }}
           onCancel={() => {
             setShowDeleteModal(false);
             setSelectedTaskID(null);
+            closeModal();
           }}
           okText="מחק"
           cancelText="ביטול"
@@ -436,7 +446,7 @@ export default function TaskManager() {
           isOpen={showAddModal}
           editingId={editingId}
           taskDetails={newTaskDetails}
-          close={() => { setShowAddModal(false); refreshData(); }}
+          close={() => { setShowAddModal(false); refreshData();closeModal() ;}}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FileText, DollarSign, CreditCard, ClipboardList, Tag, PieChart, FileCheck, Users } from 'lucide-react';
-import type { Office, DataCard } from '../../interface/interfaces';
+import type { Office, DataCard } from '../../interface/ManagerAnalisesModel';
 import { getManagerModelData, getOfficeList } from '../../services/managerService';
 import InvoicesModal from './billDataModel';
 import IntakeModal from './intakeDataModel';
@@ -44,7 +44,7 @@ const managerDataMain: React.FC = () => {
     },
 
     {
-      title: 'תשובונות חיוביים',
+      title: 'חשבונות חיוביים',
       icon: <CreditCard className="w-12 h-12 text-blue-300" />,
       available: false,
       function: 'GetDeptorsDataAsync'
@@ -174,28 +174,22 @@ const managerDataMain: React.FC = () => {
       {/* Cards Grid */}
       <div className="max-w-6xl mx-auto">
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-          {dataCards.map((card, index) => (
-            <div
+            {dataCards.map((card, index) => (
+            <button
               key={index}
-              className="bg-white rounded-2xl shadow-lg p-3 flex flex-col min-h-[180px]  hover:shadow-xl transition-shadow cursor-pointer"
+              onClick={() => openModal(card.function!)}
+              className="bg-white rounded-2xl shadow-lg p-3 flex flex-col min-h-[180px] hover:shadow-xl transition-shadow cursor-pointer"
             >
               <div className="mb-4 flex items-center justify-center">
-                {card.icon}
+              {card.icon}
               </div>
               <div className="flex-1 flex items-center justify-center">
-                <h3 className="text-xl font-semibold text-gray-800 mb-3 text-center">
-                  {card.title}
-                </h3>
+              <h3 className="text-xl font-semibold text-gray-800 mb-3 text-center">
+                {card.title}
+              </h3>
               </div>
-
-              <button
-                onClick={() => openModal(card.function!)}
-                className="text-blue-500 text-sm text-center underline hover:text-blue-700"
-              >
-                לצפייה לחץ כאן
-              </button>
-            </div>
-          ))}
+            </button>
+            ))}
         </div>
         {isBillModalOpen && dataModel && (
           <InvoicesModal

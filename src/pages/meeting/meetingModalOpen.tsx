@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react';
 
-import { X, Calendar, Clock, MapPin, Link2, FileText, Bell, Repeat, ChevronDownIcon } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, Link2, FileText, Bell, Repeat, Trash2 } from 'lucide-react';
 import type { CalendarDataModal, CalendarEventDto, CalendarPartData, Global } from '../../interface/meetingModel';
-import type { Project, SelectEmployeesList } from '../../interface/interfaces';
+import type { Project } from '../../interface/project';
+import type { SelectEmployeesList } from '../../interface/MaimModel';
 import { getProjectsList } from '../../services/TaskService';
-import ProjectFilter from '../shared/projectsFilter';
-import { Bars3Icon } from '@heroicons/react/24/outline';
+
 import meetingService from '../../services/meetingService';
 import employeeService from '../../services/employeeService';
 import ConfirmModal from '../shared/confirmDeleteModal';
+import AutoComplete from "../shared/autoCompleteInput";
 
 
 interface MeetingModalProps {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
     checkRrecurrenceChild: (recurrenceId?: string) => boolean;
-    onClose: () => void;
+
     event?: CalendarDataModal;
     isRecurrence?: boolean;
     userID?: number;
@@ -26,7 +27,7 @@ export default function AddMeetingModal(
         isOpen,
         setIsOpen,
         checkRrecurrenceChild,
-        onClose,
+
         event,
         isRecurrence,
         userID
@@ -38,69 +39,122 @@ export default function AddMeetingModal(
     const [projectsList, setProjectsList] = useState<Project[]>(
         [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
     );
-    const [isOpenProject, setIsOpenProject] = useState(false);
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-    const [citiesList, setCitiesList] = useState<Global[] | null>(null);
+    const [citiesList, setCitiesList] = useState<Global[]>([]);
     const [statuseList, setStatuseList] = useState<Global[] | null>(null);
     const [categoryList, setCategoryList] = useState<Global[] | null>(null);
     const [employeesList, setEmployeesList] = useState<SelectEmployeesList[]>([]);
 
-    const [searchEmployee, setSearchEmployee] = useState("");
-    const [isOpenEmployee, setIsOpenEmployee] = useState(false);
     const [isDeleteAllExeptions, setIsDeleteAllExeptions] = useState(false);
+    const [selectedCity, setSelectedCity] = useState<Global | null>(null);
+    const [selectedEmployee, setSelectedEmployee] = useState<SelectEmployeesList | null>(null);
 
-    const filteredEmployees = employeesList.filter((emp) =>
-        emp.name?.toLowerCase().includes(searchEmployee.toLowerCase())
-    );
+    const [isDeleteConfirm, setIsDeleteConfirm] = useState(false);
+    const [isDeleteSeriesConfirm, setIsDeleteSeriesConfirm] = useState(false);
 
-    const handleSelect = (emp: SelectEmployeesList) => {
+    const handleDeleteClick = () => {
+        const type = event?.calendarEventDto.type;
+        if (type === 1) {
+            // recurring series
+            setIsDeleteSeriesConfirm(true);
+        } else {
+            // single or exception
+            setIsDeleteConfirm(true);
+        }
+    };
+    const deleteSingleOccurrence = async () => {
+        if (!event) return;
+        const dto = event.calendarEventDto;
+
+        if (dto.type === 0) {
+            // single meeting
+            await meetingService.deleteMeeting(dto, false);
+            setIsOpen(false);
+            return;
+        }
+
+        if (dto.type === 3) {
+            if (event.calendarEventDto.id > 0) {
+                await meetingService.UpdateAppointmentType(event.calendarEventDto.id);
+            }
+            else {
+
+
+                // exception -> change to type=4
+                const updatedEvent: CalendarDataModal = {
+                    ...event,
+                    calendarEventDto: {
+                        ...event.calendarEventDto,
+                        type: 4
+                    }
+                };
+                await meetingService.insertUpdateMeetingsData(updatedEvent, "InsertMeetingDataAsync");
+            }
+            setIsOpen(false);
+            return;
+        }
+
+
+    };
+
+    const deleteWholeSeries = async () => {
+        if (!event) return;
+        await meetingService.deleteMeeting(event.calendarEventDto, true);
+        setIsOpen(false);
+    };
+
+    // helper: merge date with time (same as calendar)
+
+    const handleEmployeeSelect = (emp: SelectEmployeesList) => {
         updateForm('employeeId', emp.id || userID);
 
-        setSearchEmployee(emp.name ? emp.name : "");
-        setIsOpenEmployee(false);
+        setSelectedEmployee(emp ? emp : null);
+        //setIsOpenEmployee(false);
     };
-    const updateEmployee = () => {
-        if (form?.calendarEventDto.employeeId == null || form?.calendarEventDto.employeeId == 0) {
-            updateForm('employeeId', userID);
-        }
-    }
+    // const updateEmployee = () => {
+    //     if (form?.calendarEventDto.employeeId == null || form?.calendarEventDto.employeeId == 0) {
+    //         updateForm('employeeId', userID);
+    //     }
+    // }
     const handleBeforeSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!hasChanges()) {
-            onClose();
+            setIsOpen(false);
             return;
         }
-        
-        if (form?.calendarEventDto.recurrenceId 
-        && form?.calendarEventDto.type === 1) {
-            const hasChild=checkRrecurrenceChild(form?.calendarEventDto.recurrenceId);
+
+        if (form?.calendarEventDto.recurrenceId
+            && form?.calendarEventDto.type === 1) {
+            const hasChild = checkRrecurrenceChild(form?.calendarEventDto.recurrenceId);
             if (hasChild) {
-            setIsDeleteAllExeptions(true);
-            return;
+                setIsDeleteAllExeptions(true);
+                return;
             }
         }
-            handleSubmit();
+        handleSubmit();
     }
     const hasChanges = () => {
         return JSON.stringify(form) !== JSON.stringify(initialForm);
     };
-    const setOpenProjectList = async () => {
-        const projectsData = await getProjectsList();
-        if (projectsData) {
-            setProjectsList(projectsData as Project[]);
-        }
-        setIsOpenProject(true);
-    }
+    // const setOpenProjectList = async () => {
+    //     const projectsData = await getProjectsList();
+    //     if (projectsData) {
+    //         setProjectsList(projectsData as Project[]);
+    //     }
+    //     // setIsOpenProject(true);
+    // }
+
     useEffect(() => {
-        console.log('MeetingModal event:', event);
         const init = async () => {
 
             try {
                 setForm(event);
+                const projectsData = await getProjectsList();
+                if (projectsData) {
+                    setProjectsList(projectsData as Project[]);
+                }
                 const employeeData: SelectEmployeesList[] = await employeeService.getEmployeesList();
                 if (employeeData) {
-                    const empName = employeeData.find(emp => emp.id === event?.calendarEventDto.employeeId);
-                    setSearchEmployee(empName?.name ?? "");
                     setEmployeesList(employeeData);
                 }
                 const storedData = localStorage.getItem("meetingDataLists");
@@ -117,7 +171,7 @@ export default function AddMeetingModal(
                     const dataList = await meetingService.getMeetingDataLists();
 
                     // Save in state
-                    setCitiesList(dataList?.citiesList || null);
+                    setCitiesList(dataList?.citiesList || []);
                     setStatuseList(dataList?.statuseList || null);
                     setCategoryList(dataList?.categoryList || null);
                     // Save to localStorage for next time
@@ -129,6 +183,15 @@ export default function AddMeetingModal(
         };
         if (event) init();
     }, [event]);
+    useEffect(() => {
+        setSelectedCity(form?.calendarPartData.cityID ? citiesList!.find(c => c.id === form.calendarPartData.cityID) || null : null);
+    }, [citiesList]);
+    useEffect(() => {
+        setSelectedEmployee(form?.calendarEventDto.employeeId ? employeesList!.find(e => e.id === form.calendarEventDto.employeeId) || null : userID ? employeesList!.find(e => e.id === userID) || null : null);
+    }, [employeesList]);
+    useEffect(() => {
+        setSelectedProject(form?.calendarPartData.projectID ? projectsList!.find(p => p.id === form.calendarPartData.projectID) || null : null);
+    }, [projectsList]);
     const formatDate = (dateStr: string) => {
         if (!dateStr) return "";
         const d = new Date(dateStr); // קורא UTC → הופך ל־LOCAL אוטומטית
@@ -156,20 +219,19 @@ export default function AddMeetingModal(
         if (!dateStr || !timeStr) return '';
         return `${dateStr}T${timeStr}:00`;
     };
-    const handleOk = () => {
-        if (selectedProject) {
-            setForm((prev: any) => ({
-                ...prev,
-                calendarPartData: {
-                    ...prev.calendarPartData,
-                    projectID: selectedProject.id,
-                    projectName: selectedProject.name
-                }
-            }));
-        }
-        setIsOpenProject(false);
+    const handleProjectSelect = (project: Project) => {
+        setSelectedProject(project);
+        setForm((prev: any) => ({
+            ...prev,
+            calendarPartData: {
+                ...prev.calendarPartData,
+                projectID: project.id,
+                projectName: project.name
+            }
+        }));
+    }
 
-    };
+
 
     const validateForm = () => {
         const newErrors: { [key: string]: string } = {};
@@ -225,7 +287,7 @@ export default function AddMeetingModal(
             if (!data) {
                 alert('הפגישה נכשלה בהוספה!');
             }
-            onClose();
+            setIsOpen(false);
             // setIsOpen(false);
         }
         setIsSaving(false);
@@ -273,6 +335,7 @@ export default function AddMeetingModal(
     const getMeetingTitle = () => {
         if (form?.calendarEventDto.type === 3) return `פגישה חריגה - ${form.calendarEventDto.title}`;
         if (form?.calendarEventDto.type === 1) return `פגישה מחזורית - ${form.calendarEventDto.title}`;
+        if (form?.calendarEventDto.title === "") return `פגישה חדשה `;
         return `פגישה - ${form?.calendarEventDto.title}`;
     };
     if (!isOpen) return null;
@@ -290,32 +353,52 @@ export default function AddMeetingModal(
             updateForm('rRule', { ...form?.calendarEventDto.rRule, dtStart: combineDateTime(newDate, timeRulePart) })
         }
     }
-const updateHours = (isFullDay:boolean) => {
-    if(!isFullDay){
-        updateForm('start', combineDateTime(formatDate(form?.calendarEventDto.start || new Date().toISOString()), "08:00"));
-         updateForm('end', combineDateTime(formatDate(form?.calendarEventDto.start || new Date().toISOString()), "08:30"));
-    } 
-    else{
-        updateForm('start', formatDate(form?.calendarEventDto.start || new Date().toISOString()));
-        updateForm('end', formatDate(form?.calendarEventDto.start || new Date().toISOString()));
-    } 
-}
+    const updateHours = (isFullDay: boolean) => {
+        if (!isFullDay) {
+            updateForm('start', combineDateTime(formatDate(form?.calendarEventDto.start || new Date().toISOString()), "08:00"));
+            updateForm('end', combineDateTime(formatDate(form?.calendarEventDto.start || new Date().toISOString()), "08:30"));
+        }
+        else {
+            updateForm('start', formatDate(form?.calendarEventDto.start || new Date().toISOString()));
+            updateForm('end', formatDate(form?.calendarEventDto.start || new Date().toISOString()));
+        }
+    }
+
+    const handleCitySelect = (city: Global) => {
+        setSelectedCity(city);
+        setForm((prev) => prev ? ({
+            ...prev,
+            calendarPartData: {
+                ...prev.calendarPartData,
+                cityID: city.id ?? 0,
+            }
+        }) : prev);
+    };
     return (
 
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir="rtl">
             <div className="text-gray-800 bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="relative pt-1 flex items-center justify-center mb-2">
-                    <h2 className="text-lg font-semibold text-gray-800 text-center">{getMeetingTitle()}</h2>
+                <div className="relative pt-1 flex items-center justify-between mb-2 px-2">
+                    {event?.calendarEventDto.title !== "" && (
+                        <button
+                            onClick={handleDeleteClick}
+                            className="w-8 h-8 flex items-center justify-center text-red-500 hover:text-red-700"
+                            title="מחק"
+                        >
+                            <Trash2 className="w-5 h-5" />
+                        </button>
+                    )}
+                    <h2 className="text-lg font-semibold text-gray-800 text-center flex-1">
+                        {getMeetingTitle()}
+                    </h2>
                     <button
                         onClick={() => { setIsOpen(false); }}
-                        className="absolute left-0  w-8 h-8 flex items-center justify-center"
+                        className="w-8 h-8 flex items-center justify-center"
                     >
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
-
                 </div>
-
                 <div className="p-4 space-y-3 overflow-y-auto">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 text-right">
@@ -394,43 +477,24 @@ const updateHours = (isFullDay:boolean) => {
                         )}
                     </div>
 
-                    <div>
-
+                    <div className="relative">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             יישוב
                         </label>
 
-                        <div className="relative">
-                            {/* Left-side icon */}
-                            <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                                <svg
-                                    className="w-4 h-4 text-gray-500"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </div>
 
-                            <select
-                                value={form?.calendarPartData.cityID || ''}
-                                onChange={(e) => {
-                                    const value = e.target.value;
-                                    updateForm('cityID', value === '' ? null : Number(value));
-                                }}
-                                className="appearance-none w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                            >
-                                <option value="">בחר יישוב</option>
-                                {citiesList &&
-                                    citiesList.map((city) => (
-                                        <option key={city.id} value={city.id}>
-                                            {city.name}
-                                        </option>
-                                    ))}
-                            </select>
-                        </div>
+                        <AutoComplete
+                            items={citiesList}
+                            selectedItem={selectedCity}
+                            onSelect={(city) => {
+                                handleCitySelect(city);
+                            }}
+                            getItemId={(city) => city.id}
+                            getItemLabel={(city) => city.name}
+                            placeholder="בחר עיר..."
+                            height={2}
+                        />
+
                     </div>
 
 
@@ -442,7 +506,7 @@ const updateHours = (isFullDay:boolean) => {
 
                         <input
                             type="date"
-                             //disabled={form?.calendarEventDto.type === 3&& initialForm?.calendarEventDto.allDay }
+                            //disabled={form?.calendarEventDto.type === 3&& initialForm?.calendarEventDto.allDay }
                             value={formatDate(form?.calendarEventDto.start || new Date().toISOString())}
                             onChange={(e) => {
                                 setDateChanged(e);
@@ -462,9 +526,9 @@ const updateHours = (isFullDay:boolean) => {
                             type="checkbox"
                             id="fullDay"
                             checked={form?.calendarEventDto.allDay}
-                            onChange={(e) =>{ updateHours(e.target.checked); updateForm('allDay', e.target.checked)}}
+                            onChange={(e) => { updateHours(e.target.checked); updateForm('allDay', e.target.checked) }}
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                           // disabled={form?.calendarEventDto.type === 1}
+                        // disabled={form?.calendarEventDto.type === 1}
                         />
                         <label htmlFor="fullDay" className="mr-2 text-sm text-gray-700">
                             יום שלם
@@ -472,8 +536,8 @@ const updateHours = (isFullDay:boolean) => {
                     </div>
 
                     {!form?.calendarEventDto.allDay && (
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
+                        <div className="grid grid-cols-2 gap-3 w-full mt-2">
+                            <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-1 text-right">
                                     <Clock className="inline w-4 h-4 mr-1" />
                                     שעת התחלה
@@ -514,7 +578,7 @@ const updateHours = (isFullDay:boolean) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className="min-w-0">
                                 <label className="block text-sm font-medium text-gray-700 mb-1 text-right">
                                     שעת סיום
                                 </label>
@@ -540,69 +604,59 @@ const updateHours = (isFullDay:boolean) => {
 
 
 
-                    <div>
+
+                    <div className="relative w-full" >
+
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             פרויקט
                         </label>
-                        <div className="relative w-full"
-                        >
-                            <input
-                                type="text"
-                                value={form?.calendarPartData.projectName || ''}
-                                placeholder="בחר פרויקט..."
-                                readOnly
-                                className="w-full  px-3 py-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            />
 
-                            {/* כפתור קטן בצד ימין */}
-                            <button
-                                type="button"
-                                onClick={() => setOpenProjectList()}
-                                className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
-                            >
-                                <Bars3Icon className="h-6 w-6" />
-                            </button>
-                        </div>
+                        <AutoComplete
+                            items={projectsList}
+                            selectedItem={selectedProject}
+                            onSelect={(project) => {
+                                handleProjectSelect(project);
+                                // update your state with project.id
+                            }}
+                            getItemId={(project: any) => project.id}
+                            getItemLabel={(project: any) => project.name}
+                            placeholder="בחר פרויקט..."
+                            height={2}
+                        />
+
                     </div>
+
                     <div className="relative w-full">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             עובד<span className="text-red-500">*</span>
                         </label>
-                        <input
-                            type="text"
-                            value={searchEmployee}
-                            disabled={form?.calendarEventDto.type === 3}
-                            onChange={(e) => {
-                                setSearchEmployee(e.target.value);
-                                setIsOpenEmployee(true);
-                            }}
-                            // onFocus={() => setIsOpenEmployee(true)}
-                            placeholder="בחר עובד..."
-
-                            className="w-full  px-3 py-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                        {form?.calendarEventDto.type !== 3 ? (
+                            <>
+                                <AutoComplete
+                                    items={employeesList}
+                                    selectedItem={selectedEmployee}
+                                    onSelect={(employee) => {
+                                        handleEmployeeSelect(employee);
+                                        // update your state with employee.id
+                                    }}
+                                    getItemId={(employee: any) => employee.id}
+                                    getItemLabel={(employee: any) => employee.name}
+                                    placeholder="בחר עובד..."
+                                    height={2}
+                                />
+                            </>
+                        ) : (
+                            <>
+                                <input
+                                    type="text"
+                                    value={selectedEmployee?.name || ''}
+                                    disabled={true}
+                                    className="w-full  px-3 py-2 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent
                              disabled:bg-gray-100 disabled:cursor-not-allowed"
-                        />
-                        <button
-                            type="button"
-                            disabled={form?.calendarEventDto.type === 3}
-                            onClick={() => { setIsOpenEmployee(!isOpenEmployee), setSearchEmployee(""); }}
-                            className="pt-7 absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
-                        >
-                            <ChevronDownIcon className="h-6 w-6" />
-                        </button>
-                        {isOpenEmployee && filteredEmployees.length > 0 && (
-                            <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                {filteredEmployees.map((emp) => (
-                                    <li
-                                        key={emp.id}
-                                        onClick={() => handleSelect(emp)}
-                                        className="p-2 cursor-pointer  hover:bg-[#0078d7]  hover:text-white"
-                                    >
-                                        {emp.name}
-                                    </li>
-                                ))}
-                            </ul>
+                                />
+                            </>
                         )}
+
 
                         {/* {errorRecipient && <p className="text-red-500 text-sm mt-1">{errorRecipient}</p>} */}
                     </div>
@@ -767,7 +821,10 @@ const updateHours = (isFullDay:boolean) => {
                                                             min="1"
                                                             max="999"
                                                             value={form?.calendarEventDto.rRule?.count || 1}
-                                                            onChange={(e) => updateForm('rRule', { ...form?.calendarEventDto.rRule, count: e.target.value })}
+                                                            onChange={(e) => updateForm('rRule', {
+                                                                ...form?.calendarEventDto.rRule,
+                                                                count: parseInt(e.target.value, 10) || 1  // ← Convert to number
+                                                            })}
                                                             className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
                                                         />
                                                         <span className="text-sm text-gray-600">מופעים</span>
@@ -922,7 +979,7 @@ const updateHours = (isFullDay:boolean) => {
                             ביטול
                         </button>
                         <button
-                            onClick={(e) => { updateEmployee(); handleBeforeSubmit(e); }}
+                            onClick={(e) => { /* updateEmployee(); */ handleBeforeSubmit(e); }}
                             className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             שמור פגישה
@@ -931,16 +988,7 @@ const updateHours = (isFullDay:boolean) => {
                 </div>
             </div>
             {/* מודאל */}
-            {isOpenProject && (
-                <ProjectFilter
-                    isOpen={isOpenProject}
-                    projectsList={projectsList}
-                    selectedProject={selectedProject}
-                    setSelectedProject={setSelectedProject}
-                    handleOk={handleOk}
-                    onClose={() => setIsOpenProject(false)}
-                />
-            )}
+
             {isDeleteAllExeptions && (
                 <ConfirmModal
                     message="שינוי פגישה מחזורית ימחק את כל החריגות שלה. האם אתה בטוח שברצונך להמשיך?"
@@ -953,6 +1001,36 @@ const updateHours = (isFullDay:boolean) => {
                     onCancel={() => {
                         setIsDeleteAllExeptions(false)
                         setIsOpen(false)
+                    }}
+                />
+            )}
+            {/* Delete confirmation modals */}
+            {isDeleteConfirm && (
+                <ConfirmModal
+                    message="האם למחוק את הפגישה?"
+                    okText="כן"
+                    cancelText="לא"
+                    onOk={async () => {
+                        await deleteSingleOccurrence();
+                        setIsDeleteConfirm(false);
+                    }}
+                    onCancel={() => setIsDeleteConfirm(false)}
+                />
+            )}
+
+            {isDeleteSeriesConfirm && (
+                <ConfirmModal
+                    message="האם למחוק את כל הסדרה?"
+                    okText="כן"
+                    cancelText="לא"
+                    onOk={async () => {
+                        await deleteWholeSeries();
+                        setIsDeleteSeriesConfirm(false);
+                    }}
+                    onCancel={async () => {
+                        // delete single occurrence (create type=4 exception)
+                        await deleteSingleOccurrence();
+                        setIsDeleteSeriesConfirm(false);
                     }}
                 />
             )}

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2 } from 'lucide-react';
-import type {  Employee, HourReport, HourReportModal, Project } from '../../interface/interfaces';
+import type { Employee } from '../../interface/TimeHourModel';
+import type { HourReport, HourReportModal } from '../../interface/HourReportModal';
+import type { Project } from '../../interface/project';
 import "tailwindcss";
 import hourReportService from '../../services/hourReportService';
 import authService from '../../services/authService';
@@ -8,6 +10,7 @@ import { getProjectsList } from '../../services/TaskService';
 import HourReportModalOpen from './HourReportModalOpen';
 import EmployeeProfileCard from '../shared/employeeProfileCard';
 import ConfirmModal from '../shared/confirmDeleteModal';
+import { useModal } from '../ModalContextType';
 //import HebrewDatePicker from 'react-hebrew-datepicker';
 const ProjectHours = () => {
   const rowRef = useRef<HTMLDivElement>(null);
@@ -24,10 +27,7 @@ const ProjectHours = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editPermision, setEditPermision] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-
-
-
-
+const { openModal, closeModal } = useModal();
 
   const [newReport, setNewReport] = useState<HourReportModal>(
     {
@@ -91,6 +91,7 @@ const ProjectHours = () => {
   const onDeleteClick = (id: number) => {
     setItemToDelete(id);
     setIsConfirmOpen(true);
+    openModal();
   };
 
   // כשמאשרים מחיקה
@@ -106,6 +107,7 @@ const ProjectHours = () => {
     }
     setIsConfirmOpen(false);
     setItemToDelete(null);
+    closeModal();
   };
 
 
@@ -155,7 +157,7 @@ const ProjectHours = () => {
   }, [currentDay]);
 
   useEffect(() => {
-    console.log("reports changed:", reports);
+closeModal();
     filterReport(reports);//currentWeek,
   }, [reports]);
 
@@ -190,6 +192,7 @@ const ProjectHours = () => {
     }
     // setError(null)
     setIsModalOpen(true);
+    openModal();
   }
 
 
@@ -238,6 +241,7 @@ const ProjectHours = () => {
             <button
               onClick={() => {
                 setIsModalOpen(true);
+                openModal();
                 //  setOpenProjectList();
               }}
               className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
@@ -325,7 +329,7 @@ const ProjectHours = () => {
                         setContextMenuRowId(null);
                       }
                       }
-                      className=" text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
+                      className="pl-2 text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
                     >
                       <Edit2 size={16} />
                     </button>
@@ -334,7 +338,7 @@ const ProjectHours = () => {
                         if (report.id !== undefined) onDeleteClick(report.id);
                         setContextMenuRowId(null);
                       }}
-                      className=" text-red-500 hover:text-red-700 rounded-xl transition-colors"
+                      className="pr-2 text-red-500 hover:text-red-700 rounded-xl transition-colors"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -378,7 +382,7 @@ const ProjectHours = () => {
         <HourReportModalOpen
           title={newReport.id ? "עדכון דיווח" : "הוספת דיווח חדש"}
           isOpen={isModalOpen}
-          onClose={() => { getHourReportsList(); }}
+          onClose={() => { getHourReportsList(); closeModal(); }}
           report={newReport}
           employee={employee}
           project={selectedProject!}
@@ -398,6 +402,7 @@ const ProjectHours = () => {
           onCancel={() => {
             setIsConfirmOpen(false);
             setItemToDelete(null);
+            closeModal();
           }}
           okText="מחק"
           cancelText="ביטול"

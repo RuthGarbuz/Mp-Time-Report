@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { ManagerAnalises, ManagerCardModalProps, ManagerProposalList } from '../../interface/interfaces';
+import type { ManagerAnalises, ManagerCardModalProps, ManagerProposalList } from '../../interface/ManagerAnalisesModel';
 
 const ProposalModal: React.FC<ManagerCardModalProps> = ({ isOpen, onClose, managerDataCard, officeName }) => {
 

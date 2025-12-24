@@ -8,11 +8,11 @@ import type { DateSelectArg, EventClickArg, EventApi } from "@fullcalendar/core"
 import type { CalendarDataModal, CalendarEventDto, CalendarPartData } from "../../interface/meetingModel";
 import meetingService from "../../services/meetingService";
 import "./meetingStyle.css";
-import type { Employee } from "../../interface/interfaces";
+import type { Employee } from "../../interface/TimeHourModel";
 import timeRecordService from "../../services/timeRecordService";
 import AddMeetingModal from "./meetingModalOpen";
 import ConfirmModal from "../shared/confirmDeleteModal";
-
+import { Search } from "lucide-react";
 export default function MyScheduler() {
   const [events, setEvents] = useState<any[]>([]);
   const [employee, setEmployee] = useState<Employee | null>(null);
@@ -32,6 +32,49 @@ export default function MyScheduler() {
   const [isDeleteSeriesConfirm, setIsDeleteSeriesConfirm] = useState(false);
   const [isDeleteConfirm, setIsDeleteConfirm] = useState(false);
   const [deleteEvent, setDeleteEvent] = useState<EventApi | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+   const wrapperRef = useRef<HTMLDivElement>(null); 
+  // const calendarRef = useRef<FullCalendar | null>(null);
+
+  // Search handler
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    // Filter events by title (case-insensitive)
+    const results = events.filter((event) =>
+      event.title?.toLowerCase().includes(query.toLowerCase())
+    );
+    setSearchResults(results);
+
+    // Navigate to first result
+    if (results.length > 0 && calendarRef.current) {
+      const firstEvent = results[0];
+      const calendar = calendarRef.current.getApi();
+      
+      // Get event start date
+      let eventDate: Date;
+      if (firstEvent.start) {
+        eventDate = new Date(firstEvent.start);
+      } else if (firstEvent.rrule?.dtstart) {
+        eventDate = new Date(firstEvent.rrule.dtstart);
+      } else {
+        return;
+      }
+
+      // Navigate calendar to that date
+      calendar.gotoDate(eventDate);
+      
+      // Optionally switch to day view for better visibility
+      // calendar.changeView('timeGridDay', eventDate);
+    }
+     };
   const handleDeleteClick = (event: EventApi) => {
     setDeleteEvent(event);
     closeContextMenu();
@@ -166,13 +209,13 @@ export default function MyScheduler() {
           const ex = new Date(ed);
           if (startTime) {
             if (evt.allDay) {
-              return  ed.split("T")[0];
+              return ed.split("T")[0];
             }
             ex.setHours(startTime.getHours(), startTime.getMinutes(), startTime.getSeconds(), 0);
             return toLocalISOString(ex);
           }
         });
-      
+
       };
 
       if (evt.rRule) {
@@ -225,7 +268,7 @@ export default function MyScheduler() {
           eventObj.duration = `${hours.toString().padStart(2, "0")}:${minutes
             .toString()
             .padStart(2, "0")}:00`;
-         
+
         }
 
         // Ensure exdate entries match dtstart/time-of-day so the recurrence engine can exclude them
@@ -250,7 +293,6 @@ export default function MyScheduler() {
       }
       return eventObj;
     });
-    console.log("mapped", mapped);
     setEvents(mapped);
   }
   const formatDate = (dateStr: string) => {
@@ -262,16 +304,53 @@ export default function MyScheduler() {
 
     return `${year}-${month}-${day}`;
   };
- 
+
   useEffect(() => {
 
     loadMeetings();
   }, []);
   useEffect(() => {
-    if (calendarRef.current) {
-      calendarRef.current.getApi().refetchEvents(); // או כל פעולה אחרת
-    }
-  }, [events]);
+    const calendarEl = wrapperRef.current; // ← Use wrapper ref
+    if (!calendarEl) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      touchEndX.current = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = () => {
+      const diffX = touchStartX.current - touchEndX.current;
+      const threshold = 50;
+
+      if (Math.abs(diffX) > threshold) {
+        const calendar = calendarRef.current?.getApi();
+        if (!calendar) return;
+
+        if (diffX > 0) {
+          calendar.next();
+        } else {
+          calendar.prev();
+        }
+      }
+
+      touchStartX.current = 0;
+      touchEndX.current = 0;
+    };
+
+    calendarEl.addEventListener('touchstart', handleTouchStart, { passive: true });
+    calendarEl.addEventListener('touchmove', handleTouchMove, { passive: true });
+    calendarEl.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      calendarEl.removeEventListener('touchstart', handleTouchStart);
+      calendarEl.removeEventListener('touchmove', handleTouchMove);
+      calendarEl.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
+
   // const handleViewChange = (view: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth') => {
   //   setCalendarView(view);
   //   calendarRef.current?.getApi()?.changeView(view);
@@ -385,30 +464,99 @@ export default function MyScheduler() {
       d1.getDate() === d2.getDate()
     );
   }
+const createNewMeeting = () => {
+const now = new Date();
+          now.setHours(8, 0, 0, 0);
+          const endTime = new Date(now);
+          endTime.setMinutes(30);
 
+          const newEvent: CalendarDataModal = {
+            calendarEventDto: {
+              id: 0,
+              parentId: null,
+              title: "",
+              start: toLocalISOString(now),
+              end: toLocalISOString(endTime),
+              rRule: null,
+              exDate: null,
+              allDay: false,
+              indexInSeries: null,
+              type: 0,
+              recurrenceXml: null,
+              employeeId: employee ? employee.id : 0,
+            },
+            calendarPartData: {
+              cityID: null,
+              projectID: null,
+              projectName: null,
+              statusID: null,
+              categoryID: null,
+              description: "",
+              hasReminder: false,
+              reminderTime: null,
+              location: "",
+              meetingLink: "",
+              isPrivate: false,
+            },
+          };
+
+          setSelectedEvent(newEvent);
+          setIsModalOpen(true);
+}
+  // ...existing code...
   const handleDateSelect = (selectInfo: DateSelectArg) => {
+    const currentView = selectInfo.view.type; // "dayGridMonth", "timeGridWeek", "timeGridDay"
+    const isMonthView = currentView === "dayGridMonth";
 
-    const start = toLocalISOString(new Date(selectInfo.startStr));
-    const end = toLocalISOString(new Date(selectInfo.endStr));
-    const isMultiDay =
-      start !== end;
+    let start: string;
+    let end: string;
+    let allDay: boolean;
+    const startDate = new Date(selectInfo.startStr);
+    const endDate = new Date(selectInfo.endStr);
 
-    if (!isMultiDay && !selectInfo.allDay) {
+    const startDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+    const endDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    //const diffInDays = Math.floor((endDay.getTime() - startDay.getTime()) / (1000 * 60 * 60 * 24));
+    if (selectInfo.allDay) {
+      endDay.setDate(endDay.getDate() - 1);
+    }
+    // Block multi-day all-day selections (diffInDays > 1 means 2+ days apart)
+    // if (selectInfo.allDay && diffInDays > 1) {
+    //   return selectInfo.view.calendar.unselect();
+    // }
+    if (!datesEqualByDay(startDay, endDay)) {
       return selectInfo.view.calendar.unselect();
     }
-    const newEvent: CalendarDataModal = {
 
+    if (isMonthView) {
+      // Force non-allDay event with default time 08:00–08:30
+      const clickedDate = new Date(selectInfo.startStr);
+      clickedDate.setHours(8, 0, 0, 0);
+      const endDate = new Date(clickedDate);
+      endDate.setMinutes(30);
+
+      start = toLocalISOString(clickedDate);
+      end = toLocalISOString(endDate);
+      allDay = false;
+    } else {
+      // Use original selection (week/day view)
+      start = toLocalISOString(new Date(selectInfo.startStr));
+      end = toLocalISOString(new Date(selectInfo.endStr));
+      allDay = selectInfo.allDay ?? false;
+    }
+
+    const newEvent: CalendarDataModal = {
       calendarEventDto: {
-        id: 0, // generate temporary unique id
+        id: 0,
         parentId: null,
-        title: "חדשה", // default title
+        title: "",
         start: start,
         end: end,
         rRule: null,
         exDate: null,
-        allDay: selectInfo.allDay ?? false,
+        allDay: allDay,
         indexInSeries: null,
-        type: 0, // 0 = regular meeting (you can change)
+        type: 0,
         recurrenceXml: null,
         employeeId: employee ? employee.id : 0,
       },
@@ -424,13 +572,14 @@ export default function MyScheduler() {
         location: "",
         meetingLink: "",
         isPrivate: false,
-
       },
     };
 
     setSelectedEvent(newEvent);
     setIsModalOpen(true);
   };
+  // ...existing code...
+
 
   const handleEventClick = async (clickInfo: EventClickArg) => {
     setClickedEventInfo(clickInfo);
@@ -460,7 +609,6 @@ export default function MyScheduler() {
     if (!selected) return;
     setSelectedEvent(selected);
     if (selected.calendarEventDto.type === 1) {
-      console.log('Recurring event selected:', selected);
       setPendingEvent(true);
       setShowConfirm(true); // show the confirmation dialog
     } else {
@@ -484,7 +632,6 @@ export default function MyScheduler() {
     d.setMinutes(timeSource.getMinutes());
     d.setSeconds(timeSource.getSeconds());
     d.setMilliseconds(0);
-
     return d;
   }
   function toLocalISOString(date: Date) {
@@ -524,6 +671,7 @@ export default function MyScheduler() {
       },
       calendarEventDto: {
         ...selectedEvent.calendarEventDto,
+        id: 0, // new exception
         type: type,                    // חריגה או מחיקה מסדרה
         start: toLocalISOString(newStart),
         end: toLocalISOString(newEnd),
@@ -547,6 +695,19 @@ export default function MyScheduler() {
     const hasChild = events.some(ev => ev.extendedProps.recurrenceId === recurrenceId && (ev.extendedProps.type === 3 || ev.extendedProps.type === 4));
     return hasChild;
   }
+  const handleEventResize = (resizeInfo: any) => {
+  setEvents(prev =>
+    prev.map(e =>
+      e.id === resizeInfo.event.id
+        ? { 
+            ...e, 
+            start: toLocalISOString(new Date(resizeInfo.event.startStr)), 
+            end: toLocalISOString(new Date(resizeInfo.event.endStr)) 
+          }
+        : e
+    )
+  );
+};
   return (
     <div className="bg-white text-gray-600 p-2 rounded-lg shadow ">
       <h2 className="text-center text-xl font-semibold">📅 יומן הפגישות של {employee?.name}</h2>
@@ -597,78 +758,142 @@ export default function MyScheduler() {
       </select>
     </div>
   </div> */}
+ {/* Search bar */}
+      <div className="my-4 px-2">
+        <div className="relative" style={{ display: 'none' }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="חפש פגישה לפי כותרת..."
+            className="w-full p-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            dir="rtl"
+          />
+          {searchQuery ? (
+            <button
+              onClick={() => handleSearch("")}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          ) : (
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          )}
+        </div>
+        
+        {/* Search results counter */}
+        {searchQuery && (
+          <p className="text-sm text-gray-500 mt-2">
+            {searchResults.length > 0
+              ? `נמצאו ${searchResults.length} פגישות`
+              : "לא נמצאו תוצאות"}
+          </p>
+        )}
+      </div>
+    <div ref={wrapperRef}>
+       <FullCalendar
+      ref={calendarRef}
+      timeZone="local"
+      slotDuration="00:30:00"
+      eventStartEditable={false}
+      eventDurationEditable={false}
+      direction="rtl"
+      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]}
+      initialView={"timeGridDay"}
+      selectable={true}
+      editable={false}
+      eventDrop={handleEventDrop}
+      eventResize={handleEventResize}
+      select={handleDateSelect}
+      eventClick={handleEventClick}
+      events={events}
+      
+      longPressDelay={500}
+      eventLongPressDelay={500}
+      selectLongPressDelay={500}
+      
+      dragScroll={true}
+      stickyHeaderDates={true}
+      
+      eventDidMount={(info) => {
+        // Enable keyboard focus for better hover/focus styling
+        info.el.tabIndex = 0;
+        info.el.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          openContextMenu(e, info.event);
+        });
+      }}
+      
+      eventContent={(info) => {
+        const type = info.event.extendedProps.type;
+        const isRecurring = type === 1;
+        const isException = type === 3;
 
-      <FullCalendar
-        // ref={calendarRef}
-        timeZone="local"
-        slotDuration="00:30:00"
-        eventStartEditable={false}
-        direction="rtl"
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, rrulePlugin]} // 👈 הוספת כאן
-        //  initialView={calendarView}
-        selectable={true}
-        editable={true}
-        eventDrop={handleEventDrop}
-        select={handleDateSelect}
-        eventClick={handleEventClick}
-        events={events}
-        // headerToolbar={false}
-        eventDidMount={(info) => {
-          info.el.addEventListener("contextmenu", (e) => {
-            e.preventDefault();
-            openContextMenu(e, info.event); // 👈 נקרא לפונקציה
-          });
-        }}
-        eventContent={(info) => {
-          const type = info.event.extendedProps.type;
-          const isRecurring = type === 1;   // מחזורית
-          const isException = type === 3;   // חריגה
+        return (
+          <div className="fc-event-custom flex items-center gap-1">
+         <span>{info.event.title}</span>
+         {isRecurring && !isException && <span className="recurring-symbol">🔄</span>}
+         {isException && <span className="recurring-symbol">⚡</span>}
+          </div>
+        );
+      }}
 
-          return (
-            <div className="fc-event-custom flex items-center gap-1">
-              <span>{info.event.title}</span>
+      height="80vh"
+      locale="he"
+      firstDay={0}
+      headerToolbar={{
+        left: "prev,next today",
+        center: "title",
+        right: "timeGridDay,timeGridWeek,dayGridMonth",
+      }}
+      buttonText={{
+        today: "היום",
+        month: "חודש",
+        week: "שבוע",
+        day: "יום",
+      }}
+      dayHeaderContent={(arg) => {
+        const date = arg.date;
+        const dayNames = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
+        const dayName = dayNames[date.getDay()];
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${dayName} ${day}`;
+      }}
+      
+      handleWindowResize={true}
+      windowResizeDelay={100}
+       />
+     </div>
 
-              {isRecurring && !isException && (
-                <span className="recurring-symbol">🔄</span>
-              )}
+      {/* Floating Add Button */}
+      <button
+        onClick={() => {
+          createNewMeeting();
+        }}
+        className="fixed bottom-8 right-8 w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-50 group"
+        title="הוסף פגישה חדשה"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor" 
+          strokeWidth="2.5"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
 
-              {isException && (
-                <span className="recurring-symbol">⚡</span>
-              )}
-            </div>
-          );
-        }}
-
-        height="80vh"
-        locale="he"
-        firstDay={0} // שבוע מיום ראשון
-        headerToolbar={{
-          left: "prev,next today",
-          center: "title",
-          right: "timeGridDay,timeGridWeek,dayGridMonth", // ✅ הוספנו תצוגת יום
-        }}
-        buttonText={{
-          today: "היום",
-          month: "חודש",
-          week: "שבוע",
-          day: "יום",
-        }}
-        dayHeaderContent={(arg) => {
-          const date = arg.date;
-          const dayNames = ["א'", "ב'", "ג'", "ד'", "ה'", "ו'", "ש'"];
-          const dayName = dayNames[date.getDay()];
-          const day = String(date.getDate()).padStart(2, "0");
-          //const month = String(date.getMonth() + 1).padStart(2, "0");
-          return `${dayName} ${day}`;
-        }}
-      // datesSet={handleDatesSet}
-      />
       {/* 🟢 Modal */}
       {isModalOpen && (
         <AddMeetingModal
           isOpen={isModalOpen}
-          setIsOpen={setIsModalOpen}
-          onClose={() => { setIsModalOpen(false); loadMeetings(); }}
+          // setIsOpen={setIsModalOpen}
+          setIsOpen={() => { setIsModalOpen(false); loadMeetings(); }}
           event={selectedEvent}
           isRecurrence={isRecurrence}
           userID={employee ? employee.id : 0}
@@ -752,6 +977,25 @@ export default function MyScheduler() {
           </div>
         </div>
       )}
+      <style>
+        {`
+          .fc .fc-event,
+          .fc .fc-event-main {
+            transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+          }
+          .fc .fc-event:hover,
+          .fc .fc-event:focus,
+          .fc .fc-event:focus-visible {
+            filter: brightness(1.08);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+            z-index: 10 !important;
+          }
+          .fc .fc-event:focus-visible {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
+          }
+        `}
+      </style>
     </div>
   );
 }

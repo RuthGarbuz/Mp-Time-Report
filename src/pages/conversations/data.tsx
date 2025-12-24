@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Calendar, Clock, User, X } from "lucide-react";
-import type { Conversation } from "../../interface/interfaces";
+import type { Conversation } from "../../interface/ConversationModel";
 
 
 

@@ -6,6 +6,7 @@ import LoginPage from './pages/LoginPage';
 import MainApp from './pages/MainApp';
 import PrivateRoute from './components/PrivateRoute'; // ייבוא חדש
 import 'leaflet/dist/leaflet.css';
+import InstallPrompt from './pages/InstallPrompt';
 // import './index.css';
 // import './styles/global.css';
 const App: React.FC = () => {
@@ -27,6 +28,7 @@ const App: React.FC = () => {
         {/* ברירת מחדל להפניה */}
         <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
+       <InstallPrompt />
     </Router>
    
   );

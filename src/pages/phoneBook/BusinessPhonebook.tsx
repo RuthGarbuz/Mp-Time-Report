@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Phone, Plus, Search, X } from 'lucide-react';
 import { getPhoneBookCompanyList } from '../../services/phoneBookService';
-import type { PhoneBook } from '../../interface/interfaces';
+import type { PhoneBook } from '../../interface/PhoneBookModel';
 import UpdatePhoneBook from './UpdatePhoneBook';
+import { useModal } from '../ModalContextType';
 
 export default function BusinessPhonebook() {
   const [selectedContact, setSelectedContact] = useState<PhoneBook | null>(null);
@@ -37,7 +38,7 @@ export default function BusinessPhonebook() {
   //     { id: 4, name: 'גוגל ישראל', address: 'טוצ\'ו 98, תל אביב', phone: '03-7600000' }
   //   ]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
+const { openModal, closeModal } = useModal();
 
 
 
@@ -70,6 +71,7 @@ export default function BusinessPhonebook() {
   }, []);
 
   useEffect(() => {
+    closeModal();
     setVisibleCount(20); // מתחילים מחדש
   }, [searchTerm]);
 
@@ -83,15 +85,17 @@ export default function BusinessPhonebook() {
   };
 
 
-  const filteredContacts = contactsList.filter((contact) => {
-    const term = searchTerm.trim().toLowerCase();
-    return (
-      contact.firstName.toLowerCase().includes(term) ||
-      contact.lastName.toLowerCase().includes(term) ||
-      contact.company.toLowerCase().includes(term) ||
-      contact.companyPhone?.includes(term) ||
-      contact.mobile.includes(term)
+  // Remove apostrophes for better matching (e.g., ג'ורג matches גורג)
+  const normalizeText = (text: string) => text.replace(/'/g, '').toLowerCase();
 
+  const filteredContacts = contactsList.filter((contact) => {
+    const term = normalizeText(searchTerm.trim());
+    return (
+      normalizeText(contact.firstName).includes(term) ||
+      normalizeText(contact.lastName).includes(term) ||
+      normalizeText(contact.company).includes(term) ||
+      contact.companyPhone?.includes(searchTerm.trim()) ||
+      contact.mobile.includes(searchTerm.trim())
     );
   });
   const visibleContacts = filteredContacts.slice(0, visibleCount);
@@ -164,11 +168,12 @@ export default function BusinessPhonebook() {
         {/* <div className="relative"> */}
         <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative w-full ">
           <input
+          // ref={(input) => input?.focus()}
             type="text"
             placeholder="חפש לפי שם או חברה..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="text-gray-600 w-full pr-10 pl-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="text-gray-600 w-full pr-4 pl-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           {searchTerm ? (
             <button
@@ -190,8 +195,8 @@ export default function BusinessPhonebook() {
           <UpdatePhoneBook
             mode='update'
             contact={selectedContact}
-            onClose={() => { setSelectedContact(null); }}
-            onSave={() => { setSelectedContact(null), getData() }}
+            onClose={() => { setSelectedContact(null);closeModal(); }}
+            onSave={() => { setSelectedContact(null); getData();closeModal(); }}
 
 
           //handleAddContact={handleAddContact}
@@ -205,8 +210,8 @@ export default function BusinessPhonebook() {
           <UpdatePhoneBook
             mode='add'
             contact={newContact}
-            onClose={() => { setIsAddModalOpen(false) }}
-            onSave={() => { setIsAddModalOpen(false), getData() }}
+            onClose={() => { setIsAddModalOpen(false);closeModal(); }}
+            onSave={() => { setIsAddModalOpen(false); getData();closeModal(); }}
 
           //handleAddContact={handleAddContact}
 
@@ -228,6 +233,7 @@ export default function BusinessPhonebook() {
                 onClick={() => {
                  
                   setSelectedContact(contact)
+                  openModal();
                 }
                  
                 }
@@ -304,7 +310,8 @@ export default function BusinessPhonebook() {
           <button
 
             onClick={() => {
-              setIsAddModalOpen(true)
+              setIsAddModalOpen(true);
+              openModal();
             }}
             className="bg-gradient-to-r from-green-400 to-green-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
           >

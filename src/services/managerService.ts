@@ -1,4 +1,4 @@
-import type { ManagerIntake, Office } from "../interface/interfaces";
+import type { ManagerIntake, Office } from "../interface/ManagerAnalisesModel";
 import authService from "./authService";
 
 export const getOfficeList = async (): Promise<Office[]> => {
@@ -62,39 +62,6 @@ export const getManagerModelData = async (officeId: number,functionName: string)
     return null;
   }
 };
-// export const getFinancialSummaryData = async (
-//   officeId: number,
-//   functionName: string
-// ): Promise<FinancialSummary | null> => {
-//   try {
-//     const user = authService.getCurrentUser();
-//     if (!user) throw new Error('User not authenticated');
 
-//     const requestBody = {
-//       database: user.dataBase,
-//       officeId: officeId,
-//     };
-
-//     const dynamicBaseUrl = user.urlConnection;
-//     const endpoint = `${dynamicBaseUrl}/ManagerData/${functionName}`;
-
-//     const response = await authService.makeAuthenticatedRequest(endpoint, {
-//       method: 'POST',
-//       body: JSON.stringify(requestBody),
-//     });
-
-//     if (!response.ok) {
-//       throw new Error('Failed to fetch FinancialSummary data');
-//     }
-
-//     const data: FinancialSummary = await response.json();
-//     console.log('FinancialSummary data fetched:', data);
-
-//     return data;
-//   } catch (error) {
-//     console.error('Error fetching FinancialSummary data:', error);
-//     return null;
-//   }
-// };
 
 

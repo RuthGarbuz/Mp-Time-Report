@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Shield, AlertTriangle, CheckCircle, Lock, User, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
-import type { LoginFormData, SecurityState, UiState } from '../interface/interfaces';
+import type { LoginFormData, SecurityState, UiState } from '../interface/loginModel';
 import "tailwindcss";
 
 

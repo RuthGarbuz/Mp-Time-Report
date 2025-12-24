@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
-import type { CheckHoursOverlapQuery, Contract, Employee, HourReportModal, Project, Step, SubContract } from "../../interface/interfaces";
+import type { CheckHoursOverlapQuery, Contract, HourReportModal, Step, SubContract } from "../../interface/HourReportModal";
+import type { Employee } from "../../interface/TimeHourModel";
+import type { Project } from "../../interface/project";
 import { useEffect, useState } from "react";
 import ErrorMessage from "../shared/errorMessage";
 import hourReportService, { getHourReportStepsModal, getStepsList, insertProjectHourReport } from "../../services/hourReportService";
@@ -143,7 +145,6 @@ export default function HourReportModalOpen({
           setSubContracts(HourReportStepsData.subContractsList);
         }
         if (HourReportStepsData.stepsList.length > 0) {
-          console.log('stepsList', HourReportStepsData.stepsList)
 
           setSteps(HourReportStepsData.stepsList);
         }
@@ -158,7 +159,6 @@ export default function HourReportModalOpen({
     else if (selectedProject) {
       let StepList = await getStepsList(selectedProject?.id ?? 0);
       if (StepList && StepList.length > 0) {
-        console.log('stepsList4', StepList)
         setSteps(StepList);
       }
       setSubContracts(null)
@@ -220,7 +220,6 @@ export default function HourReportModalOpen({
   };
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // Always prevent default first
-    console.log("newReport", newReport)
 
 
     if (newReport.clockInTime) {
@@ -330,31 +329,31 @@ if(updateReport===null){
               {errorMessage && (<ErrorMessage validateError={String(errorMessage)} />)}
               <div className="space-y-4">
                 {/* Project Name and Date */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      שם פרויקט
-                    </label>
-                    <input
-                      type="text"
-                      value={selectedProject?.name}
-                      onChange={() => setNewReport({ ...newReport, projectID: selectedProject?.id ?? 0 })}
-                      className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                      disabled
-                    />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    שם פרויקט
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedProject?.name}
+                    onChange={() => setNewReport({ ...newReport, projectID: selectedProject?.id ?? 0 })}
+                    className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
+                    disabled
+                  />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      תאריך
-                    </label>
-                    <input
-                      type="date"
-                      value={currentDay ? currentDay.toISOString().split("T")[0] : ""}
-                      onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
-                      className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
-                      required
-                      disabled
-                    />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    תאריך
+                  </label>
+                  <input
+                    type="date"
+                    value={currentDay ? currentDay.toISOString().split("T")[0] : ""}
+                    onChange={(e) => setNewReport({ ...newReport, date: new Date(e.target.value) })}
+                    className="text-black w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
+                    required
+                    disabled
+                  />
                   </div>
                 </div>
 
@@ -389,7 +388,7 @@ if(updateReport===null){
                   {/* Time Range */}
                   {reportingType === 'time-range' && (
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                        <div className="ml-2">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                           שעת כניסה
                         </label>
@@ -398,15 +397,15 @@ if(updateReport===null){
                           value={newReport.clockInTime}
                           onChange={(e) => setNewReport({ ...newReport, clockInTime: e.target.value })}
                           onBlur={() => {
-                            if (newReport.clockInTime && newReport.clockOutTime) {
-                              validateTimes(newReport.clockInTime, newReport.clockOutTime)
-                            }
+                          if (newReport.clockInTime && newReport.clockOutTime) {
+                            validateTimes(newReport.clockInTime, newReport.clockOutTime)
+                          }
                           }
                           }
                           className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200"
                         />
-                      </div>
-                      <div>
+                        </div>
+                      <div className="mr-2">
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
                           שעת יציאה
                         </label>
@@ -514,7 +513,7 @@ if(updateReport===null){
                       שלב *
                     </label>
                     <select
-                      onFocus={() => { console.log("steps-list", newReport) }}
+                     
                       value={newReport.stepID}
                       onChange={(e) => setNewReport({ ...newReport, stepID: Number(e.target.value) })}
                       className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"

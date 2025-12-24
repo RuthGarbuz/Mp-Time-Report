@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import type { ManagerBillList, ManagerAnalises, ManagerCardModalProps } from '../../interface/interfaces';
+import type { ManagerBillList, ManagerAnalises, ManagerCardModalProps } from '../../interface/ManagerAnalisesModel';
 
 
 

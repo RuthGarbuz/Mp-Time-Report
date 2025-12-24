@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { ManagerCardModalProps } from '../../interface/interfaces';
-import type { FinancialSummary } from '../../interface/interfaces';
+import type { ManagerCardModalProps, FinancialSummary } from '../../interface/ManagerAnalisesModel';
 import { X } from 'lucide-react';
 
 const FinancialSummaryModal: React.FC<ManagerCardModalProps> = ({
@@ -37,7 +36,7 @@ const FinancialSummaryModal: React.FC<ManagerCardModalProps> = ({
 
     const cards = [
         {
-            title: 'חשבוניות',
+            title: 'חשבונות',
             borderColor: 'border-purple-500',
             chartColor: '#9333ea',
             monthAmount: data.billSumMonth,
@@ -95,8 +94,6 @@ const FinancialSummaryModal: React.FC<ManagerCardModalProps> = ({
 
     const calculatePercentage = (part: number, total: number) =>
         total === 0 ? 0 : ((part / total) * 100).toFixed(1);
-
-
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 text-color-gray-800" dir="rtl">

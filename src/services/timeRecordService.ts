@@ -9,7 +9,8 @@
 // };
 
 import { TimeType } from "../enum";
-import type { TimeRecord, Employee } from "../interface/interfaces";
+import type { TimeRecord } from "../interface/HourReportModal";
+import type { Employee } from "../interface/TimeHourModel";
 import authService from "./authService";
 
 
@@ -48,8 +49,7 @@ const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
         throw new Error(error || 'Failed to get employee data');
       }
       const data: TimeRecord[] = await response.json();
-      console.log('ReportData')
-      console.log(data)
+      
       //const timeRepordData: TimeRecord[] = JSON.parse(data);
       return data
       //   return {
@@ -95,7 +95,6 @@ try{
       location:location,
       // type: 'insertTimeRecord'
       };
-    console.log("requestBody", requestBody)
         const dynamicBaseUrl = user.urlConnection;
         const endpoint = `${dynamicBaseUrl}/TimeRecords/${functionName}`; // Make sure this is correct
  

@@ -121,11 +121,14 @@ button:focus-visible {
 
 .navbar {
   background: linear-gradient(to right, #7e22ce, #ec4899); /* from-purple-600 to-pink-600 */
-  padding: 1rem;
+  padding:1rem;
+  /* padding-top: 3rem; */
+  
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items:center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  /* margin-top: 3rem; */
 }
 
 .nav-title {
@@ -271,4 +274,25 @@ button:focus-visible {
   margin-top: 0.5rem;
 }
 
+}
+ @media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent pull-to-refresh on mobile */
+body {
+  overscroll-behavior-y: contain;
+}
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }

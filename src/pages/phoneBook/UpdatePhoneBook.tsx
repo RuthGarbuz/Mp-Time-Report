@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Phone, Edit3, Save, X, Mail, User } from "lucide-react";
-import type { City, PhoneBook, Company } from "../../interface/interfaces";
+import type { City, PhoneBook, Company } from "../../interface/PhoneBookModel";
 import { addCompany, addPhoneBookContact, getPhoneBookCompanyList, updateCompany, updatePhoneBookContact } from "../../services/phoneBookService";
-
+import AutoComplete from "../shared/autoCompleteInput";
 
 
 interface UpdatePhoneBookProps {
@@ -22,13 +22,12 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     const [isEditing, setIsEditing] = useState(false);
     const [isAddingCompany, setIsAddingCompany] = useState(false);
     const [errorFirstName, setErrorFirstName] = useState("");
-    const [errorLastName, setErrorLastName] = useState("");
     const [errorCompany, setErrorCompany] = useState("");
     const [errorMobile, setErrorMobile] = useState("");
 
-  const [companiesList, setCompaniesList] = useState<Company[]>([]);
-  const [citiesList, setCitiesList] = useState<City[]>([]);
-
+    const [companiesList, setCompaniesList] = useState<Company[]>([]);
+    const [citiesList, setCitiesList] = useState<City[]>([]);
+    const [selectedCity, setSelectedCity] = useState<City | null>(null);
     const [editData, setEditData] = useState<PhoneBook>({
         id: 0,
         firstName: '',
@@ -42,14 +41,14 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
         companyCityID: undefined
     });
     const getData = async () => {
-    const phoneBookData = await getPhoneBookCompanyList();
+        const phoneBookData = await getPhoneBookCompanyList();
 
-    if (phoneBookData) {
-      setCompaniesList(phoneBookData.companies);
-      setCitiesList(phoneBookData.cities);
-    }
+        if (phoneBookData) {
+            setCompaniesList(phoneBookData.companies);
+            setCitiesList(phoneBookData.cities);
+        }
 
-  };
+    };
     const setCompanyData = async () => {
         if (isAddingCompany && editData.company) {
             // Add new company
@@ -79,16 +78,11 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     const setErrors = () => {
         let hasError = false;
         setErrorFirstName("");
-        setErrorLastName("");
         setErrorCompany("");
         setErrorMobile("");
         if (!editData.firstName || editData.firstName.trim() === "") {
             hasError = true;
             setErrorFirstName("שם פרטי הוא שדה חובה");
-        }
-        if (!editData.lastName || editData.lastName.trim() === "") {
-            hasError = true;
-            setErrorLastName("שם משפחה הוא שדה חובה");
         }
         if (!editData.selectedCompanyId && (!editData.company || editData.company.trim() === "")) {
             hasError = true;
@@ -169,8 +163,15 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
 
         return digits;
     };
+    const handleCitySelect = (city: City) => {
+        setSelectedCity(city);
+        setEditData((prev) => ({
+            ...prev,
+            companyCityID: city.id ?? 0,
+        }));
+    };
     useEffect(() => {
-       
+
         setIsEditing(isAddMode)
         if (contact) {
             getData();
@@ -178,8 +179,12 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
             setIsAddingCompany(false);
         }
     }, [contact]);
+
+    useEffect(() => {
+        setSelectedCity(editData.companyCityID ? citiesList.find(c => c.id === editData.companyCityID) || null : null);
+    }, [citiesList]);
+
     if (!contact) return null;
-    console.log("editData", editData)
     return (
         <div className=" text-gray-800 fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
@@ -245,7 +250,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                         {/* LastName */}
                         <div className="text-right">
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                <User className="w-4 h-4 inline ml-1" /> שם משפחה*
+                                <User className="w-4 h-4 inline ml-1" /> שם משפחה
                             </label>
                             {isEditing ? (
                                 <input
@@ -259,7 +264,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                     {contact.lastName}
                                 </div>
                             )}
-                            {errorLastName && <p className="text-red-500 text-sm mt-1">{errorLastName}</p>}
+                            {/* {errorLastName && <p className="text-red-500 text-sm mt-1">{errorLastName}</p>} */}
 
                         </div>
                         {/* Company */}
@@ -366,10 +371,24 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                             />
 
                                             {/* עיר */}
-                                            <label className="block text-sm font-medium text-gray-700  mb-2">
-                                                עיר החברה
-                                            </label>
-                                            <select
+                                            <div className="relative w-full">
+                                                <label className="block text-sm font-medium text-gray-700  mb-2">
+                                                    עיר החברה
+                                                </label>
+                                                <AutoComplete
+                                                    items={citiesList}
+                                                    selectedItem={selectedCity}
+                                                    onSelect={(city) => {
+                                                        handleCitySelect(city);
+                                                        // update your state with city.id
+                                                    }}
+                                                    getItemId={(city) => city.id}
+                                                    getItemLabel={(city) => city.name}
+                                                    placeholder="בחר עיר..."
+
+                                                />
+                                            </div>
+                                            {/* <select
                                                 value={editData.companyCityID || ""}
                                                 onChange={(e) => setEditData({ ...editData, companyCityID: Number(e.target.value) })}
                                                 className="w-full p-3 border border-gray-300 rounded-lg text-right focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -380,7 +399,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                                         {city.name}
                                                     </option>
                                                 ))}
-                                            </select>
+                                            </select> */}
                                         </>
                                     ) : (
                                         <div className="min-h-[48px] flex items-center gap-2 text-lg text-gray-800 bg-gray-50 p-3 rounded-lg text-right">
@@ -467,7 +486,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
 
                                         return (
                                             <a
-                                            
+
                                                 href={`https://wa.me/${waNum}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
@@ -548,7 +567,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                         <button
                                             onClick={() => {
                                                 setIsEditing(false),
-                                                setEditData(contact)
+                                                    setEditData(contact)
                                             }}
                                             className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-400 transition-colors"
                                         >

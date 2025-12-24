@@ -5,6 +5,7 @@
 import { useState, useEffect } from 'react';
 import EmployeeService from '../services/employeeService';
 import "tailwindcss";
+import authService from '../services/authService';
 
 // const getLocationName = async (lat: number, lon: number) => {
 //   try {
@@ -48,26 +49,28 @@ const ReportTime = () => {
   const [locationName, setLocationName] = useState('המיקום שלך');
 
   useEffect(() => {
+    let mounted = true;
     const fetchEmployee = async () => {
       try {
-        const result = await EmployeeService.getEmployee();
-        const empData = result.data;
-
+        const empData = await authService.getCurrentEmployee();
+        // const empData = result?.data ?? {};
+        if (!mounted) return;
         setEmployee({
-          name: empData.name || '',
-          profileImage: empData.pictureBase64 || '',
-          isActive: empData.isActive ?? false,
+          name: empData.name ?? '',
+          profileImage: empData.image ?? empData.profileImage ?? '',
+          isActive: Boolean(empData.isActive ?? false),
         });
-        setStartTime(empData.startTime || '');
-        setEndTime(empData.endTime || '');
-        setMinutesHoursAmount(empData.minutesHoursAmount || '');
-        setReportedSeconds(empData.totalSecondsReported || 0);
+        setStartTime(empData.startTime ?? '');
+        setEndTime(empData.endTime ?? '');
+        setMinutesHoursAmount(empData.minutesHoursAmount ?? '');
+        setReportedSeconds(Number(empData.totalSecondsReported ?? empData.reportedSeconds ?? 0));
       } catch (error) {
         console.error('Failed to fetch employee:', error);
       }
     };
 
     fetchEmployee();
+    return () => { mounted = false; };
   }, []);
 
   useEffect(() => {
@@ -154,25 +157,10 @@ useEffect(() => {
       year: '2-digit'
     });
 
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString('he-IL', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    });
-
-  // const formatReportTime = (time: { hours: any; minutes: any; seconds: any; }) => {
-  //   const hours = String(time.hours).padStart(2, '0');
-  //   const minutes = String(time.minutes).padStart(2, '0');
-  //   const seconds = String(time.seconds).padStart(2, '0');
-  //   return `${hours}:${minutes}:${seconds}`;
-  // };
-
   const handleClockIn = async () => {
     try {
       await EmployeeService.clockIn();
-      console.log('כניסה נרשמה בהצלחה');
+      ('כניסה נרשמה בהצלחה');
       window.location.reload();
     } catch (error) {
       console.error('שגיאה ברישום כניסה:', error);
@@ -207,10 +195,10 @@ useEffect(() => {
             {/* Date and Profile Row */}
             <div className="flex justify-between items-start mb-4">
               <div className="text-gray-600">
-                <div className="text-lg mb-1 font-medium">{formatDate(currentTime)}</div>
-                <div className="text-2xl font-bold text-purple-600">
+                <div className="text-lg mb-1  font-bold text-purple-600">{formatDate(currentTime)}</div>
+                {/* <div className="text-2xl font-bold text-purple-600">
                   {formatTime(currentTime)}
-                </div>
+                </div> */}
               </div>
 
 

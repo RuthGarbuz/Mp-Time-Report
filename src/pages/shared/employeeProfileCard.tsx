@@ -1,7 +1,7 @@
-import type { Employee } from "../../interface/interfaces";
+import type { Employee } from "../../interface/TimeHourModel";
 
 interface Props {
-  employee: Employee;
+  employee: Employee| null; 
 }
 
 export default function EmployeeProfileCard({ employee }: Props) {

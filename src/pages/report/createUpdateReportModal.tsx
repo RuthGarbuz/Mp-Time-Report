@@ -79,7 +79,6 @@ const timeToMinutes = (time: string): number => {
 
 
 useEffect(() => {
-  console.log("newReport", newReport);
   if (newReport.clockInTime && newReport.clockOutTime && newReport.typeID !== 3) {
     const total = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
     setNewReport((prev: any) => ({ ...prev, total }));
@@ -147,7 +146,7 @@ useEffect(() => {
    
                    {/* clockInTime and clockOutTime Times */}
                    <div className="grid grid-cols-2 gap-4">
-                     <div>
+                     <div className="ml-2">
                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                          שעת כניסה
                        </label>
@@ -165,7 +164,7 @@ useEffect(() => {
                          disabled={newReport.typeID === 3}
                        />
                      </div>
-                     <div>
+                     <div className="mr-2">
                        <label className="block text-sm font-semibold text-gray-700 mb-2">
                          שעת יציאה
                        </label>

@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { X, ChevronDownIcon, Edit3, Plus, Save } from "lucide-react";
-import type { ConversationLogType, Contact, ConversationData, SelectEmployeesList } from "../../interface/interfaces";
+import type { ConversationLogType, Contact, ConversationData } from "../../interface/ConversationModel";
+import type { SelectEmployeesList } from "../../interface/MaimModel";
 import Bars3Icon from "@heroicons/react/24/solid/esm/Bars3Icon";
 import { GetContactsAsync, GetConversationLogTypes, insertConverstion, updateConverstion } from "../../services/TaskService";
 import ContactsGrid from "./contactGrid";
-
+import employeeService from '../../services/employeeService';
+import AutoComplete from "../shared/autoCompleteInput";
 type ConversationModalProps = {
     isOpen: boolean;
 
@@ -13,7 +15,7 @@ type ConversationModalProps = {
     resetNewConversation: () => void;
     saveConversation: () => void;
     userID: number;
-    employeesList: SelectEmployeesList[];
+  //  employeesList: SelectEmployeesList[];
 };
 
 const ConversationModalOpen: React.FC<ConversationModalProps> = ({
@@ -23,7 +25,7 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
     resetNewConversation,
     saveConversation,
     userID,
-    employeesList
+   // employeesList
 }) => {
     if (!isOpen) return null;
     const [errorSubject, setErrorSubject] = useState("");
@@ -36,11 +38,11 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
     const [isnew, setIsnew] = useState(false);
 
 
-    const [searchEmployee, setSearchEmployee] = useState("");
+    const [selectedEmployee, setSelectedEmployee] = useState<SelectEmployeesList | null>(null);
     //  const [editingId, setEditingId] = useState<number>(0);
-    const [isOpenEmployee, setIsOpenEmployee] = useState(false);
     const [isOpenType, setIsOpenType] = useState(false);
     const [isReadOnly, setIsReadOnly] = useState(true);
+    const [employeesList, setEmployeesList] = useState<SelectEmployeesList[]>([]);
 
 
     const inputClass = `text-gray-800 w-full px-3 py-2 ${isReadOnly ? " bg-gray-50" : "border border-gray-300 "}  rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none`;
@@ -49,10 +51,10 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
         const init = async () => {
 
             try {
-                const empName = employeesList.find(emp => emp.id === newConversation.recipientID);
-                console.log("empName", employeesList, empName);
-                setSearchEmployee(empName?.name ?? "");
-                
+                 const employeeData: SelectEmployeesList[] = await employeeService.getEmployeesList();
+                                if (employeeData) {
+                                    setEmployeesList(employeeData);
+                                }
                 if (localStorage.getItem('conversationLogTypes')) {
                     const storedLogTypes = JSON.parse(localStorage.getItem('conversationLogTypes') || '[]');
 
@@ -72,6 +74,9 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
         };
         if (newConversation) init();
     }, [newConversation]);
+        useEffect(() => {
+            setSelectedEmployee(newConversation.recipientID ? employeesList!.find(e => e.id === newConversation.recipientID) || null : userID ? employeesList!.find(e => e.id === userID) || null : null);
+    }, [employeesList]);
     const resetError = () => {
         setErrorSubject("");
         setErrorTime("");
@@ -157,18 +162,13 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
         setIsOpenContactList(false);
     };
 
-    const filteredEmployees = !isOpenEmployee || searchEmployee.trim() === ""
-        ? employeesList
-        : employeesList.filter((emp) =>
-            emp.name?.toLowerCase().includes(searchEmployee.toLowerCase())
-        );
-    const handleSelect = (emp: SelectEmployeesList) => {
+   
+    const handleEmployeeSelect = (emp: SelectEmployeesList) => {
         setNewConversation((prev) => ({
             ...prev,
             recipientID: emp.id ? emp.id : 0,
         }));
-        setSearchEmployee(emp.name ? emp.name : "");
-        setIsOpenEmployee(false);
+        setSelectedEmployee(emp? emp :null);
     };
     const handleSelectType = (type: ConversationLogType) => {
         setNewConversation((prev) => ({
@@ -358,42 +358,16 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             מקבל<span className="text-red-500">*</span>
                         </label>
-                        <input
-                            type="text"
-                            // value={searchEmployee}
-                            value={employeesList.find(e => e.id === newConversation.recipientID)?.name || ""}
-                            onChange={(e) => {
-                                setSearchEmployee(e.target.value);
-                                setIsOpenEmployee(true);
-                            }}
-
-                            placeholder="בחר מקבל..."
-                            disabled={isReadOnly}
-                            className={inputClass}
-
-                        />
-                        <button
-                            type="button"
-                            disabled={isReadOnly}
-                            onClick={() => { setSearchEmployee(""); setIsOpenEmployee(!isOpenEmployee) }}
-                            className="pt-7 absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 hover:text-purple-600"
-                        >
-                            <ChevronDownIcon className="h-6 w-6" />
-                        </button>
-                        {isOpenEmployee && filteredEmployees.length > 0 && (
-                            <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                {filteredEmployees.map((emp) => (
-                                    <li
-                                        key={emp.id}
-                                        onClick={() => handleSelect(emp)}
-                                        className="p-2 cursor-pointer  hover:bg-[#0078d7]  hover:text-white"
-                                    >
-                                        {emp.name}
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-
+                        <AutoComplete
+                           disabled={isReadOnly}
+    items={employeesList}
+    selectedItem={selectedEmployee}
+    onSelect={handleEmployeeSelect}
+    getItemId={(emp) => emp.id ?? 0}
+    getItemLabel={(emp) => emp.name ?? ""}
+    placeholder="בחר מקבל..."
+    height={2}
+/>
                         {errorRecipient && <p className="text-red-500 text-sm mt-1">{errorRecipient}</p>}
                     </div>
                     {/* Contact Select */}
@@ -421,10 +395,13 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
 
                         {/* Contact List Popup */}
                         {isOpenContactList && (
+    
                             <ContactsGrid
                                 contacts={contactsList}
                                 onClose={() => { setIsOpenContactList(false) }}
-                                handleSelectContact={handleSelectContact}
+                                handleSelectContact={(con:any) => {
+                                handleSelectContact(con);
+                            }}
                             ></ContactsGrid>
                             // <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                             //     {contactsList.map((c) => (

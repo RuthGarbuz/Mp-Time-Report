@@ -1,4 +1,4 @@
-import type { CheckHoursOverlapQuery, HourReport, HourReportModal, HourReportStepsModal, Step } from "../interface/interfaces";
+import type { CheckHoursOverlapQuery, HourReport, HourReportModal, HourReportStepsModal, Step } from "../interface/HourReportModal";
 import authService from "./authService";
 
 class HourReportsService{

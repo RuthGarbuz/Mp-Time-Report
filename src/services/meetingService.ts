@@ -40,7 +40,6 @@ class MeetingService {
   
   async getMeetingsData(meetingID:string): Promise<CalendarPartData|null>{
     try {
-console.log('Event click data:', meetingID);
     
       const user = authService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');

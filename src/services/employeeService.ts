@@ -2,7 +2,7 @@
 import authService from './authService';
 
 class EmployeeService {
-  async getEmployee() {
+  async getEmployee(){
     try {
     
       const user = authService.getCurrentUser();
@@ -14,7 +14,6 @@ class EmployeeService {
         id: user.id,
         database: user.dataBase
       };
-console.log("requestBodyEmployee",requestBody);
       const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
       const endpoint = `${dynamicBaseUrl}/employees/GetEmployeeDataAsync`; // Make sure this is correct
 
@@ -29,9 +28,7 @@ console.log("requestBodyEmployee",requestBody);
         throw new Error(error || 'Failed to get employee data');
       }
       const data = await response.json();
-
-      // Store employee info in localStorage
-      localStorage.setItem('employee', JSON.stringify({
+      const employeeData={
         id: data.id,
         name: data.name,
         image: data.pictureBase64,
@@ -40,13 +37,19 @@ console.log("requestBodyEmployee",requestBody);
         expiresAt: data.expiration,
         timeHourReportID:data.timeHourReportID,
         minutesHoursAmount:data.minutesHoursAmount,
-        editPermision:true
-      }));
+        editPermision:true,
+        startTime:data.startTime,
+        endTime:data.endTime,
+        totalSecondsReported:data.totalSecondsReported
+
+}
+      // Store employee info in localStorage
+      localStorage.setItem('employee', JSON.stringify(employeeData));
       localStorage.setItem("timeHourReportsTypes", JSON.stringify(data.timeHourReportsTypes));
       return {
         success: true,
         message: 'Employee fetched successfully',
-        data: data,
+        data: employeeData ,
       };
     } catch (error) {
       console.error('Get employee error:', error);
@@ -159,6 +162,7 @@ async  getUserLocation(): Promise<string> {
         const error = await response.text();
         throw new Error(error || 'Failed to get employee data');
       }
+      await this.getEmployee();
       const data = await response.json();
 
       return {
@@ -181,6 +185,7 @@ async clockOut() {
 
     const now = new Date();
     const date = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    
 //
 
 const location = await this.getUserLocation();
@@ -208,6 +213,7 @@ const location = await this.getUserLocation();
       const error = await response.text();
       throw new Error(error || 'Failed to clock out');
     }
+    await this.getEmployee();
 
     const data = await response.json();
     return {
