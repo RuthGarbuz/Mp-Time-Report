@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2 } from 'lucide-react';
 import type { Employee } from '../../interface/TimeHourModel';
 import type { HourReport, HourReportModal } from '../../interface/HourReportModal';
-import type { Project } from '../../interface/project';
+import type { Project } from '../../interface/projectModel';
 import "tailwindcss";
 import hourReportService from '../../services/hourReportService';
 import authService from '../../services/authService';

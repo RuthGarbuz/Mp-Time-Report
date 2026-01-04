@@ -86,17 +86,26 @@ const { openModal, closeModal } = useModal();
 
 
   // Remove apostrophes for better matching (e.g., ג'ורג matches גורג)
-  const normalizeText = (text: string) => text.replace(/'/g, '').toLowerCase();
+  const normalizeText = (text: string) => text.replace(/'/g, '').replace(/[-\s()]/g, '').toLowerCase();
 
   const filteredContacts = contactsList.filter((contact) => {
-    const term = normalizeText(searchTerm.trim());
-    return (
-      normalizeText(contact.firstName).includes(term) ||
-      normalizeText(contact.lastName).includes(term) ||
-      normalizeText(contact.company).includes(term) ||
-      contact.companyPhone?.includes(searchTerm.trim()) ||
-      contact.mobile.includes(searchTerm.trim())
+    const searchableText = normalizeText(
+      [
+        contact.firstName || '',
+        contact.lastName || '',
+        contact.company || '',
+        contact.companyPhone || '',
+        contact.mobile || ''
+      ].join(' ')
     );
+    
+    // Split search term into words and check that ALL words appear in searchable text
+    const searchWords = searchTerm.trim().split(/\s+/).filter(word => word.length > 0);
+    
+    return searchWords.every(word => {
+      const normalizedWord = normalizeText(word);
+      return searchableText.includes(normalizedWord);
+    });
   });
   const visibleContacts = filteredContacts.slice(0, visibleCount);
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Plus, Trash2, X } from 'lucide-react';
-import type { ContactsToInsert, IdNameDto } from '../../interface/project';
 import projectService from '../../services/projectService';
+import type { ContactsToInsert, IdNameDto } from '../../interface/projectModel';
 
 
 type ProjectParticipantsProps = {

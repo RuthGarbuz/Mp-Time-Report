@@ -29,8 +29,12 @@ function AutoComplete<T>({
   );
 
      useEffect(() => {
-    setSearchText(selectedItem ? getItemLabel(selectedItem) : "");
-  }, [selectedItem, getItemLabel]);
+    if (selectedItem) {
+      setSearchText(getItemLabel(selectedItem));
+    } else {
+      setSearchText("");
+    }
+  }, [selectedItem]);
 
 
   const [isOpen, setIsOpen] = useState(false);

@@ -182,7 +182,7 @@ useEffect(() => {
     if (img && img !== 'null') {
       return `data:image/jpeg;base64,${img}`;
     }
-    return '/images/default-profile.png'; // מ- public/images
+    return '/default-profile.png'; // from public/
   };
 
   return (

@@ -3,6 +3,7 @@ import { Phone, Edit3, Save, X, Mail, User } from "lucide-react";
 import type { City, PhoneBook, Company } from "../../interface/PhoneBookModel";
 import { addCompany, addPhoneBookContact, getPhoneBookCompanyList, updateCompany, updatePhoneBookContact } from "../../services/phoneBookService";
 import AutoComplete from "../shared/autoCompleteInput";
+import type { Global } from "../../interface/meetingModel";
 
 
 interface UpdatePhoneBookProps {
@@ -23,7 +24,8 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     const [isAddingCompany, setIsAddingCompany] = useState(false);
     const [errorFirstName, setErrorFirstName] = useState("");
     const [errorCompany, setErrorCompany] = useState("");
-    const [errorMobile, setErrorMobile] = useState("");
+    const [errorEmail, setErrorEmail] = useState("");
+    const [selectedCompany, setSelectedCompany] = useState<Global | null>(null);
 
     const [companiesList, setCompaniesList] = useState<Company[]>([]);
     const [citiesList, setCitiesList] = useState<City[]>([]);
@@ -79,7 +81,7 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
         let hasError = false;
         setErrorFirstName("");
         setErrorCompany("");
-        setErrorMobile("");
+        setErrorEmail("");
         if (!editData.firstName || editData.firstName.trim() === "") {
             hasError = true;
             setErrorFirstName("שם פרטי הוא שדה חובה");
@@ -88,10 +90,11 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
             hasError = true;
             setErrorCompany("שם חברה הוא שדה חובה");
         }
-        // if (!editData.mobile || editData.mobile.trim() === "") {
-        //     hasError = true;
-        //     setErrorMobile("מספר נייד הוא שדה חובה");
-        // }
+
+        if (editData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editData.email)) {
+            hasError = true;
+            setErrorEmail("כתובת אימייל לא תקינה");
+        }
         return hasError;
     }
     const handleAddContact = async () => {
@@ -183,7 +186,14 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
     useEffect(() => {
         setSelectedCity(editData.companyCityID ? citiesList.find(c => c.id === editData.companyCityID) || null : null);
     }, [citiesList]);
-
+  useEffect(() => {
+        setSelectedCompany(editData?.selectedCompanyId ? companiesList!.find(c => c.id === editData.selectedCompanyId) || null : null);
+    }, [companiesList]);
+  const handleCompanySelect = (company: Global) => {
+        setSelectedCompany(company);
+        setEditData({ ...editData, selectedCompanyId: Number(company.id) });
+   
+    };
     if (!contact) return null;
     return (
         <div className=" text-gray-800 fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -288,21 +298,30 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                         </label>
                                     </div>
                                     {!isAddingCompany && (
-
-                                        <select
-                                            value={editData.selectedCompanyId}
-                                            onChange={(e) => setEditData({ ...editData, selectedCompanyId: Number(e.target.value) })}
-                                            className="text-gray-800 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-                                        >
-                                            <option value="">בחר חברה...</option>
-                                            {companiesList.map(company => (
-                                                <option
-                                                    //className=" text-sm text-gray-700 bg-white hover:bg-purple-100" 
-                                                    key={company.id} value={company.id}>
-                                                    {company.name}
-                                                </option>
-                                            ))}
-                                        </select>
+ <AutoComplete
+                            items={companiesList}
+                            selectedItem={selectedCompany}
+                            onSelect={(company) => {
+                                handleCompanySelect(company);
+                            }}
+                            getItemId={(company) => company.id}
+                            getItemLabel={(company) => company.name}
+                            placeholder="בחר חברה..."
+                            height={2}
+                        />
+                                        // <select
+                                        //     value={editData.selectedCompanyId}
+                                        //     onChange={(e) => setEditData({ ...editData, selectedCompanyId: Number(e.target.value) })}
+                                        //     className="text-gray-800 w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        // >
+                                        //     <option value="">בחר חברה...</option>
+                                        //     {companiesList.map(company => (
+                                        //         <option
+                                        //             key={company.id} value={company.id}>
+                                        //             {company.name}
+                                        //         </option>
+                                        //     ))}
+                                        // </select>
 
 
                                     )}
@@ -502,7 +521,6 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                     })()}
                                 </div>
                             )}
-                            {errorMobile && <p className="text-red-500 text-sm mt-1">{errorMobile}</p>}
                         </div>
 
                         {/* Email */}
@@ -520,11 +538,6 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                         className="w-full p-3 border border-gray-300 rounded-lg text-left focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         placeholder="name@example.com"
                                     />
-
-                                    {/* הצגת הודעת שגיאה */}
-                                    {editData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editData.email) && (
-                                        <p className="text-red-500 text-sm mt-1">אנא הזן אימייל חוקי</p>
-                                    )}
                                 </>
                             ) : (
                                 <div className="min-h-[48px] text-lg text-gray-800 bg-gray-50 p-3 rounded-lg text-left">
@@ -540,6 +553,8 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                     )}
                                 </div>
                             )}
+                            {errorEmail && <p className="text-red-500 text-sm mt-1">{errorEmail}</p>}
+
                         </div>
                     </div>
                     {/* Action buttons */}

@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Briefcase, Plus, Search, X } from 'lucide-react';
 import { useModal } from '../ModalContextType';
-import type { ProjectModel } from '../../interface/project';
 import projectService from '../../services/projectService';
 import UpdateProject from './projectModelOpen';
+import type { ProjectModel } from '../../interface/projectModel';
 
 export default function ProjectList() {
   const [selectedProject, setSelectedProject] = useState<ProjectModel | null>(null);
@@ -44,13 +44,26 @@ export default function ProjectList() {
     }
   };
 
+  // Remove apostrophes for better matching (e.g., ג'ורג matches גורג)
+  const normalizeText = (text: string) => text.replace(/'/g, '').replace(/[-\s()]/g, '').toLowerCase();
+
   const filteredProjects = projectsList.filter((project) => {
-    const term = searchTerm.trim().toLowerCase();
-    const matchesSearch =
-      project.projectName.toLowerCase().includes(term) ||
-      project.projectNum.toLowerCase().includes(term) ||
-      project.customerName.toLowerCase().includes(term) ||
-      project.name.toLowerCase().includes(term);
+    const searchableText = normalizeText(
+      [
+        project.projectName || '',
+        project.projectNum || '',
+        project.customerName || '',
+        project.name || ''
+      ].join(' ')
+    );
+    
+    // Split search term into words and check that ALL words appear in searchable text
+    const searchWords = searchTerm.trim().split(/\s+/).filter(word => word.length > 0);
+    
+    const matchesSearch = searchWords.length === 0 || searchWords.every(word => {
+      const normalizedWord = normalizeText(word);
+      return searchableText.includes(normalizedWord);
+    });
 
     const matchesActive = showActiveOnly ? project.isActive : true;
 
@@ -66,6 +79,7 @@ export default function ProjectList() {
         <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative w-full">
           <div className="flex flex-col gap-4">
             {/* Search Input */}
+            
             <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-1 relative w-full ">
               <input
                 type="text"
@@ -75,17 +89,16 @@ export default function ProjectList() {
                 className="text-gray-600 w-full pr-4 pl-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 
               />
-              {searchTerm ? (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute  left-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
-
-                >
-                  <X size={18} />
-                </button>
-              ) : (
-                <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-              )}
+                    {searchTerm ? (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute  left-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+            >
+              <X size={18} />
+            </button>
+          ) : (
+            <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+          )}
             </div>
 
             {/* Active Filter Toggle */}

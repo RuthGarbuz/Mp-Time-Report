@@ -1,12 +1,13 @@
 import { X } from "lucide-react";
 import type { CheckHoursOverlapQuery, Contract, HourReportModal, Step, SubContract } from "../../interface/HourReportModal";
 import type { Employee } from "../../interface/TimeHourModel";
-import type { Project } from "../../interface/project";
 import { useEffect, useState } from "react";
 import ErrorMessage from "../shared/errorMessage";
 import hourReportService, { getHourReportStepsModal, getStepsList, insertProjectHourReport } from "../../services/hourReportService";
 import { getProjectsList } from "../../services/TaskService";
 import ProjectFilter from "../shared/projectsFilter";
+import type { Project } from "../../interface/projectModel";
+import AutoComplete from "../shared/autoCompleteInput";
 
 interface Props {
   title: string;
@@ -147,6 +148,7 @@ export default function HourReportModalOpen({
         if (HourReportStepsData.stepsList.length > 0) {
 
           setSteps(HourReportStepsData.stepsList);
+          setNewReport(prev => ({ ...prev, stepID: HourReportStepsData.stepsList[0].id }))
         }
       }
     }
@@ -160,6 +162,8 @@ export default function HourReportModalOpen({
       let StepList = await getStepsList(selectedProject?.id ?? 0);
       if (StepList && StepList.length > 0) {
         setSteps(StepList);
+          setNewReport(prev => ({ ...prev, stepID: StepList[0].id }))
+
       }
       setSubContracts(null)
       setContracts(null)
@@ -168,7 +172,9 @@ export default function HourReportModalOpen({
   const initNewReport = async () => {
     setErrorMessage(null);
     await initProjectData();
-    setNewReport({
+    
+    // Preserve the stepID that was set by initProjectData
+    setNewReport(prev => ({
       id: 0,
       date: currentDay,
       clockInTime: undefined,
@@ -178,11 +184,10 @@ export default function HourReportModalOpen({
       projectID: selectedProject?.id ?? 0,
       contractID: 0,
       subContractID: 0,
-      stepID: 0,
+      stepID: prev.stepID,  // Keep the stepID from initProjectData
       hourReportMethodID: selectedProject?.hoursReportMethodID ?? 0,
       employeeId: employee?.id ? Number(employee.id) : 0,
-
-    })
+    }))
   }
   function addTime(clockInTimeTime: string, duration: string): string {
     const [clockInTimeHours, clockInTimeMinutes] = clockInTimeTime.split(':').map(Number);
@@ -306,6 +311,7 @@ if(updateReport===null){
     setIsOpenProject(false);
     onClose();
   }
+
   return (
     <div className="text-gray-800 fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       {isModalOpen && (
@@ -508,29 +514,25 @@ if(updateReport===null){
                 )}
                 {/* Step */}
                 {(newReport.subContractID ?? 0) > 0 || (selectedProject?.hoursReportMethodID != 5 && selectedProject?.hoursReportMethodID != 3) && steps && (
-                  <div>
+                  <div  className="relative w-full">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       שלב *
                     </label>
-                    <select
-                     
-                      value={newReport.stepID}
-                      onChange={(e) => setNewReport({ ...newReport, stepID: Number(e.target.value) })}
-                      className="text-black w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 resize-none"
-                    >
-                      <option value="">בחר שלב</option>
-                      {steps
-                        ? steps
+                    <AutoComplete
+                            items={steps
                           .filter(step =>
                             newReport.subContractID === 0 || newReport.subContractID === null ||
-                            step.subContractID === newReport.subContractID)
-                          .map(step => (
-                            <option key={step.id} value={step.id}>
-                              {step.name}
-                            </option>
-                          )) : null
-                      }
-                    </select>
+                            step.subContractID === newReport.subContractID)}
+                            selectedItem={  steps.find(c => c.id === newReport.stepID) || null}
+                            onSelect={(step) => 
+                                {setNewReport({ ...newReport, stepID: Number(step.id) })}
+                            }
+                            getItemId={(step) => step.id}
+                            getItemLabel={(step) => step.name}
+                            placeholder="בחר שלב..."
+                            height={2}
+                        />
+                   
                   </div>
                 )}
 

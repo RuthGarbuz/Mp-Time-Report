@@ -51,11 +51,11 @@ export default defineConfig({
     })
   ],
    build: {
-    minify: 'terser',  // שימוש ב-Terser כמיניפייר
+    minify: 'terser', 
     terserOptions: {
       compress: {
-        drop_console: true,    // מסיר את כל console.log
-        drop_debugger: true,   // מסיר debugger אם יש
+        drop_console: true,   
+        drop_debugger: true,   
       },
     },
   },

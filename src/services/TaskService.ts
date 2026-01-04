@@ -1,5 +1,5 @@
 import type { Contact, Conversation, ConversationData, ConversationLogType } from "../interface/ConversationModel";
-import type { Task } from "../interface/TaskModel";
+import type { Task } from "../interface/task/TaskModel";
 import authService from "./authService";
 export const getProjectsList= async ()=>{ 
   try {
@@ -28,7 +28,7 @@ export const getProjectsList= async ()=>{
     return null
   } 
 }
-export const getTasksList = async (fromDate: Date, toDate: Date,activeTab:string): Promise<Task[] | null> => {
+export const getTasksList = async (fromDate: Date|null, toDate: Date|null,activeTab:string): Promise<Task[] | null> => {
   try {
     const user = authService.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
@@ -36,8 +36,8 @@ export const getTasksList = async (fromDate: Date, toDate: Date,activeTab:string
       Database: user.dataBase,
       EmployeeID:user.id,
       ActiveTab:activeTab,//received or sent
-      FromDate:fromDate.toISOString(), //
-      ToDate:toDate.toISOString() 
+      FromDate:fromDate?fromDate!.toISOString():null, //
+      ToDate:toDate?toDate!.toISOString():null 
     };
 
     const dynamicBaseUrl = user.urlConnection;
@@ -218,7 +218,6 @@ export const GetConversationsByID = async (TaskID:number): Promise<ConversationD
 const user = authService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
 
-     // const date = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
       const requestBody = {
         database: user.dataBase,
         ID: TaskID
@@ -289,7 +288,6 @@ export const insertConverstion = async (task: ConversationData): Promise<number>
   try {
      const user = authService.getCurrentUser();
     if (!user) throw new Error("User not authenticated");
-    //task.organizerID=user.id; // assign the current user ID as the recipientID
     const dynamicBaseUrl = user.urlConnection;
     const endpoint = `${dynamicBaseUrl}/Tasks/InsertConverstionAsync`; 
     const requestBody = {

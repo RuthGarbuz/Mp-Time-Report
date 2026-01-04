@@ -50,13 +50,8 @@ const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
       }
       const data: TimeRecord[] = await response.json();
       
-      //const timeRepordData: TimeRecord[] = JSON.parse(data);
       return data
-      //   return {
-      //   success: true,
-      //   message: 'Employee fetched successfully',
-      //   data: data,
-      // };
+  
     } catch (error) {
       console.error('Get employee error:', error);
       throw error;
@@ -93,7 +88,6 @@ try{
       timeHourReportsTypeID: timeRecords.typeID,
       timeHourReportMethodID: 3,
       location:location,
-      // type: 'insertTimeRecord'
       };
         const dynamicBaseUrl = user.urlConnection;
         const endpoint = `${dynamicBaseUrl}/TimeRecords/${functionName}`; // Make sure this is correct

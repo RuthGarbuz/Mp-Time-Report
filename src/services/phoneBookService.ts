@@ -145,7 +145,7 @@ export const addCompany = async (company: Company): Promise<number> => {
       address: company.address,
       cityID: company.cityID, // Assuming address is a string that includes city
       phoneNum: company.phoneNum
-     // ...company, // merge all contact fields into body
+
     };
     const response = await authService.makeAuthenticatedRequest(endpoint, {
       method: "POST",
@@ -176,9 +176,8 @@ export const updateCompany = async (company: Company): Promise<number> => {
       id:company.id,
       name: company.name,
       address: company.address,
-      cityID: company.cityID, // Assuming address is a string that includes city
+      cityID: company.cityID, 
       phoneNum: company.phoneNum
-     // ...company, // merge all contact fields into body
     };
     const response = await authService.makeAuthenticatedRequest(endpoint, {
       method: "POST",

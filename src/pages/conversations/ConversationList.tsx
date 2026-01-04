@@ -39,6 +39,7 @@ const ConversationList: React.FC = () => {
     const [employee, setEmployee] = useState<Employee | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [callEntries, setCallEntries] = useState<Conversation[]>([]);
+    const [visibleCount, setVisibleCount] = useState(20);
        const { openModal, closeModal } = useModal();
     const resetData = () => {
         setShowAddModal(false);
@@ -64,21 +65,36 @@ const ConversationList: React.FC = () => {
     }
     const handleScroll = () => {
     if (!listRef.current) return;
-    // const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
 
-    // if (scrollTop + clientHeight >= scrollHeight - 50) {
-    //   setVisibleCount((prev) => Math.min(prev + 20, filteredContacts.length));
-    // }
+    if (scrollTop + clientHeight >= scrollHeight - 50) {
+      setVisibleCount((prev) => Math.min(prev + 20, filteredTasks.length));
+    }
   };
- const filteredTasks = callEntries.filter((call) => {
-    const term = searchTerm.trim().toLowerCase();
-    return (
-      call.subject?.toLowerCase().includes(term) 
-     
 
+  // Remove apostrophes for better matching (e.g., ג'ורג matches גורג)
+  const normalizeText = (text: string) => text.replace(/'/g, '').replace(/[-\s()]/g, '').toLowerCase();
+
+  const filteredTasks = callEntries.filter((call) => {
+    const searchableText = normalizeText(
+      [
+        call.subject || '',
+      ].join(' ')
     );
+    
+    // Split search term into words and check that ALL words appear in searchable text
+    const searchWords = searchTerm.trim().split(/\s+/).filter(word => word.length > 0);
+    
+    return searchWords.length === 0 || searchWords.every(word => {
+      const normalizedWord = normalizeText(word);
+      return searchableText.includes(normalizedWord);
+    });
   });
-  //const visibleContacts = filteredTasks.slice(0, visibleCount);
+  const visibleTasks = filteredTasks.slice(0, visibleCount);
+
+  useEffect(() => {
+    setVisibleCount(20); // Reset visible count when search changes
+  }, [searchTerm]);
     const deleteTaskHandler = async () => {
         if (selectedCallID === null) return;
         const taskData = await deleteTask(selectedCallID, "DeleteConversationAsync");
@@ -202,19 +218,19 @@ const ConversationList: React.FC = () => {
         </div>
       </div>
                     {/* Call Entries */}
-
                     <div
                      ref={listRef}
           onScroll={handleScroll}
-                     className="space-y-3 overflow-y-auto">
-                        {filteredTasks.map((call, index) => (
+                  className="space-y-3 h-[calc(100vh-220px)] overflow-y-auto rounded-2xl p-1"
+        >
+                        {visibleTasks.map((call, index) => (
                             <div
                                 key={index}
                                 onClick={() => {
                                     setSelectedCallID(call.id);
                                     openConversationModal(call.id ?? 0);
                                 }}
-                                className={`flex items-start gap-3 p-4 border rounded-2xl transition-all ${call.isClosed
+                                className={`flex items-start gap-3 p-4 pl-2 border rounded-2xl transition-all ${call.isClosed
                                     ? 'bg-gray-50 border-gray-200'
                                     : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-sm'
                                     }`}
@@ -293,6 +309,9 @@ const ConversationList: React.FC = () => {
                                 </div>
                             </div>
                         ))}
+                        {visibleCount < filteredTasks.length && (
+                          <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
+                        )}
                     </div>
 
                 </div>

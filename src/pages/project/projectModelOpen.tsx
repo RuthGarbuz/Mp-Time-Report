@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { X, MapPin, FileText } from 'lucide-react';
-import type { IdNameDto, InsertProjectRequest, ProjectDetails } from '../../interface/project';
 import projectService from '../../services/projectService';
 import AutoComplete from '../shared/autoCompleteInput';
 import ProjectParticipants from './projectContactsSelect';
 import { useModal } from '../ModalContextType';
+import type { IdNameDto, InsertProjectRequest, ProjectDetails } from '../../interface/projectModel';
 
 interface ProjectModalOpenProps {
   isOpen: boolean;
@@ -68,12 +68,10 @@ export default function ProjectModalOpen({ isOpen, onClose, onSave, projectID }:
     const fetchProjectData = async () => {
       setIsLoading(true);
       try {
-
         const projectData = await projectService.getProjectByID(projectID ?? 0);
-        console.log('Fetched Project Data:', projectData);
         setFormData(projectData as ProjectDetails);
         setOriginalData(projectData);
-
+    
       } catch (error) {
         console.error('Failed to load project data:', error);
         alert('שגיאה בטעינת נתוני הפרויקט');
@@ -145,7 +143,6 @@ export default function ProjectModalOpen({ isOpen, onClose, onSave, projectID }:
 
   const handleSave = async (): Promise<number> => {
     let result;
-    console.log('Form Data to Save:', formData.projectDataListsDto);
     if (!formData.name?.trim()) {
       setErrorMessage('שם הפרויקט הוא שדה חובה');
       if (!formData.projectNum || String(formData.projectNum).trim() === '') {
@@ -181,7 +178,7 @@ export default function ProjectModalOpen({ isOpen, onClose, onSave, projectID }:
   };
   const contactsGridOpen = async () => {
     let newID = 0;
-    if (projectID === 0 || projectID === null) {
+    if (formData.projectID === 0 || formData.projectID === null) {
       newID = await handleSave();
       if (newID == 0 || newID === undefined) return;
       const projectSaved: ProjectDetails = {
@@ -189,6 +186,7 @@ export default function ProjectModalOpen({ isOpen, onClose, onSave, projectID }:
         projectID: newID !== 0 ? newID : formData.projectID
       }
       setFormData(projectSaved);
+       setOriginalData(projectSaved);
     }
     const contactsList = formData.projectDataListsDto.customers.filter(customer =>
       !formData.projectContacts?.some(contact => contact.id === customer.customerID)
@@ -205,7 +203,7 @@ export default function ProjectModalOpen({ isOpen, onClose, onSave, projectID }:
   const closeProjectParticipants = () => {
     setIsContactsOpen(false);
     closeModal();
-    setOriginalData(formData);
+   
   }
   if (!isOpen) return null;
 

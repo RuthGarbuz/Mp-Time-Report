@@ -3,9 +3,9 @@ import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { X } from "lucide-react";
 import { Priority } from "../../enum";
 import { getProjectsList, insertTask, updateTask } from "../../services/TaskService";
-import type { Project } from "../../interface/project";
+import type { Project } from "../../interface/projectModel";
 import type { SelectEmployeesList } from "../../interface/MaimModel";
-import type { Task } from "../../interface/TaskModel";
+import type { Task } from "../../interface/task/TaskModel";
 import employeeService from "../../services/employeeService";
 import AutoComplete from "../shared/autoCompleteInput";
 

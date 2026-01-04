@@ -1,4 +1,4 @@
-import type { ContactsToInsert, InsertProjectRequest, ProjectDetails, ProjectModel } from "../interface/project";
+import type { ContactsToInsert, InsertProjectRequest, ProjectDetails, ProjectModel } from "../interface/projectModel";
 import authService from "./authService";
 const projectService = {
   async getProjectsModelList(): Promise<ProjectModel[] | null> {
@@ -146,22 +146,6 @@ const projectService = {
       return false;
     }
   },
-  //   async getProject(id: number): Promise<ProjectModel> {
-  //     const response = await api.get(`/projects/${id}`);
-  //     return response.data;
-  //   },
-
-  //   async createProject(project: ProjectModel): Promise<ProjectModel> {
-  //     const response = await api.post('/projects', project);
-  //     return response.data;
-  //   },
-
-  //   async updateProject(project: ProjectModel): Promise<ProjectModel> {
-  //     const response = await api.put(`/projects/${project.projectID}`, project);
-  //     return response.data;
-  //   },
-
-
 };
 
 export default projectService;

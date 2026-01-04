@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { Project } from "../../interface/project";
+import type { Project } from "../../interface/projectModel";
 
 
 

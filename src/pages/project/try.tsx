@@ -1,6 +1,6 @@
 // import { useEffect, useState } from 'react';
 // import { X, Save, Trash2 } from 'lucide-react';
-// import type { ProjectDetails, ProjectModel } from '../../interface/project';
+// import type { ProjectDetails, ProjectModel } from '../../interface/projectModel';
 // import projectService from '../../services/projectService';
 
 // interface UpdateProjectProps {

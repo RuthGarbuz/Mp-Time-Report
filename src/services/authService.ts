@@ -1,12 +1,9 @@
-// services/authService.js
 const API_BASE_URL = 'http://localhost:5003/api'
 //const API_BASE_URL = 'https://mpweba.master-plan.co.il/GlobalWebAPI/api'
 
 //const API_BASE_URL = "https://mpwebapp.master-plan.co.il/GlobalWebAPI/api";
 
-//onst API_BASE_URL = 'http://localhost:5003/api';http://5.144.49.24/GlobalWebAPI/api/Auth/login
-//const API_BASE_URL = 'http://5.144.49.24/GlobalWebAPI/api';
-//const API_BASE_URL = '/api';
+
 
 class AuthService {
   [x: string]: any;
@@ -32,10 +29,8 @@ class AuthService {
 
     const data = await response.json();
 
-    // שמירת הטוקן
     this.setToken(data.token);
 
-    // יצירת אובייקט המשתמש
     const userObject = {
       id: data.id,
       email: data.email,
@@ -45,11 +40,10 @@ class AuthService {
       expiresAt: data.expiration,
       seeFinance: data.seeFinance,
       allowAddReport: data.allowAddReport,
-      password: password ,// שמירת הסיסמה
-      rememberMe: rememberMe // שמירת מצב זכור אותי
+      password: password ,
+      rememberMe: rememberMe 
     };
 
-    // שמירה לפי rememberMe
     if (rememberMe) {
       localStorage.setItem('user', JSON.stringify(userObject));
     } else {

@@ -102,7 +102,6 @@ export default function MyScheduler() {
 
     let prepared = await prepareDeleteException(event);
     if (!prepared) return;
-
     const rRule = prepared.selected.calendarEventDto.rRule;
     const index = calculateIndexInSeries(rRule, prepared.mergedStart);
     const updatedSelected = {
@@ -110,6 +109,7 @@ export default function MyScheduler() {
       calendarEventDto: {
         ...prepared.selected.calendarEventDto,
         indexInSeries: index,
+        
         // start: toLocalISOString(new Date(prepared.mergedStart)),
         // end: toLocalISOString(new Date(prepared.mergedEnd)),
         type: 4 // set to deleted
@@ -133,19 +133,20 @@ export default function MyScheduler() {
     );
 
     if (!data) return null;
+if(event.endStr){
 
+}
     const selected: CalendarDataModal = {
       calendarEventDto: {
         ...event.extendedProps as CalendarEventDto,
         employeeId: employee?.id,
         start: toLocalISOString(new Date(event.startStr)),
-        end: toLocalISOString(new Date(event.endStr)),
+        end: toLocalISOString(new Date(event.endStr==""?event.startStr:event.endStr)),
       },
       calendarPartData: data as CalendarPartData
     };
     const clickedDate = new Date(event.start!);
 
-    // מיזוג תאריכים לתיקוני type=3
     const parentStart = new Date(selected.calendarEventDto.start);
     const parentEnd = new Date(selected.calendarEventDto.end
       ? selected.calendarEventDto.end

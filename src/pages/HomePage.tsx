@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import CreateUpdateTaskModal from './tasks/createUpdateTaskModal';
 import HourReportModalOpen from './projectHours/HourReportModalOpen';
 import employeeService from '../services/employeeService';
-import { BarChart3, Calendar, ClipboardPlus, ClockPlus, List, UserCheck } from 'lucide-react';
+import { BarChart3, Calendar, ClipboardPlus, ClockPlus, List, Phone, UserCheck } from 'lucide-react';
 import { useModal } from './ModalContextType';
 import authService from '../services/authService';
 import type { MainAppProps } from '../interface/MaimModel';
@@ -65,13 +65,13 @@ useEffect(() => {
   }, []);
   const menuItems: MenuItem[] = [
     { id: '1', label: 'דיווח נכחות', icon: <UserCheck className="w-12 h-12" />, color: 'from-green-500 to-green-600', route: '/main/report-time' ,visible:true },
-    { id: '2', label: 'אלפון', icon: <div className="relative"><svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg><span className="absolute -top-1 -right-1 text-2xl font-bold">+</span></div>, color: 'from-blue-500 to-blue-600', route: '/main/phone-book-List',visible:true },
+    { id: '2', label: 'אלפון', icon: <Phone className="w-12 h-12" />, color: 'from-blue-500 to-blue-600', route: '/add-project-hours' ,visible:true},
     { id: '3', label: 'הוסף שעות לפרויקט', icon: <ClockPlus className="w-12 h-12" />, color: 'from-orange-500 to-orange-600', route: '/add-project-hours' ,visible:true},
     { id: '4', label: 'הוסף משימה', icon: <ClipboardPlus className="w-12 h-12" />, color: 'from-purple-500 to-purple-600', route: '/add-task',visible:true },
     { id: '5', label: ' יומן פגישות', icon: <div className="relative"><Calendar className="w-12 h-12" /><span className="absolute -top-1 -right-1 text-2xl font-bold"></span></div>, color: 'from-pink-500 to-pink-600', route: '/main/MyScheduler',visible:true },
-    { id: '6', label: 'מידע למנהל', icon: <BarChart3 className="w-12 h-12" />, color: 'from-teal-500 to-teal-600', route: '/main/managerDataMain', visible:user?.seeFinance  },
-    { id: '7', label: 'רשימת פרויקטים', icon: <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>, color: 'from-cyan-500 to-cyan-600', route: '/main/project-list', visible: true },
-    { id: '8', label: 'יומן שיחות', icon: <List className="w-12 h-12" />, color: 'from-amber-500 to-amber-600', route: '/main/conversations-List', visible: true },
+    { id: '6', label: 'רשימת פרויקטים', icon: <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>, color: 'from-cyan-500 to-cyan-600', route: '/main/project-list', visible: true },
+    { id: '7', label: 'יומן שיחות', icon: <List className="w-12 h-12" />, color: 'from-amber-500 to-amber-600', route: '/main/conversations-List', visible: true },
+    { id: '8', label: 'מידע למנהל', icon: <BarChart3 className="w-12 h-12" />, color: 'from-teal-500 to-teal-600', route: '/main/managerDataMain', visible:user?.seeFinance  },
     
   ];
   const handleClick = (item: MenuItem) => {
@@ -97,14 +97,14 @@ useEffect(() => {
        // setShowMeetingModal(true);
         break;
        case '6':
-        navigate("/main/managerDataMain");
+        navigate("/main/project-list");
        // setShowMeetingModal(true);
         break;
       case '7':
-        navigate("/main/project-list");
+        navigate("/main/conversations-List");
         break;
       case '8':
-        navigate("/main/conversations-List");
+        navigate("/main/managerDataMain");
         break;
       default:
         break;

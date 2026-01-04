@@ -10,7 +10,7 @@ export default function EmployeeProfileCard({ employee }: Props) {
     if (img && img !== 'null') {
       return `data:image/jpeg;base64,${img}`;
     }
-    return '/images/default-profile.png'; // מ- public/images
+    return '/default-profile.png'; // from public/
   };
   // Add loading state while employee data is being fetched
   if (!employee) {

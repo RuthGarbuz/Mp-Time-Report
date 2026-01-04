@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { X, Calendar, Clock, MapPin, Link2, FileText, Bell, Repeat, Trash2 } from 'lucide-react';
 import type { CalendarDataModal, CalendarEventDto, CalendarPartData, Global } from '../../interface/meetingModel';
-import type { Project } from '../../interface/project';
+import type { Project } from '../../interface/projectModel';
 import type { SelectEmployeesList } from '../../interface/MaimModel';
 import { getProjectsList } from '../../services/TaskService';
 

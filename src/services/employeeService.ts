@@ -1,4 +1,3 @@
-// services/employeeService.js
 import authService from './authService';
 
 class EmployeeService {
@@ -36,7 +35,7 @@ class EmployeeService {
         jobScope: data.jobScope,
         expiresAt: data.expiration,
         timeHourReportID:data.timeHourReportID,
-        minutesHoursAmount:data.minutesHoursAmount,
+        minutesHoursAmount:data.minutesHoursAmount??0,
         editPermision:true,
         startTime:data.startTime,
         endTime:data.endTime,

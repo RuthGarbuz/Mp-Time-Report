@@ -63,7 +63,8 @@ class MeetingService {
         throw new Error(error || 'Failed to get meeting data');
       }
        const data: CalendarPartData = await response.json();
-    return data;
+  
+           return data;
       } catch (error) {
       console.error('Get meeting error:', error);
       throw error;
@@ -81,7 +82,6 @@ class MeetingService {
         database: user.dataBase,
         employeeID: user.id
       };
-
       const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
       const endpoint = `${dynamicBaseUrl}/Meeting/${functionName}`; // Make sure this is correct
 
