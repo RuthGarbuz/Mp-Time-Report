@@ -31,6 +31,7 @@ const HomePage: React.FC<MainAppProps> = ({ onLogout }) => {
   // const [newContact, setNewContact] = useState<PhoneBook | null>(null);
   const { openModal, closeModal } = useModal();
     const [user, setUser] = useState<any>(null);
+    
   const navigate = useNavigate();
   useEffect(() => {
     const fetchEmployee = async () => {

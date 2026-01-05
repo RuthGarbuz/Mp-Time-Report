@@ -1,5 +1,5 @@
 import type { Contact, Conversation, ConversationData, ConversationLogType } from "../interface/ConversationModel";
-import type { Task } from "../interface/task/TaskModel";
+import type { Task } from "../pages/tasks/models/task.model";
 import authService from "./authService";
 export const getProjectsList= async ()=>{ 
   try {
