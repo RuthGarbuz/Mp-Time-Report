@@ -1,361 +1,122 @@
-import { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2} from 'lucide-react';
-import type { Employee, TimeHourReportsType } from '../../interface/TimeHourModel';
-import type { TimeRecord } from '../../interface/HourReportModal';
+/**
+ * ReportList Component
+ * 
+ * Main component for displaying and managing weekly time reports.
+ * Features:
+ * - Week navigation (previous/next/today)
+ * - Report grid with time entries
+ * - Add/Edit/Delete reports
+ * - Weekly statistics (total hours, days worked)
+ * - Permission-based access control
+ * 
+ * Refactored to use custom hooks for better separation of concerns.
+ */
+
+import { useRef } from 'react';
+import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2 } from 'lucide-react';
 import "tailwindcss";
-import { TimeType } from '../../enum';
-import React from 'react';
-import authService from '../../services/authService';
-import timeRecordService from '../../services/timeRecordService';
 import EmployeeProfileCard from '../shared/employeeProfileCard';
 import ConfirmModal from '../shared/confirmDeleteModal';
 import ReportModal from './createUpdateReportModal';
 import { useModal } from '../ModalContextType';
+import { useReportList } from './hooks';
+
 const ReportList = () => {
   const rowRef = useRef<HTMLDivElement>(null);
-  const [editingReportId, setEditingReportId] = useState<number | null>(null);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
-  const [contextMenuRowId, setContextMenuRowId] = useState<number | null>(null);
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [totalTime, setTotalTime] = useState<string>();
-  const [totalDay, setTotalDay] = useState<number>();
-  // Date navigation
-  const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [filteredReports, setFilteredReports] = useState<TimeRecord[] | null>(null);
-  // Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [typeReports, setTypeReports] = useState<TimeHourReportsType[]>([]);
-  const [editPermision, setEditPermision] = useState(false);
-  const [allowAddReport, setAllowAddReport] = useState(false);
-const [errorMessage, setErrorMessage] = useState<string[] | null>(null);
-const { openModal, closeModal } = useModal();
-
-  const [newReport, setNewReport] = useState<TimeRecord>(
-    {
-      date: new Date(),
-      type: TimeType.Regular,
-      typeID: 5,
-      clockInTime: "",
-      clockOutTime: "",
-      notes: ""
-    }
-  );
-  //setHousrForFreeDay();
-  const initNewReport = (): void => {
-    setErrorMessage(null);
-    let calculateclockOutTime = ""
-    if (employee?.minutesHoursAmount) {
-      calculateclockOutTime = addTime("08:00", employee.minutesHoursAmount)
-    }
-    setNewReport({
-      date:formatDateOnly(currentWeek) as unknown as Date,
-      type: TimeType.Regular,
-      typeID: 5,
-      clockInTime: "08:00",
-      clockOutTime: calculateclockOutTime,
-      notes: ""
-    })
-  }
-  // Sample reports data
-  const [reports, setReports] = useState<TimeRecord[]>([]);
- 
-  const timeToMinutes = (time: string): number => {
-    const [hours, minutes] = time.split(":").map(Number);
-    return hours * 60 + minutes;
-  };
-  function toDateString(date: string | Date): string | null {
-    if (!date) return null;
-    let d: Date;
-    if (date instanceof Date) {
-      d = date;
-    } else if (typeof date === "string") {
-      d = new Date(date);
-    } else {
-      return null;
-    }
-    return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
-  }
- function toLocalISOString(date: Date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-   
-    return `${d}-${m}-${y}`;
-  }
-  const validateOverlappingReports = (reports: TimeRecord[]): string[] => {
-    const errors: string[] = [];
-    for (let i = 0; i < reports.length; i++) {
-      const reportA = reports[i];
-      const dateA = toDateString(reportA.date);
-
-      if (!reportA.clockInTime || !reportA.clockOutTime) continue;
-      if (reportA.clockInTime === "-" || reportA.clockOutTime === "-") continue;
-
-      const startA = timeToMinutes(reportA.clockInTime);
-      const endA = timeToMinutes(reportA.clockOutTime);
-
-      for (let j = i + 1; j < reports.length; j++) {
-        const reportB = reports[j];
-        if(reportB.id===reportA.id) continue; 
-        const dateB = toDateString(reportB.date);
-        if (dateA !== dateB) continue;
-        if (!reportB.clockInTime || !reportB.clockOutTime) continue;
-        if (reportB.clockInTime === "-" || reportB.clockOutTime === "-") continue;
-
-        const startB = timeToMinutes(reportB.clockInTime);
-        const endB = timeToMinutes(reportB.clockOutTime);
-
-        const isOverlap = startA < endB && startB < endA;
-
-        if (isOverlap) {
-          errors.push(`יש דיווחים מתאריך ${toLocalISOString(new Date(reportA.date))} שחופפים בשעות`);
-        }
-      }
-    }
-
-    return errors;
-  };
-  const filterReport = (reportData: TimeRecord[]) => {
-    setTotalTime(getTotalTime(reportData));
-    setTotalDay(getReportedDaysCount(reportData))
-    setFilteredReports(reportData);
-  }
-  const getReportedDaysCount = (reports: TimeRecord[]): number => {
-    const uniqueDates = new Set<string>();
-
-    for (const report of reports) {
-      if (report.typeID !== 5 && report.typeID !== 6) continue;
-      if (report.date) {
-        uniqueDates.add(report.date.toString());
-      }
-    }
-    return uniqueDates.size;
-  };
-
+  const { openModal, closeModal } = useModal();
   
-  const getTotalTime = (reports: TimeRecord[]): string => {
-    let totalMinutes = 0;
+  // Use custom hook for all report list logic
+  const {
+    employee,
+    reports,
+    filteredReports,
+    typeReports,
+    currentWeek,
+    totalTime,
+    totalDay,
+    editPermission,
+    allowAddReport,
+    isModalOpen,
+    newReport,
+    editingReportId,
+    errorMessage,
+    isConfirmOpen,
+    itemToDelete,
+    contextMenuRowId,
+    navigateWeek,
+    openNewReport,
+    openEditReport,
+    closeReportModal,
+    handleSubmit,
+    setNewReport,
+    onDeleteClick,
+    confirmDelete,
+    cancelDelete,
+    setContextMenuRowId,
+    getReportTypeStyle
+  } = useReportList();
 
-    for (const report of reports) {
-      if (report.typeID !== 5 && report.typeID !== 6) continue;
-      if (!report.total || !report.total.includes(':')) continue;
 
-      const [hoursStr, minutesStr] = report.total.split(':');
-
-      const hours = parseInt(hoursStr, 10);
-      const minutes = parseInt(minutesStr, 10);
-
-      if (!isNaN(hours) && !isNaN(minutes)) {
-        totalMinutes += hours * 60 + minutes;
-      }
-    }
-
-
-    const totalHours = Math.floor(totalMinutes / 60);
-    const remainingMinutes = totalMinutes % 60;
-
-    const formattedHours = String(totalHours).padStart(2, '0');
-    const formattedMinutes = String(remainingMinutes).padStart(2, '0');
-
-    return `${formattedHours}:${formattedMinutes}`;
+  /**
+   * Helper function to format date for display
+   */
+  const formatDateForDisplay = (date: Date): string => {
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = String(d.getFullYear()).slice(-2);
+    return `${day}/${month}/${year}`;
   };
 
-  // Format date for display
-  const formatWeekRange = (inputDate: string | number | Date) => {
+  /**
+   * Helper function to format week range for display
+   */
+  const formatWeekRangeDisplay = (inputDate: Date): string => {
     const date = new Date(inputDate);
     const dayOfWeek = date.getDay(); // 0 = Sunday
 
-    // קבע את תחילת השבוע ליום ראשון
     const startOfWeek = new Date(date);
     startOfWeek.setDate(date.getDate() - dayOfWeek);
 
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    const formatDate = (d: Date) => {
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const year = String(d.getFullYear()).slice(-2);
-      return `${day}/${month}/${year}`;
-    };
-
-    return `${formatDate(startOfWeek)} - ${formatDate(endOfWeek)}`;
-  };
-  const onDeleteClick = (id: number) => {
-    setItemToDelete(id);
-    setIsConfirmOpen(true);
+    return `${formatDateForDisplay(startOfWeek)} - ${formatDateForDisplay(endOfWeek)}`;
   };
 
-  // כשמאשרים מחיקה
-  const confirmDelete = async () => {
-    if (itemToDelete !== null) {
-    try {
-      await timeRecordService.deleteTimeRecord(itemToDelete); // שליחה לשרת
-      const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
-      setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
-    } catch (error) {
-      console.error('Error adding new report:', error);
-    }
-    }
-    setIsConfirmOpen(false);
-    setItemToDelete(null);
+  /**
+   * Handle opening new report modal
+   */
+  const handleOpenNewReport = () => {
+    openNewReport();
+    openModal();
   };
-  const handleUpdateRecord = async () => {
-try {
-      await timeRecordService.insertTimeRecord(newReport,"UpdateTimeRecordDataAsync"); // שליחה לשרת
-      const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
-      setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
-    } catch (error) {
-      console.error('Error adding new report:', error);
-    }
-  }
-  const handleAddNewRecord = async () => {
-    try {
-      await timeRecordService.insertTimeRecord(newReport,"InsertTimeRecordDataAsync"); // שליחה לשרת
-      const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
-      setReports(storedTimeRecord ?? []);// רענון הנתונים מהשרת
-    } catch (error) {
-      console.error('Error adding new report:', error);
-    }
+
+  /**
+   * Handle opening edit report modal
+   */
+  const handleOpenEditReport = (id: number) => {
+    openEditReport(id);
+    openModal();
   };
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent<Element>) => {
-    e.preventDefault(); // Always prevent default first
 
-    
-    if (!newReport.clockInTime || !newReport.clockOutTime) {
-      return 0;
-    }
-    const newUpdateReports = [...reports, { ...newReport}]
-    const validateError = validateOverlappingReports(newUpdateReports)
-      if (validateError.length !== 0) {
-        setErrorMessage(validateError);
-        //alert(validateError);
-        return;
-      }
-    // const totalHours = calculateTotalHours(newReport.clockInTime, newReport.clockOutTime);
-    // newReport.total = totalHours;
-    if (editingReportId !== null) {
-          handleUpdateRecord()
-
-      setEditingReportId(null);
-    } else {
-      
-      handleAddNewRecord()
-    }
-
-    // ✅ Close only after successful handling
-    setIsModalOpen(false);
-    closeModal();
-  };
- 
-  // Reset form when closing modal
-  const closeReportModal = () => {
-   
-    //setTypeReport(typeReports.find((t) => t.id === 5) || null)
-    setIsModalOpen(false)
+  /**
+   * Handle closing report modal
+   */
+  const handleCloseReportModal = () => {
+    closeReportModal();
     closeModal();
   };
 
-
-
-  const navigateWeek = (direction: 'prev' | 'next' | 'today') => {
-    let newDay: Date;
-
-    if (direction !== 'today') {
-      const base = new Date(currentWeek); // לצורך חישוב שבוע חדש
-      base.setDate(base.getDate() + (direction === 'next' ? 7 : -7));
-      newDay = base;
-    } else {
-      newDay = new Date(); // היום
-    }
-
-    setCurrentWeek(newDay);
-    filterReport(reports);//newDay,
-
-  };
-function formatDateOnly(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-   useEffect(() => {
-   
-    const permisionEmployee = authService.getCurrentEmployee();
-    if (permisionEmployee) 
-      {
-      setEditPermision(permisionEmployee.editPermision);
-      }
-  }, []);
-  useEffect(() => {
-    const permisionUser = authService.getCurrentUser();
-    if (permisionUser) {
-      setAllowAddReport(permisionUser.allowAddReport);
-    }
-   
-  }, []);
-  useEffect(() => {
-    const storedEmployee = timeRecordService.getEmployee();
-    if (storedEmployee) {
-      setEmployee(storedEmployee);
-    } else {
-      setEmployee({
-        name: "משתמש לא ידוע",
-        profileImage: "https://via.placeholder.com/150"
-      });
-    }
-    const fetchData = async () => {
-      try {
-        const storedTimeRecord = await timeRecordService.getTimeRecordsData(currentWeek);
-        setReports(storedTimeRecord ?? []);
-        initNewReport()
-      } catch (error) {
-        console.error('Failed to fetch time records:', error);
-        setReports([]);
-      }
-    };
-
-    fetchData();
-  }, [currentWeek]);
-
-  useEffect(() => {
+  /**
+   * Handle form submission with modal close
+   */
+  const handleFormSubmit = (e: React.FormEvent) => {
+    handleSubmit(e);
     closeModal();
-    filterReport(reports);//currentWeek,
-  }, [reports]);
-  useEffect(() => {
-    const json = localStorage.getItem("timeHourReportsTypes");
-    if (json) {
-      try {
-        const list: TimeHourReportsType[] = JSON.parse(json);
-        setTypeReports(list);
-      } catch (e) {
-        console.error("Failed to parse localStorage:", e);
-      }
-    }
-  }, []);
-  const getReportTypeStyle = (type: number) => {
-    switch (type) {
-      case 5:
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 1://"מחלה":
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 3://"חופש":
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 6://"עבודה מהבית":
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 4://"מילואים":
-        return 'bg-pink-100 text-pink-800 border-red-200';
-      case 2://"העדרות בתשלום":
-        return 'bg-orange-100 text-orange-800 orange-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-
   };
 
-  // Add loading state while employee data is being fetched
+  // Show loading state while employee data is being fetched
   if (!employee) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans flex items-center justify-center" dir="rtl">
@@ -367,54 +128,15 @@ function formatDateOnly(d: Date): string {
     );
   }
 
-  function onUpdateClick(id: number) {
-    setErrorMessage(null);
-    const updateReport = reports.find(report => report.id === id);
-    setNewReport({
-      id: updateReport ? updateReport.id : undefined,
-      date: updateReport ? updateReport.date : new Date(),
-      type: updateReport ? updateReport.type : TimeType.Regular,
-      typeID:updateReport ? updateReport.typeID :5,
-      clockInTime: updateReport ? updateReport.clockInTime : '',
-      clockOutTime: updateReport ? updateReport.clockOutTime : '',
-      notes: updateReport ? updateReport.notes : ''
-    });
-    setEditingReportId(id);
-    setIsModalOpen(true);
-    openModal();
-  }
-  function addTime(clockInTimeTime: string, duration: string): string {
-    const [clockInTimeHours, clockInTimeMinutes] = clockInTimeTime.split(':').map(Number);
-    const [durationHours, durationMinutes] = duration.split(':').map(Number);
-
-    let totalMinutes = clockInTimeMinutes + durationMinutes;
-    let totalHours = clockInTimeHours + durationHours;
-
-    if (totalMinutes >= 60) {
-      totalMinutes -= 60;
-      totalHours += 1;
-    }
-
-    // Handle overflow beyond 24 hours if needed
-    totalHours = totalHours % 24;
-
-    const clockOutTimeHoursStr = String(totalHours).padStart(2, '0');
-    const clockOutTimeMinutesStr = String(totalMinutes).padStart(2, '0');
-
-    return `${clockOutTimeHoursStr}:${clockOutTimeMinutesStr}`;
-  }
 
   return (
     <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
       <div className="max-w-6xl mx-auto h-full flex flex-col">
 
         {/* Employee Profile Section */}
-        <EmployeeProfileCard
-          employee={employee}
-        ></EmployeeProfileCard>
+        <EmployeeProfileCard employee={employee} />
 
         {/* Week Navigation */}
-
         <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
           <div className="flex items-center justify-between">
             <button
@@ -427,7 +149,7 @@ function formatDateOnly(d: Date): string {
             <div className="flex items-center gap-2 md:gap-3">
               <Calendar className="w-5 h-5 md:w-6 md:h-6 text-blue-500" />
               <h2 className="text-lg md:text-xl font-bold text-gray-800">
-                {formatWeekRange(currentWeek)}
+                {formatWeekRangeDisplay(currentWeek)}
               </h2>
             </div>
 
@@ -441,16 +163,10 @@ function formatDateOnly(d: Date): string {
         </div>
 
         {/* Add Report Button */}
-        { editPermision && allowAddReport && (
-          
+        {editPermission && allowAddReport && (
           <div className="mb-6">
             <button
-              onClick={() => {
-               // setError(null)
-                initNewReport()
-                setIsModalOpen(true)
-                openModal();
-              }}
+              onClick={handleOpenNewReport}
               className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
             >
               <Plus className="w-5 h-5" />
@@ -493,13 +209,7 @@ function formatDateOnly(d: Date): string {
                 {/* Date */}
                 <div className="w-[20%] text-center">
                   <div className="font-medium text-gray-800">
-                    {(() => {
-                      const d = new Date(report.date);
-                      const day = String(d.getDate()).padStart(2, '0');
-                      const month = String(d.getMonth() + 1).padStart(2, '0');
-                      const year = String(d.getFullYear()).slice(-2);
-                      return `${day}/${month}/${year}`;
-                    })()}
+                    {formatDateForDisplay(new Date(report.date))}
                   </div>
                   <div className="text-xs text-gray-500 hidden md:block">
                     {new Date(report.date).toLocaleDateString('he-IL', { weekday: 'long' })}
@@ -554,75 +264,45 @@ function formatDateOnly(d: Date): string {
                   </span>
                 </div>
                 {/* Total Hours */}
-                {contextMenuRowId ===report.id &&editPermision && allowAddReport && (//report.id 
-                 <div className=" top-1 left-1 flex gap-1 z-10">
-                  <button
-                    onClick={() => {
-                       if (report.id !== undefined) {
-                          //setModalTitle('עדכון דיווח מתאריך: ' + report.date);
-                          onUpdateClick(report.id);
+                {contextMenuRowId === report.id && editPermission && allowAddReport && (
+                  <div className=" top-1 left-1 flex gap-1 z-10">
+                    <button
+                      onClick={() => {
+                        if (report.id !== undefined) {
+                          handleOpenEditReport(report.id);
                         }
                         setContextMenuRowId(null);
-                    }
-                    }
-                    className=" text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => { 
-                      if (report.id !== undefined) onDeleteClick(report.id);
-                      setContextMenuRowId(null);
-                     }}
-                    className="text-red-500 hover:text-red-700 rounded-xl transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                  // <div className="absolute top-1 right-1 flex flex-col gap-1 z-10">
-                  //   <button
-                  //     onClick={() => {
-                  //       if (report.id !== undefined) onDeleteClick(report.id);
-                  //       setContextMenuRowId(null);
-                  //     }}
-                  //     className="bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow"
-                  //   >
-                  //     מחק
-                  //   </button>
-
-                  //   <button
-                  //     onClick={() => {
-                  //       if (report.id !== undefined) {
-                  //         //setModalTitle('עדכון דיווח מתאריך: ' + report.date);
-                  //         onUpdateClick(report.id);
-                  //       }
-                  //       setContextMenuRowId(null);
-                  //     }}
-                  //     className="bg-green-100 text-green-600 text-xs px-2 py-1 rounded shadow"
-                  //   >
-                  //     עדכון
-                  //   </button>
-                  // </div>
+                      }}
+                      className=" text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => { 
+                        if (report.id !== undefined) onDeleteClick(report.id);
+                        setContextMenuRowId(null);
+                      }}
+                      className="text-red-500 hover:text-red-700 rounded-xl transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 )}
             
               </div>
             ))}
           </div>
         </div>
+
+        {/* Confirm Delete Modal */}
         {isConfirmOpen && (
           <ConfirmModal
-    message="האם הנך בטוח שברצונך למחוק דיווח זה?"
-    onOk={() => {
-       confirmDelete();
-    }}
-    onCancel={() => {
-      setIsConfirmOpen(false);
-      setItemToDelete(null);
-    }}
-    okText="מחק"
-    cancelText="ביטול"
-  />
-         
+            message="האם הנך בטוח שברצונך למחוק דיווח זה?"
+            onOk={confirmDelete}
+            onCancel={cancelDelete}
+            okText="מחק"
+            cancelText="ביטול"
+          />
         )}
         {/* Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -653,20 +333,19 @@ function formatDateOnly(d: Date): string {
         </div>
       </div>
 
-     
+      {/* Report Modal */}
       {isModalOpen && (
         <ReportModal
-        isOpen={isModalOpen}
-        title={newReport.id ? "עדכון דיווח" : "הוספת דיווח חדש"}
-        newReport={newReport}
-        setNewReport={setNewReport}
-        typeReports={typeReports}
-        closeModal={closeReportModal}
-        handleSubmit={handleSubmit}
-        currentWeek={currentWeek}
-         errorMessage={errorMessage ? errorMessage.join(', ') : ""}
-      />
-       
+          isOpen={isModalOpen}
+          title={newReport.id ? "עדכון דיווח" : "הוספת דיווח חדש"}
+          newReport={newReport}
+          setNewReport={setNewReport}
+          typeReports={typeReports}
+          closeModal={handleCloseReportModal}
+          handleSubmit={handleFormSubmit}
+          currentWeek={currentWeek}
+          errorMessage={errorMessage ? errorMessage.join(', ') : ""}
+        />
       )}
     </div>
   );

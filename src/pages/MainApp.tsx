@@ -19,7 +19,7 @@ import ManagerDataMain from './managerData/managerDataMain';
 import ConversationList from './conversations/ConversationList';
 import MyScheduler from './meeting/myCalander';
 import { ModalProvider } from './ModalContextType';
-import ProjectList from './project/projectList';
+import ProjectList from './projects/projectList';
 const MainApp: React.FC<MainAppProps> = ({ onLogout }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const[titleName,setTitleName]=useState("");

@@ -1,193 +1,62 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Phone, Plus, Search, X } from 'lucide-react';
-import { getPhoneBookCompanyList } from '../../services/phoneBookService';
-import type { PhoneBook } from '../../interface/PhoneBookModel';
-import UpdatePhoneBook from './UpdatePhoneBook';
 import { useModal } from '../ModalContextType';
+import { usePhoneBook } from './hooks/usePhoneBook';
+import { createInitialContact, normalizeForWhatsApp } from './models';
+import UpdatePhoneBook from './UpdatePhoneBook';
 
 export default function BusinessPhonebook() {
-  const [selectedContact, setSelectedContact] = useState<PhoneBook | null>(null);
-
-  const [contactsList, setContactsList] = useState<PhoneBook[]>([]);
-
-
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [visibleCount, setVisibleCount] = useState(20);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const { openModal, closeModal } = useModal();
 
-  const [newContact, setNewContact] = useState<PhoneBook>(
-    {
-      id: 0,
-      firstName: '',
-      lastName: '',
-      company: '',
-      companyAddress: '',
-      companyPhone: '',
-      mobile: '',
-      email: '',
-      selectedCompanyId: 0,
-      companyCityID: 0
-    }
-  );
-
-  //   const [companies, setCompanies] = useState([
-  //     { id: 1, name: 'בנק הפועלים', address: 'רחב רוטשילד 1, תל אביב', phone: '03-5653000' },
-  //     { id: 2, name: 'טכנולוגיות אינטל', address: 'הר חוצבים 15, ירושלים', phone: '02-5894000' },
-  //     { id: 3, name: 'מיקרוסופט ישראל', address: 'אינשטיין 3, תל אביב', phone: '03-9721000' },
-  //     { id: 4, name: 'גוגל ישראל', address: 'טוצ\'ו 98, תל אביב', phone: '03-7600000' }
-  //   ]);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-const { openModal, closeModal } = useModal();
-
-
-
-  const getData = async () => {
-    const phoneBookData = await getPhoneBookCompanyList();
-
-    if (phoneBookData) {
-      setContactsList(phoneBookData.phoneBooks);
-
-    }
-
-  };
-
-  useEffect(() => {
-    setNewContact(
-      {
-        id: 0,
-        firstName: '',
-        lastName: '',
-        company: '',
-        companyAddress: '',
-        companyPhone: '',
-        mobile: '',
-        email: '',
-        selectedCompanyId: 0,
-        companyCityID: 0
-      }
-    )
-    getData();
-  }, []);
-
-  useEffect(() => {
-    closeModal();
-    setVisibleCount(20); // מתחילים מחדש
-  }, [searchTerm]);
+  const {
+    contacts,
+   
+    selectedContact,
+    isAddModalOpen,
+    isLoading,
+    filterState,
+    hasMore,
+    setSearchTerm,
+    loadMore,
+    openAddModal,
+    closeAddModal,
+    openEditModal,
+    closeEditModal,
+    handleSave,
+  } = usePhoneBook(openModal, closeModal);
 
   const handleScroll = () => {
-    if (!listRef.current) return;
+    if (!listRef.current || !hasMore) return;
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
 
     if (scrollTop + clientHeight >= scrollHeight - 50) {
-      setVisibleCount((prev) => Math.min(prev + 20, filteredContacts.length));
+      loadMore();
     }
   };
-
-
-  // Remove apostrophes for better matching (e.g., ג'ורג matches גורג)
-  const normalizeText = (text: string) => text.replace(/'/g, '').replace(/[-\s()]/g, '').toLowerCase();
-
-  const filteredContacts = contactsList.filter((contact) => {
-    const searchableText = normalizeText(
-      [
-        contact.firstName || '',
-        contact.lastName || '',
-        contact.company || '',
-        contact.companyPhone || '',
-        contact.mobile || ''
-      ].join(' ')
-    );
-    
-    // Split search term into words and check that ALL words appear in searchable text
-    const searchWords = searchTerm.trim().split(/\s+/).filter(word => word.length > 0);
-    
-    return searchWords.every(word => {
-      const normalizedWord = normalizeText(word);
-      return searchableText.includes(normalizedWord);
-    });
-  });
-  const visibleContacts = filteredContacts.slice(0, visibleCount);
-
-
-
-
   const callContact = (phone: string) => {
     if (!phone) return;
     const a = document.createElement('a');
     a.href = `tel:${phone}`;
     a.click();
-
-  };
-
-
-
-
-  // const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const email = e.target.value;
-  //   setNewContact({ ...newContact, email: e.target.value })
-  //   if (email && !validateEmail(email)) {
-  //     setEmailError("האימייל לא תקין");
-  //   } else {
-  //     setEmailError("");
-  //   }
-  // };
-
-
-
-  // const highlightMatch = (text: string, query: string) => {
-  //     if (!query) return text;
-
-  //     const regex = new RegExp(`(${query})`, 'gi');
-  //     return text.split(regex).map((part, i) =>
-  //         part.toLowerCase() === query.toLowerCase() ? (
-  //             <mark key={i} className="bg-yellow-200 font-bold">{part}</mark>
-  //         ) : (
-  //             part
-  //         )
-  //     );
-  // };
-  const normalizeForWhatsApp = (raw?: string | null) => {
-    if (!raw) return null;
-
-    // Keep only digits
-    let digits = raw.replace(/\D/g, "");
-
-    // Remove leading 00 (international prefix)
-    if (digits.startsWith("00")) digits = digits.slice(2);
-
-    // Remove leading country code 972 if repeated
-    if (digits.startsWith("972")) digits = digits.slice(3);
-
-    // Remove leading 0 from local numbers
-    if (digits.startsWith("0")) digits = digits.slice(1);
-
-    // Now always add 972 in front
-    digits = "972" + digits;
-
-    // Sanity check: only digits and reasonable length
-    if (!/^\d{11,12}$/.test(digits)) return null;
-
-    return digits;
   };
 
   return (
     <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
       <div className="max-w-6xl mx-auto h-full flex flex-col">
-        {/* <div className="relative"> */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative w-full ">
+        {/* Search Bar */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6 relative w-full">
           <input
-          // ref={(input) => input?.focus()}
             type="text"
             placeholder="חפש לפי שם או חברה..."
-            value={searchTerm}
+            value={filterState.searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="text-gray-600 w-full pr-4 pl-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
-          {searchTerm ? (
+          {filterState.searchTerm ? (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute  left-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+              className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
             >
               <X size={18} />
             </button>
@@ -195,60 +64,30 @@ const { openModal, closeModal } = useModal();
             <Search className="absolute left-8 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           )}
         </div>
-        {/* </div> */}
 
-        {/* Add Contact Modal */}
-        {/* Contact Modal */}
-        {selectedContact && (
-
-          <UpdatePhoneBook
-            mode='update'
-            contact={selectedContact}
-            onClose={() => { setSelectedContact(null);closeModal(); }}
-            onSave={() => { setSelectedContact(null); getData();closeModal(); }}
-
-
-          //handleAddContact={handleAddContact}
-          />
-        )}
-
-
-
-        {/* Add Contact Modal */}
-        {isAddModalOpen && (
-          <UpdatePhoneBook
-            mode='add'
-            contact={newContact}
-            onClose={() => { setIsAddModalOpen(false);closeModal(); }}
-            onSave={() => { setIsAddModalOpen(false); getData();closeModal(); }}
-
-          //handleAddContact={handleAddContact}
-
-          />
-
-        )}
-
-
+        {/* Contact List */}
         <div
           ref={listRef}
           onScroll={handleScroll}
           className="h-[calc(100vh-180px)] overflow-y-auto rounded-2xl shadow-2xl bg-white/10"
         >
-          <div className="bg-white rounded-3xl shadow-2xl p-2 ">
-         
-            {visibleContacts.map((contact, index) => (
-              <div key={index}
-                className="backdrop-blur-lg border-b border-white/20 py-6  mx-4 text-white flex justify-between items-center"
-                onClick={() => {
-                 
-                  setSelectedContact(contact)
-                  openModal();
-                }
-                 
-                }
-              >
-         
-                <div>
+          <div className="bg-white rounded-3xl shadow-2xl p-2">
+            {isLoading ? (
+              <div className="text-center py-12 text-gray-500">טוען...</div>
+            ) : contacts.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Phone className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p>לא נמצאו אנשי קשר</p>
+              </div>
+            ) : (
+              <>
+                {contacts.map((contact, index) => (
+                  <div
+                    key={contact.id || index}
+                    className="backdrop-blur-lg border-b border-white/20 py-6 mx-4 text-white flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors rounded-lg px-2"
+                    onClick={() => openEditModal(contact)}
+                  >
+                    <div>
                   <div className="text-lg font-semibold text-gray-800">{contact.firstName} {contact.lastName}</div>
                   <div className="text-sm text-gray-500">{contact.company}</div>
                   <div className="text-sm flex items-center gap-2">
@@ -305,23 +144,40 @@ const { openModal, closeModal } = useModal();
 
                 </div>
 
-              </div>
-            ))}
-            {visibleCount < filteredContacts.length && (
-              <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
+                  </div>
+                ))}
+                {hasMore && (
+                  <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
+                )}
+              </>
             )}
           </div>
         </div>
 
+        {/* Modals */}
+        {selectedContact && (
+          <UpdatePhoneBook
+            mode="update"
+            contact={selectedContact}
+            onClose={closeEditModal}
+            onSave={handleSave}
+          />
+        )}
 
-        {/* Floating Add Button - Fixed Position */}
+        {isAddModalOpen && (
+          <UpdatePhoneBook
+            mode="add"
+            contact={createInitialContact()}
+            onClose={closeAddModal}
+            onSave={handleSave}
+          />
+        )}
+
+
+        {/* Floating Add Button */}
         <div className="fixed bottom-20 right-6 z-40 group">
           <button
-
-            onClick={() => {
-              setIsAddModalOpen(true);
-              openModal();
-            }}
+            onClick={openAddModal}
             className="bg-gradient-to-r from-green-400 to-green-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
           >
             <Plus className="w-6 h-6" />

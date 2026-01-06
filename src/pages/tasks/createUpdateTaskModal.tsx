@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import type { Task } from './models/task.model';
 import { createInitialTask } from './models/task.model';
 import { useTaskModal } from './hooks/useTaskModal';
 import TaskModalForm from './components/TaskModalForm';
+import { useModal } from '../ModalContextType';
 
 type TaskModalProps = {
   isOpen: boolean;
@@ -49,7 +50,15 @@ const CreateUpdateTaskModal: React.FC<TaskModalProps> = ({
   });
 
   if (!isOpen) return null;
-
+  const { openModal, closeModal } = useModal();
+useEffect(() => {
+  if (isOpen) {
+    openModal();
+    return () => {
+      closeModal();
+    };
+  }
+}, [isOpen, openModal, closeModal]);
   return (
     <div
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"

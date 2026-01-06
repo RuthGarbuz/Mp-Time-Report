@@ -1,152 +1,273 @@
-import React, { useState } from 'react';
-import { X, Check } from 'lucide-react';
-import type { Contact } from '../../interface/ConversationModel';
+/**
+ * ContactsGrid Component - Refactored Version
+ * 
+ * רכיב grid לבחירת אנשי קשר עם יכולת חיפוש וסינון.
+ * המימוש החדש משתמש ב-hook מותאם אישית (useContactGrid) להפרדת לוגיקה עסקית מהממשק,
+ * ובאינטגרציה עם useModal ל scroll locking.
+ * 
+ * תכונות עיקריות:
+ * - חיפוש בזמן אמת (שם, חברה)
+ * - תמיכה במצב בחירה בודדת או מרובה
+ * - תצוגת מונה לאנשי קשר שנבחרו
+ * - אינטגרציה עם useModal context לנעילת scroll
+ * 
+ * @props contacts - רשימת אנשי הקשר
+ * @props onClose - פונקציה לסגירת הגריד
+ * @props handleSelectContact - פונקציה לבחירת איש קשר (במצב בחירה בודדת)
+ * @props isMultiSelect - האם לאפשר בחירת מספר אנשי קשר (ברירת מחדל: false)
+ * @props onConfirmSelection - פונקציה לאישור בחירה מרובה (אופציונלי)
+ */
 
-type ConversationModalProps = {
-    onClose: () => void;
-    contacts: Contact[];
-    handleSelectContact: (contact: Contact | Contact[]) => Promise<void> | void;
-    isMulti?: boolean;
+import React, { useEffect } from "react";
+import { X, Search } from "lucide-react";
+import { useContactGrid } from "./hooks/useContactGrid";
+import { useModal } from "../ModalContextType";
+import type { Contact } from "./models";
+
+type ContactsGridProps = {
+  contacts: Contact[];
+  onClose: () => void;
+  handleSelectContact: (contact: Contact) => void;
+  isMultiSelect?: boolean;
+  onConfirmSelection?: (contacts: Contact[]) => void;
 };
 
-const ContactsGrid: React.FC<ConversationModalProps> = ({
-    onClose,
-    contacts,
-    handleSelectContact,
-    isMulti = false,
+const ContactsGrid: React.FC<ContactsGridProps> = ({
+  contacts,
+  onClose,
+  handleSelectContact,
+  isMultiSelect = false,
+  onConfirmSelection,
 }) => {
-    const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-    const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
+  // ============================================================================
+  // HOOKS
+  // ============================================================================
+  
+  const { openModal, closeModal } = useModal();
+  
+  // Wrapper function לטיפול נכון בטיפוסים
+  const handleSelect = (contact: Contact | Contact[]) => {
+    if (isMultiSelect && onConfirmSelection) {
+      onConfirmSelection(Array.isArray(contact) ? contact : [contact]);
+    } else if (!Array.isArray(contact)) {
+      handleSelectContact(contact);
+    }
+  };
+  
+  const {
+    // State
+    searchQuery,
+    selectedContacts,
+    
+    // Computed
+    filteredContacts,
+    selectedCount,
+    isConfirmDisabled,
+    
+    // Actions
+    setSearchQuery,
+    handleToggleContact,
+    handleConfirm,
+    isContactSelected,
+  } = useContactGrid({
+    contacts,
+    onSelect: handleSelect,
+    onClose,
+    isMulti: isMultiSelect
+  });
 
-    const filteredContacts = contacts.filter(contact =>
-        contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        contact.companyName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
-    const handleToggleContact = (contact: Contact) => {
-        if (isMulti) {
-            setSelectedContacts(prev => {
-                const exists = prev.find(c => c.id === contact.id);
-                if (exists) {
-                    return prev.filter(c => c.id !== contact.id);
-                }
-                return [...prev, contact];
-            });
-        } else {
-            setSelectedContact(contact);
-        }
+  // ============================================================================
+  // EFFECTS - Scroll Locking
+  // ============================================================================
+  
+  /**
+   * אינטגרציה עם useModal context:
+   * נועל את ה-scroll של הדף כאשר הגריד נפתח
+   */
+  useEffect(() => {
+    openModal();
+    
+    // Cleanup: שחרר נעילה כאשר הקומפוננטה מוסרת
+    return () => {
+      closeModal();
     };
+  }, [openModal, closeModal]);
 
-    const isContactSelected = (contact: Contact) => {
-        if (isMulti) {
-            return selectedContacts.some(c => c.id === contact.id);
-        }
-        return selectedContact?.id === contact.id;
-    };
+  // ============================================================================
+  // HANDLERS
+  // ============================================================================
+  
+  /**
+   * מטפל בלחיצה על איש קשר:
+   * - במצב בחירה בודדת: סוגר את הגריד ומחזיר את איש הקשר
+   * - במצב בחירה מרובה: מוסיף/מסיר מהרשימה
+   */
+  const onContactClick = (contact: Contact) => {
+    if (!isMultiSelect) {
+      // Single select mode: סגור מיד
+      handleSelectContact(contact);
+      onClose();
+    } else {
+      // Multi-select mode: toggle selection
+      handleToggleContact(contact);
+    }
+  };
 
-    const handleConfirm = async () => {
-        if (isMulti) {
-            if (selectedContacts.length > 0) {
-                await handleSelectContact(selectedContacts);
-            }
-        } else {
-            if (selectedContact) {
-                await handleSelectContact(selectedContact);
-            }
-        }
-    };
+  /**
+   * מטפל באישור בחירה מרובה
+   */
+  const onConfirm = () => {
+     handleConfirm();
+    if (onConfirmSelection) {
+      onConfirmSelection(selectedContacts); 
+    }
+    onClose();
+  };
 
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-auto p-5 overflow-hidden">
-                <div className="flex items-center justify-between pb-2 mb-3">
-                    <h2 className="text-lg font-semibold text-gray-800">
-                        רשימת אנשי קשר {isMulti && `(${selectedContacts.length} נבחרו)`}
-                    </h2>
-                    <button 
-                        onClick={onClose} 
-                        className="hover:bg-gray-100 rounded-lg p-2 transition"
-                    >
-                        <X size={22} />
-                    </button>
-                </div>
-
-                <input 
-                    type="text"
-                    placeholder="חיפוש..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                />
-
-                <div className="max-h-[60vh] overflow-y-auto rounded-lg">
-                    <table className="w-full border-collapse table-fixed">
-                        <thead className="bg-gray-100 sticky top-0 z-10">
-                            <tr>
-                                <th className="text-center p-3 font-semibold text-gray-700 border-b w-1/5">בחר</th>
-                                <th className="text-right p-3 font-semibold text-gray-700 border-b w-2/5">שם איש קשר</th>
-                               {!isMulti &&( <th className="text-right p-3 font-semibold text-gray-700 border-b w-2/5">חברה</th>)}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredContacts.length === 0 ? (
-                                <tr>
-                                    <td colSpan={3} className="text-center py-8 text-gray-500">
-                                        לא נמצאו תוצאות
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredContacts.map((contact) => (
-                                    <tr 
-                                        key={contact.id}
-                                        className="border-b border-gray-200 hover:bg-purple-50 transition cursor-pointer"
-                                        onClick={() => handleToggleContact(contact)}
-                                        onDoubleClick={() => !isMulti && handleSelectContact(contact)}
-                                    >
-                                        <td className="p-3 flex items-center justify-center">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleToggleContact(contact);
-                                                }}
-                                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-                                                    isContactSelected(contact)
-                                                        ? 'bg-green-500 border-green-500 text-white'
-                                                        : 'border-gray-300 hover:border-green-400'
-                                                }`}
-                                            >
-                                                {isContactSelected(contact) && <Check size={16} />}
-                                            </button>
-                                        </td>
-                                        <td className="p-3 text-gray-800 break-words">{contact.name}</td>
-                             {!isMulti &&(<td className="p-3 text-gray-600 break-words">{contact.companyName}</td>)}
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-2 mt-4">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition"
-                    >
-                        ביטול
-                    </button>
-                    <button
-                        onClick={handleConfirm}
-                        disabled={isMulti ? selectedContacts.length === 0 : !selectedContact}
-                        className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:from-purple-700 hover:to-pink-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        אישור
-                    </button>
-                </div>
-            </div>
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
+        
+        {/* ========== HEADER ========== */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-gray-800">
+              בחירת אנשי קשר
+            </h2>
+            {/* מונה לבחירה מרובה */}
+            {isMultiSelect && selectedCount > 0 && (
+              <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                {selectedCount} נבחרו
+              </span>
+            )}
+          </div>
+          
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
-    );
+
+        {/* ========== SEARCH BAR ========== */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="חיפוש לפי שם או חברה..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              dir="rtl"
+            />
+          </div>
+        </div>
+
+        {/* ========== CONTACTS GRID ========== */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {filteredContacts.length === 0 ? (
+            // Empty state
+            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+              <Search className="w-16 h-16 mb-4" />
+              <p className="text-lg font-medium">לא נמצאו אנשי קשר</p>
+              <p className="text-sm">נסה לשנות את מילת החיפוש</p>
+            </div>
+          ) : (
+            // Contacts grid
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredContacts.map((contact) => {
+                const isSelected = isContactSelected(contact);
+                
+                return (
+                  <div
+                    key={contact.id}
+                    onClick={() => onContactClick(contact)}
+                    className={`
+                      p-4 rounded-lg border-2 cursor-pointer transition-all duration-200
+                      ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-50 shadow-md"
+                          : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                      }
+                    `}
+                  >
+                    {/* Checkbox (Multi-select only) */}
+                    {isMultiSelect && (
+                      <div className="flex items-center justify-end mb-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {}} // Handled by parent div onClick
+                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Contact Name */}
+                    <div className="text-lg font-bold text-gray-800 mb-2 text-right">
+                      {contact.name}
+                    </div>
+                    
+                    {/* Company Name */}
+                    <div className="text-sm text-gray-600 mb-3 text-right">
+                      {contact.companyName}
+                    </div>
+                    
+                    {/* Contact Details */}
+                    <div className="space-y-1 text-sm text-gray-500 text-right">
+                      {contact.email && (
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="truncate">{contact.email}</span>
+                          <span>📧</span>
+                        </div>
+                      )}
+                      {contact.contactCell && (
+                        <div className="flex items-center justify-end gap-2">
+                          <span dir="ltr">{contact.contactCell}</span>
+                          <span>📱</span>
+                        </div>
+                      )}
+                      {contact.contactTell && (
+                        <div className="flex items-center justify-end gap-2">
+                          <span dir="ltr">{contact.contactTell}</span>
+                          <span>📞</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ========== FOOTER (Multi-select only) ========== */}
+        {isMultiSelect && (
+          <div className="p-4 border-t border-gray-200 flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+            >
+              ביטול
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isConfirmDisabled}
+              className="flex-1 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              אשר בחירה ({selectedCount})
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default ContactsGrid;
