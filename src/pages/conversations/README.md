@@ -1,32 +1,32 @@
-# Conversations Module - ארכיטקטורה
+# Conversations Module - Architecture
 
-## סקירה כללית
-מודול ניהול שיחות עם לקוחות עם ארכיטקטורה נקייה ומודולרית. המבנה מבוסס על הפרדת אחריות (Separation of Concerns) ו-Custom Hooks Pattern.
+## Overview
+Customer conversation management module with clean and modular architecture. The structure is based on Separation of Concerns and Custom Hooks Pattern.
 
-## מבנה תיקיות
+## Folder Structure
 
 ```
 conversations/
-├── models/                          # מודלים וטיפוסים
-│   ├── conversation.model.ts        # ממשקי נתוני שיחה ואיש קשר
-│   ├── conversationForm.state.ts    # מצבי טופס ושגיאות
-│   ├── conversationValidation.ts    # ולידציה
+├── models/                          # Models and types
+│   ├── conversation.model.ts        # Conversation and contact data interfaces
+│   ├── conversationForm.state.ts    # Form states and errors
+│   ├── conversationValidation.ts    # Validation logic
 │   └── index.ts                     # Barrel exports
 ├── hooks/                           # Custom React Hooks
-│   ├── useConversationList.ts       # לוגיקת רשימת השיחות
-│   ├── useConversationModal.ts      # לוגיקת מודאל יצירה/עריכה
-│   └── useContactGrid.ts            # לוגיקת בחירת אנשי קשר
-├── components/                      # רכיבי UI משותפים (עתידי)
-├── ConversationList.tsx             # רכיב ראשי - רשימת שיחות
-├── conversationModalOpen.tsx        # מודאל יצירה/עריכה/צפייה
-└── contactGrid.tsx                  # רשת בחירת אנשי קשר
+│   ├── useConversationList.ts       # Conversation list logic
+│   ├── useConversationModal.ts      # Create/edit modal logic
+│   └── useContactGrid.ts            # Contact selection logic
+├── components/                      # Shared UI components (future)
+├── ConversationList.tsx             # Main component - conversation list
+├── conversationModalOpen.tsx        # Create/edit/view modal
+└── contactGrid.tsx                  # Contact selection grid
 ```
 
-## ארכיטקטורה
+## Architecture
 
 ### 1. Models Layer (`models/`)
 
-**תפקיד:** הגדרת טיפוסים, ממשקים ופונקציות עזר pure.
+**Purpose:** Define types, interfaces, and pure helper functions.
 
 #### `conversation.model.ts`
 ```typescript
@@ -61,7 +61,7 @@ export interface ConversationLogType {
 ```
 
 #### `conversationForm.state.ts`
-מגדיר את מצב הטופס והערכים ההתחלתיים:
+Defines form state and initial values:
 ```typescript
 export interface ConversationFormErrors {
   subject: string;
@@ -72,7 +72,7 @@ export interface ConversationFormErrors {
 ```
 
 #### `conversationValidation.ts`
-מחלקה ייעודית לולידציה:
+Dedicated validation class:
 ```typescript
 export class ConversationValidator {
   static validate(conversation: ConversationData): ConversationFormErrors;
@@ -82,20 +82,20 @@ export class ConversationValidator {
 }
 ```
 
-**יתרונות:**
-- ✅ קוד טסטבילי (pure functions)
-- ✅ ניתן לשימוש חוזר
-- ✅ הפרדה בין לוגיקה עסקית ל-UI
-- ✅ Type safety מלא
+**Benefits:**
+- ✅ Testable code (pure functions)
+- ✅ Reusable
+- ✅ Separation between business logic and UI
+- ✅ Full type safety
 
 ---
 
 ### 2. Hooks Layer (`hooks/`)
 
-**תפקיד:** ניהול State, Side Effects ולוגיקה עסקית.
+**Purpose:** Manage State, Side Effects, and business logic.
 
 #### `useConversationList.ts`
-מנהל את רשימת השיחות:
+Manages the conversation list:
 
 ```typescript
 export const useConversationList = (projectId?: number) => {
@@ -105,10 +105,10 @@ export const useConversationList = (projectId?: number) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<ConversationData | null>(null);
   
-  // טעינת נתונים
+  // Load data
   const loadConversations = useCallback(async () => { ... }, [selectedProject]);
   
-  // פעולות CRUD
+  // CRUD operations
   const openNewConversation = () => { ... };
   const openConversation = (conversation: ConversationData) => { ... };
   const deleteConversation = async (id: number) => { ... };
@@ -128,17 +128,17 @@ export const useConversationList = (projectId?: number) => {
 };
 ```
 
-**אחריות:**
-- 📋 ניהול רשימת השיחות
-- 🔍 סינון לפי פרויקט
-- 🔄 טעינת נתונים מה-API
-- 🗑️ מחיקת שיחות
-- 📝 פתיחת מודאל יצירה/עריכה
+**Responsibilities:**
+- 📋 Manage conversation list
+- 🔍 Filter by project
+- 🔄 Load data from API
+- 🗑️ Delete conversations
+- 📝 Open create/edit modal
 
 ---
 
 #### `useConversationModal.ts`
-מנהל את מודאל היצירה/עריכה:
+Manages the create/edit modal:
 
 ```typescript
 export const useConversationModal = ({
@@ -155,19 +155,19 @@ export const useConversationModal = ({
   const [logTypes, setLogTypes] = useState<ConversationLogType[]>([]);
   const [contactsList, setContactsList] = useState<Contact[]>([]);
   
-  // מעבר בין מצבים: צפייה/עריכה/הוספה חדשה
+  // Switch between modes: view/edit/add new
   const handleEditOrAdd = (id: number) => {
     if (id === 0) {
       setIsNew(true);
       setIsReadOnly(false);
-      // איפוס טופס חדש
+      // Reset new form
     } else {
       setIsNew(false);
       setIsReadOnly(false);
     }
   };
   
-  // שמירה עם ולידציה
+  // Save with validation
   const handleSave = async () => {
     const validationErrors = ConversationValidator.validate(conversation);
     if (hasErrors(validationErrors)) {
@@ -200,17 +200,17 @@ export const useConversationModal = ({
 };
 ```
 
-**אחריות:**
-- 📝 ניהול מצבי הטופס (קריאה/עריכה/יצירה)
-- 🔍 טעינת רשימות (עובדים, סוגי שיחה, אנשי קשר)
-- ✅ ולידציה
-- 💾 שמירה ל-API (insert/update)
-- 🎨 ניהול UI states (פתיחת dropdowns, modals)
+**Responsibilities:**
+- 📝 Manage form states (read/edit/create)
+- 🔍 Load lists (employees, conversation types, contacts)
+- ✅ Validation
+- 💾 Save to API (insert/update)
+- 🎨 Manage UI states (open dropdowns, modals)
 
 ---
 
 #### `useContactGrid.ts`
-מנהל את בחירת אנשי הקשר:
+Manages contact selection:
 
 ```typescript
 export const useContactGrid = ({
@@ -223,7 +223,7 @@ export const useContactGrid = ({
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
   
-  // סינון אנשי קשר לפי חיפוש
+  // Filter contacts by search query
   const filteredContacts = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return contacts.filter(c =>
@@ -232,16 +232,16 @@ export const useContactGrid = ({
     );
   }, [contacts, searchQuery]);
   
-  // בחירה/ביטול בחירה
+  // Select/deselect contact
   const toggleSelect = (contact: Contact) => {
     if (isMulti) {
-      // לוגיקת multi-select
+      // Multi-select logic
     } else {
       setSelectedContact(contact);
     }
   };
   
-  // אישור הבחירה
+  // Confirm selection
   const handleConfirm = async () => {
     const selected = isMulti ? selectedContacts : selectedContact;
     await onSelect(selected);
@@ -259,18 +259,18 @@ export const useContactGrid = ({
 };
 ```
 
-**אחריות:**
-- 🔍 חיפוש אנשי קשר
-- ✅ בחירה (יחיד או מרובה)
-- 📋 סינון תוצאות
-- ✔️ אישור ושמירה
+**Responsibilities:**
+- 🔍 Search contacts
+- ✅ Selection (single or multi)
+- 📋 Filter results
+- ✔️ Confirm and save
 
 ---
 
 ### 3. Components Layer
 
 #### `ConversationList.tsx`
-רכיב ראשי נקי המשתמש ב-Hook:
+Clean main component using Hook:
 
 ```typescript
 export default function ConversationList() {
@@ -286,30 +286,30 @@ export default function ConversationList() {
     handleProjectChange,
   } = useConversationList();
 
-  // טעינה ראשונית
+  // Initial load
   useEffect(() => { loadConversations(); }, [loadConversations]);
 
-  // רק JSX - ללא לוגיקה!
+  // Only JSX - no logic!
   return (
     <div className="p-6">
-      {/* סינון פרויקטים */}
-      {/* טבלת שיחות */}
-      {/* מודאל */}
+      {/* Project filter */}
+      {/* Conversations table */}
+      {/* Modal */}
     </div>
   );
 }
 ```
 
-**מאפיינים:**
-- ✨ קוד UI נקי וקריא
-- 🔌 קל לבדיקה
-- ♻️ ניתן לשימוש חוזר בלוגיקה
-- 🚀 ביצועים מיטביים (מזעור re-renders)
+**Features:**
+- ✨ Clean and readable UI code
+- 🔌 Easy to test
+- ♻️ Reusable business logic
+- 🚀 Optimal performance (minimize re-renders)
 
 ---
 
 #### `conversationModalOpen.tsx`
-מודאל נקי עם אינטגרציה ל-useModal:
+Clean modal with useModal integration:
 
 ```typescript
 export default function ConversationModalOpen({ 
@@ -338,7 +338,7 @@ export default function ConversationModalOpen({
     userID
   });
 
-  // נעילת scroll כשהמודאל פתוח
+  // Lock scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       openModal();
@@ -346,22 +346,22 @@ export default function ConversationModalOpen({
     }
   }, [isOpen, openModal, closeModal]);
 
-  // רק JSX!
+  // Only JSX!
   return <form>...</form>;
 }
 ```
 
-**תכונות:**
-- 🔒 **Scroll Locking** - נעילה אוטומטית של גלילת הדף
-- 🎭 **3 מצבים** - צפייה בלבד / עריכה / הוספה חדשה
-- ✅ **ולידציה מלאה** - שדות חובה ותאריכים
-- 📋 **בחירת אנשי קשר** - דרך ContactsGrid
-- 👥 **AutoComplete** - לבחירת מקבל השיחה
+**Features:**
+- 🔒 **Scroll Locking** - Automatic page scroll lock
+- 🎭 **3 Modes** - Read-only / Edit / Add New
+- ✅ **Full Validation** - Required fields and dates
+- 📋 **Contact Selection** - Via ContactsGrid
+- 👥 **AutoComplete** - For conversation recipient selection
 
 ---
 
 #### `contactGrid.tsx`
-רשת בחירת אנשי קשר:
+Contact selection grid:
 
 ```typescript
 export default function ContactsGrid({ 
@@ -383,12 +383,12 @@ export default function ContactsGrid({
     isMulti: false
   });
 
-  // רק JSX!
+  // Only JSX!
   return (
     <div className="modal">
-      {/* חיפוש */}
-      {/* רשימה */}
-      {/* כפתורים */}
+      {/* Search */}
+      {/* List */}
+      {/* Buttons */}
     </div>
   );
 }
@@ -396,104 +396,104 @@ export default function ContactsGrid({
 
 ---
 
-## שיפורים שבוצעו
+## Improvements
 
-### 🔧 לפני הרפקטור:
+### 🔧 Before Refactoring:
 
 **ConversationList.tsx:**
-- ❌ 20+ שורות של `useState`
-- ❌ 5 `useEffect` מורכבים
-- ❌ לוגיקה מעורבבת עם UI
-- ❌ 500+ שורות קוד
-- ❌ קשה לבדיקה
+- ❌ 20+ lines of `useState`
+- ❌ 5 complex `useEffect`
+- ❌ Logic mixed with UI
+- ❌ 500+ lines of code
+- ❌ Hard to test
 
 **conversationModalOpen.tsx:**
-- ❌ 25+ שורות של `useState`
-- ❌ 7 `useEffect` עם תלויות מסובכות
-- ❌ ולידציה מעורבבת עם UI
-- ❌ 600+ שורות של קוד
-- ❌ ניהול scroll ידני
+- ❌ 25+ lines of `useState`
+- ❌ 7 `useEffect` with complicated dependencies
+- ❌ Validation mixed with UI
+- ❌ 600+ lines of code
+- ❌ Manual scroll management
 
 **contactGrid.tsx:**
-- ❌ 15+ שורות של `useState`
-- ❌ לוגיקת חיפוש מעורבבת
-- ❌ 300+ שורות קוד
+- ❌ 15+ lines of `useState`
+- ❌ Search logic mixed in
+- ❌ 300+ lines of code
 
-### ✅ אחרי הרפקטור:
+### ✅ After Refactoring:
 
 **ConversationList.tsx:**
-- ✅ 1 Hook call פשוט
-- ✅ 1 `useEffect` יחיד
-- ✅ 200 שורות (במקום 500)
-- ✅ UI נקי וקריא
-- ✅ קל לבדיקה
+- ✅ 1 simple Hook call
+- ✅ 1 single `useEffect`
+- ✅ 200 lines (instead of 500)
+- ✅ Clean and readable UI
+- ✅ Easy to test
 
 **conversationModalOpen.tsx:**
 - ✅ 2 Hook calls (useModal + useConversationModal)
-- ✅ 1 `useEffect` לscroll locking
-- ✅ 500 שורות (במקום 600+)
-- ✅ ולידציה מופרדת
-- ✅ scroll locking אוטומטי דרך context
+- ✅ 1 `useEffect` for scroll locking
+- ✅ 500 lines (instead of 600+)
+- ✅ Separated validation
+- ✅ Automatic scroll locking via context
 
 **contactGrid.tsx:**
-- ✅ 1 Hook call פשוט
-- ✅ 200 שורות (במקום 300)
-- ✅ חיפוש מיטבי עם useMemo
-- ✅ קל לתחזוקה
+- ✅ 1 simple Hook call
+- ✅ 200 lines (instead of 300)
+- ✅ Optimized search with useMemo
+- ✅ Easy to maintain
 
 ---
 
-## תכונות מיוחדות
+## Special Features
 
-### 1. Scroll Locking עם useModal Context
+### 1. Scroll Locking with useModal Context
 
 ```typescript
-// במודאל:
+// In modal:
 const { openModal, closeModal } = useModal();
 
 useEffect(() => {
   if (isOpen) {
-    openModal(); // נועל scroll
-    return () => closeModal(); // משחרר
+    openModal(); // Locks scroll
+    return () => closeModal(); // Releases
   }
 }, [isOpen, openModal, closeModal]);
 ```
 
-**יתרונות:**
-- ✅ ניהול מרכזי של scroll locking
-- ✅ תמיכה במספר מודלים במקביל (counter-based)
-- ✅ ניקיון אוטומטי (cleanup)
-- ✅ שמירת מיקום scroll
+**Benefits:**
+- ✅ Centralized scroll locking management
+- ✅ Support for multiple modals simultaneously (counter-based)
+- ✅ Automatic cleanup
+- ✅ Preserves scroll position
 
-### 2. מצבי טופס מתקדמים
+### 2. Advanced Form States
 
-המודאל תומך ב-3 מצבים:
-- **📖 צפייה (Read-only)** - כל השדות נעולים, כפתורי עריכה/הוספה
-- **✏️ עריכה** - עריכת שיחה קיימת
-- **➕ הוספה חדשה** - יצירת שיחה חדשה
+The modal supports 3 states:
+- **📖 View (Read-only)** - All fields locked, edit/add buttons
+- **✏️ Edit** - Edit existing conversation
+- **➕ Add New** - Create new conversation
 
-### 3. ולידציה חכמה
+### 3. Smart Validation
 
 ```typescript
 class ConversationValidator {
   static validate(conversation: ConversationData): ConversationFormErrors {
     const errors = createInitialFormState();
     
-    // ולידציה של נושא (חובה)
+    // Validate subject (required)
     if (!conversation.subject?.trim()) {
-      errors.subject = 'נושא השיחה הוא שדה חובה';
+      errors.subject = 'Conversation subject is required';
     }
     
-    // ולידציה של תאריכים
+    // Validate dates
     if (conversation.startDate && conversation.dueDate) {
       if (new Date(conversation.dueDate) < new Date(conversation.startDate)) {
-        errors.time = 'תאריך חזרה צריך להיות אחרי תאריך הפניה';
+        errors.time = 'Due date must be after start date';
       }
     }
     
-    // ולידציה של מקבל (חובה)
+    // Validate recipient (required)
     if (!conversation.recipientID) {
-      errors.recipient = 'יש לבחור מקבל לשיחה';
+      errors.recipient = 'Please select a conversation recipient';
     }
     
     return errors;
@@ -501,10 +501,10 @@ class ConversationValidator {
 }
 ```
 
-### 4. חיפוש מיטבי
+### 4. Optimized Search
 
 ```typescript
-// ב-useContactGrid:
+// In useContactGrid:
 const filteredContacts = useMemo(() => {
   const query = searchQuery.toLowerCase();
   if (!query) return contacts;
@@ -516,35 +516,35 @@ const filteredContacts = useMemo(() => {
 }, [contacts, searchQuery]);
 ```
 
-**יתרונות:**
-- ✅ חישוב מחדש רק כשנדרש
-- ✅ חיפוש בשם ובחברה
-- ✅ ביצועים מצוינים
+**Benefits:**
+- ✅ Recalculates only when needed
+- ✅ Search by name and company
+- ✅ Excellent performance
 
 ---
 
-## דפוסי שימוש
+## Usage Patterns
 
-### 1. הוספת שדה חדש לשיחה
+### 1. Adding a New Field to Conversation
 
 ```typescript
-// 1. הוסף ל-interface במודל
+// 1. Add to interface in model
 // models/conversation.model.ts
 export interface ConversationData {
-  // ... שדות קיימים
+  // ... existing fields
   newField: string;
 }
 
-// 2. הוסף ולידציה אם נדרש
+// 2. Add validation if required
 // models/conversationValidation.ts
 static validate(conversation: ConversationData): ConversationFormErrors {
-  // ... ולידציה קיימת
+  // ... existing validation
   if (!conversation.newField) {
-    errors.newField = 'שדה חדש הוא שדה חובה';
+    errors.newField = 'New field is required';
   }
 }
 
-// 3. השתמש בשדה במודאל
+// 3. Use field in modal
 <input
   value={newConversation.newField}
   onChange={(e) => setNewConversation(prev => ({
@@ -554,7 +554,7 @@ static validate(conversation: ConversationData): ConversationFormErrors {
 />
 ```
 
-### 2. שימוש ב-useModal לנעילת scroll
+### 2. Using useModal for Scroll Locking
 
 ```typescript
 import { useModal } from '../ModalContextType';
@@ -575,15 +575,15 @@ function MyModal({ isOpen }) {
 
 ---
 
-## עקרונות תכנות
+## Programming Principles
 
 ### 1. Single Responsibility Principle
-כל קובץ/מחלקה/פונקציה עושים **דבר אחד** בלבד.
+Each file/class/function does **one thing** only.
 
 ### 2. DRY (Don't Repeat Yourself)
-- פונקציות עזר ב-models משותפות
-- Hook logic ניתן לשימוש חוזר
-- Validation class אחת
+- Shared helper functions in models
+- Reusable Hook logic
+- Single Validation class
 
 ### 3. Separation of Concerns
 - **Models** - Data & Types & Validation
@@ -593,13 +593,13 @@ function MyModal({ isOpen }) {
 
 ### 4. Testability
 ```typescript
-// בדיקת ולידציה
+// Testing validation
 test('validates required subject', () => {
   const errors = ConversationValidator.validate({ subject: '' });
   expect(errors.subject).toBeTruthy();
 });
 
-// בדיקת Hook
+// Testing Hook
 test('useContactGrid filters contacts', () => {
   const { result } = renderHook(() => useContactGrid({...}));
   act(() => result.current.setSearchQuery('john'));
@@ -621,12 +621,12 @@ test('useContactGrid filters contacts', () => {
 
 ## Migration Notes
 
-### קבצים שהוחלפו:
-- ✅ `ConversationList.tsx` - refactored לחלוטין
-- ✅ `conversationModalOpen.tsx` - refactored לחלוטין
-- ✅ `contactGrid.tsx` - refactored לחלוטין
+### Files Replaced:
+- ✅ `ConversationList.tsx` - fully refactored
+- ✅ `conversationModalOpen.tsx` - fully refactored
+- ✅ `contactGrid.tsx` - fully refactored
 
-### קבצים חדשים:
+### New Files:
 - 🆕 `models/conversation.model.ts`
 - 🆕 `models/conversationForm.state.ts`
 - 🆕 `models/conversationValidation.ts`
@@ -635,20 +635,20 @@ test('useContactGrid filters contacts', () => {
 - 🆕 `hooks/useConversationModal.ts`
 - 🆕 `hooks/useContactGrid.ts`
 
-### קבצים ישנים (שמורים כגיבוי):
+### Old Files (saved as backup):
 - 📦 `ConversationList.old.tsx`
 - 📦 `conversationModalOpen.old.tsx`
 - 📦 `contactGrid.old.tsx`
 
 ---
 
-## למפתחים
+## For Developers
 
-כשמוסיפים פיצ'ר חדש:
+When adding a new feature:
 
-1. **שאל את עצמך:** האם צריך state חדש? → Hook
-2. **שאל את עצמך:** האם צריך טיפוס/ממשק? → Model
-3. **שאל את עצמך:** האם צריך לוגיקה עסקית? → Hook או Validator
-4. **שאל את עצמך:** האם צריך UI? → Component
+1. **Ask yourself:** Do I need new state? → Hook
+2. **Ask yourself:** Do I need a type/interface? → Model
+3. **Ask yourself:** Do I need business logic? → Hook or Validator
+4. **Ask yourself:** Do I need UI? → Component
 
-**זכור:** Keep it simple, keep it clean! 🚀
+**Remember:** Keep it simple, keep it clean! 🚀

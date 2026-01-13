@@ -7,9 +7,9 @@ import { useModal } from '../ModalContextType';
 import { useConversationList } from './hooks/useConversationList';
 
 /**
- * רכיב רשימת השיחות
- * מציג רשימה של שיחות עם אפשרויות חיפוש, עריכה ומחיקה
- * משתמש ב-useConversationList hook לניהול כל הלוגיקה
+ * Conversation List Component
+ * Displays a list of conversations with search, edit, and delete options
+ * Uses useConversationList hook to manage all logic
  */
 const ConversationList: React.FC = () => {
   // =============== HOOKS ===============
@@ -45,7 +45,7 @@ const ConversationList: React.FC = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans flex items-center justify-center" dir="rtl">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען נתונים...</p>
+          <p className="text-gray-600">Loading data...</p>
         </div>
       </div>
     );
@@ -53,57 +53,57 @@ const ConversationList: React.FC = () => {
 
   // =============== HANDLERS ===============
   /**
-   * פתיחת מודאל שיחה
-   * קורא ל-openModal מה-context לנעילת scroll
+   * Open conversation modal
+   * Calls openModal from context to lock scroll
    */
   const handleOpenModal = async (id: number) => {
     await openConversationModal(id);
-    openModal(); // נעילת scroll ברקע
+    openModal(); // Lock background scroll
   };
 
   /**
-   * סגירת מודאל שיחה
-   * קורא ל-closeModal מה-context לשחרור scroll
+   * Close conversation modal
+   * Calls closeModal from context to unlock scroll
    */
   const handleCloseModal = () => {
     closeConversationModal();
-    closeModal(); // שחרור scroll ברקע
+    closeModal(); // Unlock background scroll
   };
 
   /**
-   * פתיחת מודאל מחיקה
+   * Open delete confirmation modal
    */
   const handleOpenDeleteModal = (id: number) => {
     openDeleteModal(id);
-    openModal(); // נעילת scroll
+    openModal(); // Lock scroll
   };
 
   /**
-   * ביטול מחיקה
+   * Cancel deletion
    */
   const handleCancelDelete = () => {
     cancelDelete();
-    closeModal(); // שחרור scroll
+    closeModal(); // Unlock scroll
   };
 
   /**
-   * אישור מחיקה
+   * Confirm deletion
    */
   const handleConfirmDelete = async () => {
     await confirmDelete();
-    closeModal(); // שחרור scroll
+    closeModal(); // Unlock scroll
   };
 
   // =============== RENDER ===============
   return (
     <div className="h-full bg-gradient-to-br from-blue-50 via-white to-purple-50 p-4 font-sans" dir="rtl">
       <div className="max-w-6xl mx-auto h-full flex flex-col">
-        {/* פרופיל עובד */}
+        {/* Employee Profile */}
         <EmployeeProfileCard employee={employee} />
 
-        {/* כרטיס רשימת שיחות */}
+        {/* Conversations List Card */}
         <div className="bg-white rounded-3xl shadow-2xl p-6">
-          {/* שורת חיפוש */}
+          {/* Search Bar */}
           <div className="bg-white shadow-md rounded-full mb-4">
             <div className="relative">
               <input
@@ -126,7 +126,7 @@ const ConversationList: React.FC = () => {
             </div>
           </div>
 
-          {/* רשימת שיחות */}
+          {/* Conversations List */}
           <div
             ref={listRef}
             onScroll={handleScroll}
@@ -142,7 +142,7 @@ const ConversationList: React.FC = () => {
                     : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-sm'
                 }`}
               >
-                {/* Checkbox - סימון כסגור */}
+                {/* Checkbox - Mark as closed */}
                 <div className="relative group">
                   <button
                     onClick={(e) => {
@@ -162,7 +162,7 @@ const ConversationList: React.FC = () => {
                   </span>
                 </div>
 
-                {/* פרטי השיחה */}
+                {/* Conversation Details */}
                 <div className="flex-1 min-w-0">
                   <div
                     className={`font-medium mb-1 truncate ${
@@ -186,7 +186,7 @@ const ConversationList: React.FC = () => {
                   </div>
                 </div>
 
-                {/* כפתור מחיקה */}
+                {/* Delete Button */}
                 <div className="flex-shrink-0 flex gap-1">
                   <div className="relative group">
                     <button
@@ -203,14 +203,14 @@ const ConversationList: React.FC = () => {
               </div>
             ))}
 
-            {/* הודעת "טוען עוד..." */}
+            {/* "Loading more..." message */}
             {conversations.length < filteredCount && (
-              <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
+              <div className="text-center text-sm text-gray-500 py-4">Loading more...</div>
             )}
           </div>
         </div>
 
-        {/* מודלים */}
+        {/* Modals */}
         {showAddModal && (
           <ConversationModalOpen
             isOpen={showAddModal}

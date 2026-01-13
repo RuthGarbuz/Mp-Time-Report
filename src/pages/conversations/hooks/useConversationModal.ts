@@ -19,8 +19,8 @@ type UseConversationModalProps = {
 };
 
 /**
- * Hook לניהול מודאל שיחה (יצירה/עריכה)
- * מרכז את כל הלוגיקה העסקית של הטופס
+ * Hook for managing conversation modal (create/edit)
+ * Centralizes all business logic for the form
  */
 export const useConversationModal = ({
   conversation,
@@ -47,16 +47,16 @@ export const useConversationModal = ({
 
   // =============== COMPUTED VALUES ===============
   /**
-   * כותרת המודאל - משתנה לפי מצב (יצירה/עריכה/צפייה)
+   * Modal title - changes based on state (create/edit/view)
    */
   const title = useMemo(() => {
-    if (isReadOnly) return "פרטי שיחת לקוח";
-    if (isNew) return "הוספת שיחה חדשה";
-    return "עריכת שיחה";
+    if (isReadOnly) return "פרטי שיחה";
+    if (isNew) return "שיחה חדשה";
+    return "ערוך שיחה";
   }, [isReadOnly, isNew]);
 
   /**
-   * מחלקות CSS לשדות קלט - משתנות לפי מצב קריאה בלבד
+   * CSS classes for input fields - changes based on read-only state
    */
   const inputClass = useMemo(() => 
     `text-gray-800 w-full px-3 py-2 ${
@@ -69,19 +69,19 @@ export const useConversationModal = ({
 
   // =============== EFFECTS ===============
   /**
-   * טעינת נתוני עובדים וסוגי שיחה
-   * רץ פעם אחת כשיש conversation
+   * Load employee data and conversation types
+   * Runs once when conversation exists
    */
   useEffect(() => {
     const init = async () => {
       try {
-        // טעינת רשימת עובדים
+        // Load employees list
         const employees = await employeeService.getEmployeesList();
         if (employees) {
           setEmployeesList(employees);
         }
 
-        // טעינת סוגי שיחה (מקאש או מהשרת)
+        // Load conversation types (from cache or server)
         const cachedLogTypes = localStorage.getItem('conversationLogTypes');
         if (cachedLogTypes) {
           setLogTypes(JSON.parse(cachedLogTypes));
@@ -103,7 +103,7 @@ export const useConversationModal = ({
   }, [conversation]);
 
   /**
-   * הגדרת העובד הנבחר כשרשימת העובדים משתנה
+   * Set selected employee when employees list changes
    */
   useEffect(() => {
     if (employeesList.length === 0) return;
@@ -117,19 +117,19 @@ export const useConversationModal = ({
 
   // =============== ACTIONS ===============
   /**
-   * איפוס שגיאות
+   * Reset errors
    */
   const resetErrors = useCallback(() => {
     setErrors(createInitialFormState());
   }, []);
 
   /**
-   * עדכון שדה בשיחה
+   * Update conversation field
    */
   const updateField = useCallback((field: keyof ConversationData, value: any) => {
     setConversation(prev => ({ ...prev, [field]: value }));
     
-    // ניקוי שגיאה רלוונטית
+    // Clear relevant error
     if (field === 'subject') {
       setErrors(prev => ({ ...prev, subject: '' }));
     } else if (field === 'recipientID') {
@@ -140,27 +140,27 @@ export const useConversationModal = ({
   }, [setConversation]);
 
   /**
-   * מעבר למצב עריכה/יצירה חדשה
+   * Switch to edit/create new mode
    */
   const handleEditOrAdd = useCallback((id: number) => {
     if (id === 0) {
-      // יצירה חדשה
+      // Create new
       setConversation(prev => ({
         ...prev,
         subject: "",
         organizerID: userID,
-        recipientID: 0,
+        recipientID: userID,
       }));
       setIsNew(true);
     } else {
-      // עריכה
+      // Edit
       setIsNew(false);
     }
     setIsReadOnly(false);
   }, [setConversation, userID]);
 
   /**
-   * ביטול עריכה - חזרה למצב קריאה בלבד
+   * Cancel edit - return to read-only mode
    */
   const handleCancel = useCallback(() => {
     resetErrors();
@@ -169,12 +169,12 @@ export const useConversationModal = ({
   }, [resetErrors, onClose]);
 
   /**
-   * שמירת שיחה (יצירה או עדכון)
+   * Save conversation (create or update)
    */
   const handleSave = useCallback(async () => {
     resetErrors();
 
-    // ולידציה
+    // Validation
     const validator = new ConversationValidator(conversation);
     const validationErrors = validator.validate();
 
@@ -185,13 +185,13 @@ export const useConversationModal = ({
 
     setIsSaving(true);
     try {
-      // הכנה לשמירה
+      // Prepare for save
       const preparedConversation = {
         ...ConversationValidator.prepareForSubmit(conversation),
         contactName: conversation.contactName || ''
       };
 
-      // שמירה לשרת
+      // Save to server
       let success = false;
       if (!isNew && conversation.id) {
         success = await updateConverstion(preparedConversation);
@@ -207,7 +207,7 @@ export const useConversationModal = ({
       } else {
         setErrors(prev => ({
           ...prev,
-          general: 'שגיאה בשמירת השיחה'
+          general: 'Error saving conversation'
         }));
         return false;
       }
@@ -215,7 +215,7 @@ export const useConversationModal = ({
       console.error('Failed to save conversation:', error);
       setErrors(prev => ({
         ...prev,
-        general: 'שגיאה בשמירת השיחה'
+        general: 'Error saving conversation'
       }));
       return false;
     } finally {
@@ -224,7 +224,7 @@ export const useConversationModal = ({
   }, [conversation, isNew, resetErrors, onSave]);
 
   /**
-   * פתיחת מודאל בחירת אנשי קשר
+   * Open contact selection modal
    */
   const openContactList = useCallback(async () => {
     const contacts = await GetContactsAsync();
@@ -235,7 +235,7 @@ export const useConversationModal = ({
   }, []);
 
   /**
-   * בחירת איש קשר
+   * Select contact
    */
   const handleSelectContact = useCallback((contact: Contact) => {
     setConversation(prev => ({
@@ -251,7 +251,7 @@ export const useConversationModal = ({
   }, [setConversation]);
 
   /**
-   * בחירת עובד (מקבל השיחה)
+   * Select employee (conversation recipient)
    */
   const handleEmployeeSelect = useCallback((emp: SelectEmployeesList) => {
     setConversation(prev => ({
@@ -262,7 +262,7 @@ export const useConversationModal = ({
   }, [setConversation]);
 
   /**
-   * בחירת סוג שיחה
+   * Select conversation type
    */
   const handleSelectType = useCallback((type: ConversationLogType) => {
     setConversation(prev => ({

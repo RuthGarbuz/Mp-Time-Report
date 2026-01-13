@@ -42,7 +42,7 @@ export default function ProjectList() {
         <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-6">
           <div className="flex flex-col gap-4">
             {/* Search Input */}
-           <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-3 relative w-full">
+            <div className="bg-white rounded-2xl shadow-lg p-4 md:p-6 mb-3 relative w-full">
 
               <input
                 type="text"
@@ -139,9 +139,19 @@ export default function ProjectList() {
         <div className="fixed bottom-20 right-6 z-40 group">
           <button
             onClick={openNewProject}
-            className="bg-gradient-to-r from-blue-400 to-blue-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            className="fixed bottom-8 right-8 w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-50 group"
+
           >
-            <Plus className="w-6 h-6" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
           </button>
           <span className="absolute right-16 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
             הוסף פרויקט

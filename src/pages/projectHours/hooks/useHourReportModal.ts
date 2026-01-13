@@ -43,6 +43,7 @@ export const useHourReportModal = ({
   const [reportingType, setReportingType] = useState<'total' | 'time-range'>('total');
   const [errors, setErrors] = useState({ time: '', project: '', general: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   // Project related
   const [projectsList, setProjectsList] = useState<Project[]>([]);
@@ -91,7 +92,9 @@ export const useHourReportModal = ({
         
         if (hourReportStepsData.stepsList.length > 0) {
           setSteps(hourReportStepsData.stepsList);
-          setReport(prev => ({ ...prev, stepID: hourReportStepsData.stepsList[0].id }));
+        if (!editingReportId || existingReport?.stepID === 0) {
+            setReport(prev => ({ ...prev, stepID: hourReportStepsData.stepsList[0].id }));
+        }
         }
       }
     } else if (project.hoursReportMethodID === 3) {
@@ -102,8 +105,10 @@ export const useHourReportModal = ({
       const stepList = await getStepsList(project.id);
       if (stepList && stepList.length > 0) {
         setSteps(stepList);
+        if (!editingReportId || existingReport?.stepID === 0) {
         setReport(prev => ({ ...prev, stepID: stepList[0].id }));
-      }
+        }
+    }
       setContracts(null);
       setSubContracts(null);
     }
@@ -112,7 +117,9 @@ export const useHourReportModal = ({
   // Initialize report data
   useEffect(() => {
     const initReport = async () => {
-   //     console.log("existingReport", existingReport)
+      // Set loading true at the start
+      setIsLoading(true);
+      try {
       if (existingReport) {
 
         // Normalize time formats for existing report
@@ -152,8 +159,10 @@ export const useHourReportModal = ({
           newReport.hourReportMethodID = initialProject.hoursReportMethodID;
           await loadProjectData(initialProject);
         }
-
         setReport(newReport);
+      }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -172,6 +181,8 @@ export const useHourReportModal = ({
 
   // Handle project selection
   const handleProjectSelect = useCallback(async (project: Project) => {
+    setIsLoading(true);
+    try {
     setSelectedProject(project);
     setReport(prev => ({
       ...prev,
@@ -181,6 +192,9 @@ export const useHourReportModal = ({
     
     await loadProjectData(project);
     setIsProjectSelectOpen(false);
+    } finally {
+      setIsLoading(false);
+    }
   }, [loadProjectData]);
 
   // Update report field
@@ -272,6 +286,7 @@ export const useHourReportModal = ({
     errors,
     title,
     isSaving,
+    isLoading,
     hasChanges,
     
     // Project state

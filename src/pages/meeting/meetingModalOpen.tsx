@@ -415,7 +415,10 @@ export default function AddMeetingModal(
                         />
 
                         {errors.subject && (
-                            <p className="text-red-500 text-xs mt-1 text-right">{errors.subject}</p>
+                            <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                                <p className="text-red-500 text-xs mt-1 text-right">{errors.subject}</p>
+                            </div>
+
                         )}
                     </div>
 
@@ -516,9 +519,11 @@ export default function AddMeetingModal(
                                 }`}
                         />
 
-                        {errors.date && (
-                            <p className="text-red-500 text-xs mt-1 text-right">{errors.date}</p>
-                        )}
+                        {errors.date &&
+                            <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                                (
+                                <p className="text-red-500 text-xs mt-1 text-right">{errors.date}</p>
+                                )</div>}
                     </div>
 
                     <div className="flex items-center">
@@ -596,11 +601,10 @@ export default function AddMeetingModal(
                             </div>
                         </div>
                     )}
-                    {errors.time && (
-
-                        <p className="text-red-500 text-xs text-right">{errors.time}</p>
-
-                    )}
+                    {errors.time &&
+                        <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                            <p className="text-red-500 text-xs text-right">{errors.time}</p>
+                        </div>}
 
 
 
@@ -901,36 +905,17 @@ export default function AddMeetingModal(
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             סטטוס הפגישה
                         </label>
-
-                        {/* Left-side arrow icon */}
-                        <div className="pt-6 pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                            <svg
-                                className="w-4 h-4 text-gray-500"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-
-                        <select
-                            value={form?.calendarPartData.statusID || ''}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                updateForm('statusID', value === '' ? null : Number(value));
-                            }}
-                            className="appearance-none w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                        >
-                            <option value="">בחר סטטוס</option>
-                            {statuseList &&
-                                statuseList.map((status) => (
-                                    <option key={status.id} value={status.id}>
-                                        {status.name}
-                                    </option>
-                                ))}
-                        </select>
+         {statuseList && (
+                            <AutoComplete
+                                items={statuseList}
+                                selectedItem={form?.calendarPartData.statusID != null && form?.calendarPartData.statusID > 0 ? statuseList?.find(c => c.id === form?.calendarPartData.statusID) : null}
+                                onSelect={(status) => updateForm('statusID', status!.id)}
+                                getItemId={(c) => c!.id}
+                                getItemLabel={(c) => c!.name}
+                                placeholder="בחר סטטוס פגישה..."
+                                height={2}
+                            />
+                        )}
                     </div>
 
                     {/* סוג הפגישה */}
@@ -938,36 +923,18 @@ export default function AddMeetingModal(
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             סוג הפגישה
                         </label>
+                        {categoryList && (
+                            <AutoComplete
+                                items={categoryList}
+                                selectedItem={form?.calendarPartData.categoryID != null && form?.calendarPartData.categoryID > 0 ? categoryList?.find(c => c.id === form?.calendarPartData.categoryID) : null}
+                                onSelect={(category) => updateForm('categoryID', category!.id)}
+                                getItemId={(c) => c!.id}
+                                getItemLabel={(c) => c!.name}
+                                placeholder="בחר סוג פגישה..."
+                                height={2}
+                            />
+                        )}
 
-                        {/* Left-side arrow icon */}
-                        <div className="pt-6 pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                            <svg
-                                className="w-4 h-4 text-gray-500"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </div>
-
-                        <select
-                            value={form?.calendarPartData.categoryID || ''}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                updateForm('categoryID', value === '' ? null : Number(value));
-                            }}
-                            className=" appearance-none w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-black"
-                        >
-                            <option value="">בחר סוג פגישה</option>
-                            {categoryList &&
-                                categoryList.map((category) => (
-                                    <option key={category.id} value={category.id}>
-                                        {category.name}
-                                    </option>
-                                ))}
-                        </select>
                     </div>
 
 

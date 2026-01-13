@@ -11,8 +11,8 @@ import {
 } from '../../../services/TaskService';
 
 /**
- * Hook לניהול רשימת השיחות
- * מרכז את כל הלוגיקה העסקית של רשימת השיחות במקום אחד
+ * Hook for managing conversation list
+ * Centralizes all business logic for conversation list in one place
  */
 export const useConversationList = () => {
   // =============== STATE ===============
@@ -34,8 +34,8 @@ export const useConversationList = () => {
 
   // =============== COMPUTED VALUES ===============
   /**
-   * סינון שיחות לפי מונח חיפוש
-   * משתמש ב-useMemo למניעת חישובים מיותרים
+   * Filter conversations by search term
+   * Uses useMemo to prevent unnecessary calculations
    */
   const filteredConversations = useMemo(
     () => filterConversations(conversations, searchTerm),
@@ -43,7 +43,7 @@ export const useConversationList = () => {
   );
 
   /**
-   * שיחות גלויות (virtual scrolling)
+   * Visible conversations (virtual scrolling)
    */
   const visibleConversations = useMemo(
     () => filteredConversations.slice(0, visibleCount),
@@ -52,8 +52,8 @@ export const useConversationList = () => {
 
   // =============== EFFECTS ===============
   /**
-   * טעינת נתוני עובד
-   * רץ פעם אחת בהתחלה
+   * Load employee data
+   * Runs once on mount
    */
   useEffect(() => {
     const storedEmployee = timeRecordService.getEmployee();
@@ -61,22 +61,22 @@ export const useConversationList = () => {
       setEmployee(storedEmployee);
     } else {
       setEmployee({
-        name: "משתמש לא ידוע",
+        name: "Unknown User",
         profileImage: "https://via.placeholder.com/150"
       });
     }
   }, []);
 
   /**
-   * טעינת רשימת שיחות
-   * רץ פעם אחת בהתחלה
+   * Load conversations list
+   * Runs once on mount
    */
   useEffect(() => {
     loadConversations();
   }, []);
 
   /**
-   * איפוס מספר הפריטים הגלויים כשהחיפוש משתנה
+   * Reset number of visible items when search changes
    */
   useEffect(() => {
     setVisibleCount(20);
@@ -84,7 +84,7 @@ export const useConversationList = () => {
 
   // =============== ACTIONS ===============
   /**
-   * טעינת רשימת שיחות מהשרת
+   * Load conversations list from server
    */
   const loadConversations = useCallback(async () => {
     try {
@@ -97,34 +97,34 @@ export const useConversationList = () => {
   }, []);
 
   /**
-   * טיפול בגלילה - virtual scrolling
-   * טוען עוד פריטים כשמגיעים לסוף הרשימה
+   * Handle scroll - virtual scrolling
+   * Loads more items when reaching the end of the list
    */
   const handleScroll = useCallback(() => {
     if (!listRef.current) return;
     
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
     
-    // בודק אם הגענו קרוב לסוף (50px לפני)
+    // Check if we're close to the end (50px before)
     if (scrollTop + clientHeight >= scrollHeight - 50) {
       setVisibleCount((prev) => Math.min(prev + 20, filteredConversations.length));
     }
   }, [filteredConversations.length]);
 
   /**
-   * פתיחת מודאל שיחה חדשה או עריכת שיחה קיימת
-   * @param id - 0 לשיחה חדשה, או מזהה השיחה לעריכה
+   * Open new conversation modal or edit existing conversation
+   * @param id - 0 for new conversation, or conversation ID for editing
    */
   const openConversationModal = useCallback(async (id: number) => {
     if (id === 0) {
-      // שיחה חדשה - איפוס הנתונים
+      // New conversation - reset data
       const initialData = createInitialConversation(
         employee?.id ?? 0,
         employee?.id ?? 0
       );
       setConversationData(initialData);
     } else {
-      // עריכת שיחה קיימת - טעינת הנתונים
+      // Edit existing conversation - load data
       const data = await GetConversationsByID(id);
       if (data) {
         setConversationData(data as ConversationData);
@@ -135,7 +135,7 @@ export const useConversationList = () => {
   }, [employee]);
 
   /**
-   * סגירת מודאל השיחה ואיפוס הנתונים
+   * Close conversation modal and reset data
    */
   const closeConversationModal = useCallback(() => {
     setShowAddModal(false);
@@ -148,8 +148,8 @@ export const useConversationList = () => {
   }, [employee]);
 
   /**
-   * שמירת שיחה (חדשה או עדכון קיים)
-   * טוען מחדש את הרשימה אחרי שמירה מוצלחת
+   * Save conversation (new or update existing)
+   * Reloads list after successful save
    */
   const saveConversation = useCallback(async () => {
     await loadConversations();
@@ -157,8 +157,8 @@ export const useConversationList = () => {
   }, [loadConversations, closeConversationModal]);
 
   /**
-   * סימון שיחה כסגורה/פתוחה
-   * @param id - מזהה השיחה
+   * Mark conversation as closed/open
+   * @param id - Conversation ID
    */
   const toggleConversationClosed = useCallback(async (id: number) => {
     const conversation = conversations.find(c => c.id === id);
@@ -171,13 +171,13 @@ export const useConversationList = () => {
     );
 
     if (success) {
-      // מסיר את השיחה מהרשימה אחרי סגירה
+      // Remove conversation from list after closing
       setConversations(prev => prev.filter(c => c.id !== id));
     }
   }, [conversations, employee]);
 
   /**
-   * פתיחת מודאל אישור מחיקה
+   * Open delete confirmation modal
    */
   const openDeleteModal = useCallback((id: number) => {
     setSelectedConversationID(id);
@@ -185,7 +185,7 @@ export const useConversationList = () => {
   }, []);
 
   /**
-   * ביטול מחיקה - סגירת המודאל
+   * Cancel delete - close modal
    */
   const cancelDelete = useCallback(() => {
     setShowDeleteModal(false);
@@ -193,8 +193,8 @@ export const useConversationList = () => {
   }, []);
 
   /**
-   * אישור מחיקת שיחה
-   * מוחק מהשרת ומעדכן את הרשימה המקומית
+   * Confirm conversation deletion
+   * Deletes from server and updates local list
    */
   const confirmDelete = useCallback(async () => {
     if (selectedConversationID === null) return;

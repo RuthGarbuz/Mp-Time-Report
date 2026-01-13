@@ -61,6 +61,7 @@ export const useProjects = (openModal: () => void, closeModal: () => void) => {
   const handleProjectSaved = useCallback(() => {
     closeProjectModal();
     loadProjects();
+    
   }, [closeProjectModal, loadProjects]);
 
   const loadMore = useCallback(() => {

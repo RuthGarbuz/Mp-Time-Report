@@ -11,7 +11,7 @@ export default function BusinessPhonebook() {
 
   const {
     contacts,
-   
+
     selectedContact,
     isAddModalOpen,
     isLoading,
@@ -88,61 +88,61 @@ export default function BusinessPhonebook() {
                     onClick={() => openEditModal(contact)}
                   >
                     <div>
-                  <div className="text-lg font-semibold text-gray-800">{contact.firstName} {contact.lastName}</div>
-                  <div className="text-sm text-gray-500">{contact.company}</div>
-                  <div className="text-sm flex items-center gap-2">
-                    {contact.mobile || contact.companyPhone ? (
-                      <>
-                        <a
-                          href={`tel:${contact.mobile || contact.companyPhone}`}
-                          className="text-blue-600 hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {contact.mobile || contact.companyPhone}
-                        </a>
-                        {contact.mobile && (() => {
-                          const waNum = normalizeForWhatsApp(contact.mobile);
-                          if (!waNum) return null;
-
-                          return (
+                      <div className="text-lg font-semibold text-gray-800">{contact.firstName} {contact.lastName}</div>
+                      <div className="text-sm text-gray-500">{contact.company}</div>
+                      <div className="text-sm flex items-center gap-2">
+                        {contact.mobile || contact.companyPhone ? (
+                          <>
                             <a
-                              href={`https://wa.me/${waNum}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                              href={`tel:${contact.mobile || contact.companyPhone}`}
+                              className="text-blue-600 hover:underline"
                               onClick={(e) => e.stopPropagation()}
-                              title="שלח ב־WhatsApp"
                             >
-                              <img
-                                src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-                                alt="WhatsApp"
-                                className="w-5 h-5"
-                              />
+                              {contact.mobile || contact.companyPhone}
                             </a>
-                          );
-                        })()}
+                            {contact.mobile && (() => {
+                              const waNum = normalizeForWhatsApp(contact.mobile);
+                              if (!waNum) return null;
 
-                      </>
-                    ) : (
-                      <span className="text-gray-500">אין מספר</span>
-                    )}
-                  </div>
+                              return (
+                                <a
+                                  href={`https://wa.me/${waNum}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  title="שלח ב־WhatsApp"
+                                >
+                                  <img
+                                    src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                                    alt="WhatsApp"
+                                    className="w-5 h-5"
+                                  />
+                                </a>
+                              );
+                            })()}
 
-                </div>
-                <div className="flex">
-                  <button
+                          </>
+                        ) : (
+                          <span className="text-gray-500">אין מספר</span>
+                        )}
+                      </div>
 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      callContact(contact.companyPhone ?? '')
-                    }
-                    }
-                    className="bg-green-500 hover:bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
-                    title="התקשר"
-                  >
-                    <Phone size={18} />
-                  </button>
+                    </div>
+                    <div className="flex">
+                      <button
 
-                </div>
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          callContact(contact.companyPhone ?? '')
+                        }
+                        }
+                        className="bg-green-500 hover:bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-md"
+                        title="התקשר"
+                      >
+                        <Phone size={18} />
+                      </button>
+
+                    </div>
 
                   </div>
                 ))}
@@ -176,11 +176,22 @@ export default function BusinessPhonebook() {
 
         {/* Floating Add Button */}
         <div className="fixed bottom-20 right-6 z-40 group">
+
           <button
             onClick={openAddModal}
-            className="bg-gradient-to-r from-green-400 to-green-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+            className="fixed bottom-8 right-8 w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-50 group"
+
           >
-            <Plus className="w-6 h-6" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-6 h-6 group-hover:rotate-90 transition-transform duration-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2.5"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
           </button>
           <span className="absolute right-16 top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
             הוסף איש קשר

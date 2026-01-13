@@ -4,6 +4,7 @@ import ProjectContactsSelect from './components/ProjectContactsSelect';
 import { useProjectModal } from './hooks/useProjectModal';
 import { useEffect } from 'react';
 import { useModal } from '../ModalContextType';
+import { Skeleton } from '../shared/Skeleton';
 
 interface ProjectModalOpenProps {
   isOpen: boolean;
@@ -20,7 +21,6 @@ export default function ProjectModalOpen({ isOpen, onClose, onSave, projectID }:
     title,
     isLoading,
     isSaving,
-    hasChanges,
     isContactsOpen,
     gridContacts,
     updateField,
@@ -67,10 +67,12 @@ useEffect(() => {
 
         {/* Form */}
         <div className="p-6 space-y-4 overflow-y-auto">
+          {/* {isLoading ? <ProjectSkeleton /> : <ProjectForm />} */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            </div>
+            <Skeleton />
+            // <div className="flex items-center justify-center py-12">
+            //   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            // </div>
           ) : (
             <>
               {/* Project Name */}
@@ -85,7 +87,12 @@ useEffect(() => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
                   placeholder="הזן שם פרויקט"
                 />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+
+                {errors.name && 
+                <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+                </div>}
+            
               </div>
 
               {/* Two Column Grid */}
@@ -101,7 +108,10 @@ useEffect(() => {
                     onChange={(e) => updateField('projectNum', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-right"
                   />
-                  {errors.projectNum && <p className="text-red-500 text-sm mt-1">{errors.projectNum}</p>}
+
+                  {errors.projectNum && <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                  <p className="text-red-500 text-sm mt-1">{errors.projectNum}</p>
+                  </div>}
                 </div>
 
                 {/* Customer */}
@@ -324,7 +334,7 @@ useEffect(() => {
                 </button>
                 <button
                   onClick={handleSaveAndClose}
-                  disabled={isSaving || !hasChanges}
+                  disabled={isSaving }
                   className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving ? 'שומר...' : 'שמור פרויקט'}

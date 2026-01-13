@@ -4,7 +4,6 @@
  * This file defines the form state and error structures for time report forms.
  */
 
-import type { TimeRecord } from './report.model';
 
 /**
  * Form errors for time report creation/editing

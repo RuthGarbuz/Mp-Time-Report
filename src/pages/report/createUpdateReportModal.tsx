@@ -78,10 +78,7 @@ export default function ReportModal({
    * Handle close button click
    */
   const onClose = () => {
-    if (error) {
-      alert("לא ניתן לסגור את הטופס כל עוד קיימת שגיאה. אנא תקן/י את השדות.");
-      return;
-    }
+  
     closeModal();
   };
 

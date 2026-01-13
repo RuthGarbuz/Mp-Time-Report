@@ -15,6 +15,7 @@ export const useProjectHours = () => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   const [editPermission, setEditPermission] = useState(false);
+  const [contextMenuRowId, setContextMenuRowId] = useState<number | null>(null);
 
   // Total time calculation
   const totalTime = useMemo(() => {
@@ -71,7 +72,6 @@ export const useProjectHours = () => {
   const openEditReport = useCallback(async (id: number) => {
     const updateReport = await hourReportService.getFullHourReportProjectData(id);
     if (!updateReport) return;
-     updateReport.date = currentDay;
     setEditingReportId(id);
     setEditingReport(updateReport);
     setIsModalOpen(true);
@@ -122,6 +122,8 @@ export const useProjectHours = () => {
     isModalOpen,
     isConfirmOpen,
     editPermission,
+    contextMenuRowId,
+    setContextMenuRowId,
 
     // Actions
     navigateDay,

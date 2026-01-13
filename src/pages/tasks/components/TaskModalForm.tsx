@@ -55,7 +55,9 @@ const TaskModalForm: React.FC<TaskModalFormProps> = memo(({
           dir="rtl"
         />
         {errors.subject && (
+          <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
           <p className="text-red-500 text-sm mt-1">{errors.subject}</p>
+          </div>
         )}
       </div>
 

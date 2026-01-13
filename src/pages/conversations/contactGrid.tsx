@@ -1,21 +1,21 @@
 /**
  * ContactsGrid Component - Refactored Version
  * 
- * רכיב grid לבחירת אנשי קשר עם יכולת חיפוש וסינון.
- * המימוש החדש משתמש ב-hook מותאם אישית (useContactGrid) להפרדת לוגיקה עסקית מהממשק,
- * ובאינטגרציה עם useModal ל scroll locking.
+ * Grid component for selecting contacts with search and filtering capabilities.
+ * The new implementation uses a custom hook (useContactGrid) to separate business logic from UI,
+ * and integrates with useModal for scroll locking.
  * 
- * תכונות עיקריות:
- * - חיפוש בזמן אמת (שם, חברה)
- * - תמיכה במצב בחירה בודדת או מרובה
- * - תצוגת מונה לאנשי קשר שנבחרו
- * - אינטגרציה עם useModal context לנעילת scroll
+ * Key features:
+ * - Real-time search (name, company)
+ * - Support for single or multi-select mode
+ * - Display counter for selected contacts
+ * - Integration with useModal context for scroll locking
  * 
- * @props contacts - רשימת אנשי הקשר
- * @props onClose - פונקציה לסגירת הגריד
- * @props handleSelectContact - פונקציה לבחירת איש קשר (במצב בחירה בודדת)
- * @props isMultiSelect - האם לאפשר בחירת מספר אנשי קשר (ברירת מחדל: false)
- * @props onConfirmSelection - פונקציה לאישור בחירה מרובה (אופציונלי)
+ * @props contacts - List of contacts
+ * @props onClose - Function to close the grid
+ * @props handleSelectContact - Function to select a contact (in single-select mode)
+ * @props isMultiSelect - Whether to allow multiple contact selection (default: false)
+ * @props onConfirmSelection - Function to confirm multi-selection (optional)
  */
 
 import React, { useEffect } from "react";
@@ -45,7 +45,7 @@ const ContactsGrid: React.FC<ContactsGridProps> = ({
   
   const { openModal, closeModal } = useModal();
   
-  // Wrapper function לטיפול נכון בטיפוסים
+  // Wrapper function for proper type handling
   const handleSelect = (contact: Contact | Contact[]) => {
     if (isMultiSelect && onConfirmSelection) {
       onConfirmSelection(Array.isArray(contact) ? contact : [contact]);
@@ -81,13 +81,13 @@ const ContactsGrid: React.FC<ContactsGridProps> = ({
   // ============================================================================
   
   /**
-   * אינטגרציה עם useModal context:
-   * נועל את ה-scroll של הדף כאשר הגריד נפתח
+   * Integration with useModal context:
+   * Locks page scroll when the grid is opened
    */
   useEffect(() => {
     openModal();
     
-    // Cleanup: שחרר נעילה כאשר הקומפוננטה מוסרת
+    // Cleanup: Release lock when component unmounts
     return () => {
       closeModal();
     };
@@ -98,13 +98,13 @@ const ContactsGrid: React.FC<ContactsGridProps> = ({
   // ============================================================================
   
   /**
-   * מטפל בלחיצה על איש קשר:
-   * - במצב בחירה בודדת: סוגר את הגריד ומחזיר את איש הקשר
-   * - במצב בחירה מרובה: מוסיף/מסיר מהרשימה
+   * Handles contact click:
+   * - In single-select mode: closes the grid and returns the contact
+   * - In multi-select mode: adds/removes from the list
    */
   const onContactClick = (contact: Contact) => {
     if (!isMultiSelect) {
-      // Single select mode: סגור מיד
+      // Single select mode: close immediately
       handleSelectContact(contact);
       onClose();
     } else {
@@ -114,7 +114,7 @@ const ContactsGrid: React.FC<ContactsGridProps> = ({
   };
 
   /**
-   * מטפל באישור בחירה מרובה
+   * Handles multi-selection confirmation
    */
   const onConfirm = () => {
      handleConfirm();
@@ -138,7 +138,7 @@ const ContactsGrid: React.FC<ContactsGridProps> = ({
             <h2 className="text-xl font-bold text-gray-800">
               בחירת אנשי קשר
             </h2>
-            {/* מונה לבחירה מרובה */}
+            {/* Counter for multi-selection */}
             {isMultiSelect && selectedCount > 0 && (
               <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
                 {selectedCount} נבחרו

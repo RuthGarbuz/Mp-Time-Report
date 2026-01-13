@@ -24,9 +24,11 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
   if (!isOpen) return null; // אם המודאל סגור - לא מחזירים כלום
 
     const [searchProject, setSearchProject] = useState("");
- const filteredProjects = projectsList.filter((p) =>
-    p.name.toLowerCase().includes(searchProject.toLowerCase()))
- 
+const filteredProjects = projectsList.filter((p) => {
+  const normalizedName = p.name.toLowerCase().replace(/['"'״׳]/g, '');
+  const normalizedSearch = searchProject.toLowerCase().replace(/['"'״׳]/g, '');
+  return normalizedName.includes(normalizedSearch);
+});
 
   return (
     <div className="text-gray-800 min-h-40 fixed inset-0 flex items-center justify-center bg-black/50 z-50">

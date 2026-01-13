@@ -1,24 +1,24 @@
 /**
  * ConversationModalOpen Component - Refactored Version
  * 
- * זהו רכיב מודאלי להוספה/עריכה/צפייה בשיחות עם לקוחות.
- * המימוש החדש משתמש ב-hook מותאם אישית (useConversationModal) להפרדת לוגיקה עסקית מהממשק,
- * ובאינטגרציה עם useModal ל scroll locking.
+ * This is a modal component for adding/editing/viewing conversations with clients.
+ * The new implementation uses a custom hook (useConversationModal) to separate business logic from UI,
+ * and integrates with useModal for scroll locking.
  * 
- * תכונות עיקריות:
- * - מצבים: צפייה בלבד / עריכה / הוספה חדשה
- * - בחירת איש קשר (דרך ContactsGrid)
- * - בחירת סוג שיחה (ConversationLogType)
- * - בחירת מקבל השיחה (AutoComplete עבור עובדים)
- * - וולידציה של שדות חובה ותאריכים
- * - אינטגרציה עם useModal context לנעילת scroll
+ * Key features:
+ * - Modes: read-only / edit / new
+ * - Contact selection (via ContactsGrid)
+ * - Conversation type selection (ConversationLogType)
+ * - Recipient selection (AutoComplete for employees)
+ * - Validation of required fields and dates
+ * - Integration with useModal context for scroll locking
  * 
- * @props isOpen - האם המודאל פתוח
- * @props conversationData - נתוני השיחה הנוכחיים
- * @props setConversationData - פונקציה לעדכון נתוני השיחה
- * @props resetConversation - פונקציה לאיפוס המודאל
- * @props saveConversation - פונקציה לשמירת השיחה ורענון הרשימה
- * @props userID - מזהה המשתמש המחובר
+ * @props isOpen - Whether the modal is open
+ * @props conversationData - Current conversation data
+ * @props setConversationData - Function to update conversation data
+ * @props resetConversation - Function to reset the modal
+ * @props saveConversation - Function to save the conversation and refresh the list
+ * @props userID - Logged-in user ID
  */
 
 import React, { useEffect } from "react";
@@ -90,8 +90,8 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
   // ============================================================================
   
   /**
-   * אינטגרציה עם useModal context:
-   * נועל/משחרר את ה-scroll של הדף כאשר המודאל נפתח/נסגר
+   * Integration with useModal context:
+   * Locks/unlocks page scroll when modal opens/closes
    */
   useEffect(() => {
     if (isOpen) {
@@ -100,7 +100,7 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
       closeModal();
     }
     
-    // Cleanup: שחרר נעילה אם הקומפוננטה מוסרת
+    // Cleanup: Release lock if component unmounts
     return () => {
       if (isOpen) {
         closeModal();
@@ -113,14 +113,14 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
   // ============================================================================
   
   /**
-   * מטפל בלחיצה על כפתור עריכה/הוספה
+   * Handles click on edit/add button
    */
   const handleEditOrAddClick = (id: number) => {
     handleEditOrAdd(id);
   };
 
   /**
-   * מטפל בלחיצה על ביטול - מאפס שגיאות ומחזיר למצב קריאה
+   * Handles cancel click - resets errors and returns to read mode
    */
   const handleCancelClick = () => {
     handleCancel();
@@ -128,17 +128,18 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
   };
 
   /**
-   * מטפל בשמירה - מוודא תקינות ושומר
+   * Handles save - validates and saves
    */
   const handleSaveClick = async () => {
+     closeModal();
     const success = await handleSave();
     if (success) {
-      saveConversation(); // רענן את הרשימה הראשית
+      saveConversation(); // Refresh main list
     }
   };
 
   /**
-   * מטפל בסגירת המודאל - מאפס הכל
+   * Handles modal close - resets everything
    */
   const handleClose = () => {
     resetNewConversation();
@@ -237,9 +238,10 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
               className={inputClass}
               dir="rtl"
             />
-            {errors.subject && (
+            {errors.subject && 
+                                <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
               <p className="text-red-500 text-sm mt-1">{errors.subject}</p>
-            )}
+            </div>}
           </div>
 
           {/* Dates: Start & Due */}
@@ -280,9 +282,10 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
                 />
               </div>
             </div>
-            {errors.time && (
+            {errors.time && 
+              <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
               <p className="text-red-500 text-sm mt-1">{errors.time}</p>
-            )}
+            </div>}
           </div>
 
           {/* Conversation Log Type */}
@@ -356,9 +359,11 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
               placeholder="בחר מקבל..."
               height={2}
             />
-            {errors.recipient && (
+           
+            {errors.recipient &&
+              <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
               <p className="text-red-500 text-sm mt-1">{errors.recipient}</p>
-            )}
+           </div>}
           </div>
 
           {/* Contact Select */}

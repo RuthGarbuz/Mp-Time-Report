@@ -1,4 +1,4 @@
-// ממשקים וטיפוסים למודול Conversations
+// Interfaces and types for the Conversations module
 export interface Conversation {
   id: number;
   subject: string;

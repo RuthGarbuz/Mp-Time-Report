@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 
-import ReportTime from './ReportTime';
+import ReportTime from './reportTime/ReportTime';
 import ReportList from './report/ReportList';
 import { useLocation } from 'react-router-dom';
 

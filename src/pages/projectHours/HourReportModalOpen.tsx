@@ -7,6 +7,8 @@ import { useModal } from '../ModalContextType';
 import ErrorMessage from "../shared/errorMessage";
 import ProjectFilter from "../shared/projectsFilter";
 import AutoComplete from "../shared/autoCompleteInput";
+import { Skeleton } from "../shared/Skeleton";
+
 
 interface Props {
   title: string;
@@ -36,6 +38,7 @@ export default function HourReportModalOpen({
     reportingType,
     errors,
     isSaving,
+    isLoading,
     projectsList,
     selectedProject,
     contracts,
@@ -80,7 +83,7 @@ export default function HourReportModalOpen({
         
 
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir="rtl">
-      {!selectedProject ? (
+      {!selectedProject&&!editingReportId ? (
       <ProjectFilter
         isOpen={true}
         projectsList={projectsList}
@@ -91,7 +94,12 @@ export default function HourReportModalOpen({
       />
       ) : (
       <div className="text-gray-800 bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <form onSubmit={handleSubmit} className="flex flex-col h-full overflow-y-auto">
+        {isLoading ? (
+          <div className="p-6">
+            <Skeleton />
+          </div>
+        ) : (
+          <>
         {/* Header */}
         
         <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
@@ -107,13 +115,18 @@ export default function HourReportModalOpen({
         
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
- {/* Error Message */}
-          
-          {errors.time && (<ErrorMessage validateError={String(errors.time)} />)}
+            <form onSubmit={handleSubmit}>
+
+              {/* Error Message */}
+              {errors.time && (
+            <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+              <ErrorMessage validateError={String(errors.time)} />
+            </div>
+            )}
           {/* Project Display */}
           <div className="bg-blue-50 p-3 rounded-lg">
           <div className="text-sm text-gray-600 mb-1">פרויקט נבחר:</div>
-          <div className="text-lg font-semibold text-blue-600">{selectedProject.name}</div>
+          <div className="text-lg font-semibold text-blue-600">{selectedProject?.name}</div>
           </div>
 
           {/* Date Display */}
@@ -200,52 +213,74 @@ export default function HourReportModalOpen({
           )}
 
           {/* Project-specific fields (contracts, subcontracts, steps) */}
-          {contracts && contracts.length > 0 && (
+          {contracts && contracts.length > 0 ? (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">חוזה</label>
             <AutoComplete
             items={contracts}
             selectedItem={contracts.find(c => c.id === formReport.contractID) || null}
-            onSelect={(contract) => updateReportField('contractID', contract.id)}
+            onSelect={(contract) => {
+              updateReportField('contractID', contract.id);
+              updateReportField('subContractID', null);
+              updateReportField('stepID', null);
+            }}
             getItemId={(c) => c.id}
             getItemLabel={(c) => c.name}
             placeholder="בחר חוזה..."
             height={2}
             />
           </div>
-          )}
+          ) : null}
 
-          {subContracts && subContracts.length > 0 && formReport.contractID && (
+          {subContracts && subContracts.length > 0 && formReport.contractID && 
+           subContracts.some(sc => sc.contractID === formReport.contractID) ? (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">תת-חוזה</label>
             <AutoComplete
             items={subContracts.filter(sc => sc.contractID === formReport.contractID)}
             selectedItem={subContracts.find(sc => sc.id === formReport.subContractID) || null}
-            onSelect={(subContract) => updateReportField('subContractID', subContract.id)}
+            onSelect={(subContract) => {
+              updateReportField('subContractID', subContract.id);
+              updateReportField('stepID', null);
+            }}
             getItemId={(sc) => sc.id}
             getItemLabel={(sc) => sc.name}
             placeholder="בחר תת-חוזה..."
             height={2}
             />
           </div>
-          )}
-
+          ) : null}
+          {/* Steps field - show only if steps exist AND either: 
+              1. No subcontracts exist, OR
+              2. SubContractID is selected AND that ID has steps */}
           {steps && steps.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">שלב</label>
-            <AutoComplete
-            items={steps.filter(step =>
-              !formReport.subContractID || step.subContractID === formReport.subContractID
-            )}
-            selectedItem={steps.find(s => s.id === formReport.stepID) || null}
-            onSelect={(step) => updateReportField('stepID', step.id)}
-            getItemId={(s) => s.id}
-            getItemLabel={(s) => s.name}
-            placeholder="בחר שלב..."
-            height={2}
-            />
-          </div>
-          )}
+            (!subContracts || subContracts.length === 0) ||
+            (subContracts && subContracts.length > 0 && formReport.subContractID && 
+             steps.some(step => step.subContractID === formReport.subContractID))
+          ) ? (
+            (() => {
+
+              const filteredSteps = steps.filter(step =>
+                !formReport.subContractID || step.subContractID === formReport.subContractID
+              );
+              const selected = filteredSteps.find(s => s.id === formReport.stepID) || null;
+              
+              return (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">שלב</label>
+                  <AutoComplete
+                    items={filteredSteps}
+                    selectedItem={selected}
+                    onSelect={(step) => updateReportField('stepID', step.id)}
+                    getItemId={(s) => s.id}
+                    getItemLabel={(s) => s.name}
+                    placeholder="בחר שלב..."
+                    height={2}
+                  />
+                </div>
+              );
+            })()
+          ) : null}
 
           {/* Notes */}
           <div>
@@ -259,10 +294,11 @@ export default function HourReportModalOpen({
           />
           </div>
 
-          {/* Error Messages */}
-          {/* {errors.time && <ErrorMessage message={errors.time} />}
-          {errors.project && <ErrorMessage message={errors.project} />}
-          {errors.general && <ErrorMessage message={errors.general} />} */}
+              {/* Error Messages */}
+              {/* {errors.time && <ErrorMessage message={errors.time} />}
+              {errors.project && <ErrorMessage message={errors.project} />}
+              {errors.general && <ErrorMessage message={errors.general} />} */}
+             </form>
         </div>
 
         {/* Footer */}
@@ -275,14 +311,21 @@ export default function HourReportModalOpen({
           ביטול
           </button>
           <button
-          type="submit"
+          type="button"
+          onClick={async () => {
+            const success = await handleSave();
+            if (success) {
+              onClose();
+            }
+          }}
           disabled={isSaving}
           className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
           >
           {isSaving ? 'שומר...' : 'שמור דיווח'}
           </button>
         </div>
-        </form>
+        </>
+        )}
       </div>
       )}
     </div>

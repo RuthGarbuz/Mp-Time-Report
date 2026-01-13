@@ -255,7 +255,10 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                     {contact.firstName}
                                 </div>
                             )}
-                            {errorFirstName && <p className="text-red-500 text-sm mt-1">{errorFirstName}</p>}
+                            {errorFirstName && 
+                            <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                            <p className="text-red-500 text-sm mt-1">{errorFirstName}</p>
+                             </div>}
                         </div>
                         {/* LastName */}
                         <div className="text-right">
@@ -553,7 +556,11 @@ const UpdatePhoneBook: React.FC<UpdatePhoneBookProps> = ({
                                     )}
                                 </div>
                             )}
-                            {errorEmail && <p className="text-red-500 text-sm mt-1">{errorEmail}</p>}
+                            
+                            {errorEmail &&
+                             <div ref={(el) => el?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+                                <p className="text-red-500 text-sm mt-1">{errorEmail}</p>
+                                </div>}
 
                         </div>
                     </div>

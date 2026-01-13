@@ -5,6 +5,7 @@ import { createInitialTask } from './models/task.model';
 import { useTaskModal } from './hooks/useTaskModal';
 import TaskModalForm from './components/TaskModalForm';
 import { useModal } from '../ModalContextType';
+import { Skeleton } from '../shared/Skeleton';
 
 type TaskModalProps = {
   isOpen: boolean;
@@ -81,7 +82,8 @@ useEffect(() => {
 
         {/* Form */}
         {data.isLoading ? (
-          <div className="p-4 text-center text-gray-500">טוען...</div>
+          <Skeleton />
+          // <div className="p-4 text-center text-gray-500">טוען...</div>
         ) : (
           <TaskModalForm
             task={state.taskDetails}

@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { ChevronLeft, ChevronRight, Clock, Calendar, Plus, Edit2, Trash2 } from 'lucide-react';
 import "tailwindcss";
 import HourReportModalOpen from './HourReportModalOpen';
@@ -19,6 +18,8 @@ const ProjectHours = () => {
     isModalOpen,
     isConfirmOpen,
     editPermission,
+    contextMenuRowId,
+    setContextMenuRowId,
     navigateDay,
     openNewReport,
     openEditReport,
@@ -120,7 +121,8 @@ const ProjectHours = () => {
                 {reports.map((report, index) => (
                   <div
                     key={report.id}
-                    className={`relative p-2 md:p-3 hover:bg-gray-50 transition-colors duration-200
+                    onClick={() => setContextMenuRowId(report.id ?? null)}
+                    className={`relative p-2 md:p-3 hover:bg-gray-50 transition-colors duration-200 cursor-pointer
                       ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
                       flex flex-row items-center justify-between gap-3 text-xs md:text-sm`}
                   >
@@ -162,21 +164,31 @@ const ProjectHours = () => {
                       </span>
                     </div>
                    
-                    {/* Actions */}
-                    <div className="flex gap-1">
-                      <button
-                        onClick={() => openEditReport(report.id)}
-                        className="pl-2 text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => onDeleteClick(report.id)}
-                        className="pr-2 text-red-500 hover:text-red-700 rounded-xl transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    {/* Actions - Show only when row is clicked */}
+                    {contextMenuRowId === report.id && editPermission && (
+                      <div className="top-1 left-1 flex gap-1 z-10">
+                        <button
+                          onClick={() => {
+                            if (report.id !== undefined) {
+                              openEditReport(report.id);
+                            }
+                            setContextMenuRowId(null);
+                          }}
+                          className="text-gray-500 hover:text-gray-700 rounded-xl transition-colors"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (report.id !== undefined) onDeleteClick(report.id);
+                            setContextMenuRowId(null);
+                          }}
+                          className="text-red-500 hover:text-red-700 rounded-xl transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

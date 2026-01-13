@@ -28,7 +28,6 @@ const ReportList = () => {
   // Use custom hook for all report list logic
   const {
     employee,
-    reports,
     filteredReports,
     typeReports,
     currentWeek,
@@ -38,10 +37,8 @@ const ReportList = () => {
     allowAddReport,
     isModalOpen,
     newReport,
-    editingReportId,
     errorMessage,
     isConfirmOpen,
-    itemToDelete,
     contextMenuRowId,
     navigateWeek,
     openNewReport,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import projectService from '../../../services/projectService';
 import { ProjectValidator } from '../models/projectValidation';
 import { createInitialProject, mapProjectToInsertRequest, type ProjectDetails } from '../models/project.model';
@@ -12,7 +12,7 @@ type UseProjectModalProps = {
   onSave: () => void;
 };
 
-export const useProjectModal = ({ projectID, isOpen, onSave }: UseProjectModalProps) => {
+export const useProjectModal = ({ projectID, isOpen, onSave,onClose }: UseProjectModalProps) => {
   const [formData, setFormData] = useState<ProjectDetails>(createInitialProject());
   const [originalData, setOriginalData] = useState<ProjectDetails | null>(null);
   const [errors, setErrors] = useState({ name: '', projectNum: '', general: '' });
@@ -21,7 +21,7 @@ export const useProjectModal = ({ projectID, isOpen, onSave }: UseProjectModalPr
   const [isContactsOpen, setIsContactsOpen] = useState(false);
   const [gridContacts, setGridContacts] = useState<IdNameDto[]>([]);
   const { openModal, closeModal } = useModal();
-
+  const fetchedRef = useRef(false);
   // Title
   const title = useMemo(
     () => (projectID === 0 || projectID === null ? 'הוסף פרויקט חדש' : `עריכת פרויקט - ${formData.name}`),
@@ -37,8 +37,10 @@ export const useProjectModal = ({ projectID, isOpen, onSave }: UseProjectModalPr
   // Load project data
   useEffect(() => {
     const fetchProjectData = async () => {
-      if (!isOpen) return;
-      
+     // if (!isOpen) return;
+       if (!isOpen ) return;
+  if (fetchedRef.current) return;
+    fetchedRef.current = true;
       setIsLoading(true);
       try {
         const projectData = await projectService.getProjectByID(projectID ?? 0);
@@ -54,7 +56,11 @@ export const useProjectModal = ({ projectID, isOpen, onSave }: UseProjectModalPr
 
     fetchProjectData();
   }, [projectID, isOpen]);
-
+useEffect(() => {
+  if (!isOpen) {
+    fetchedRef.current = false;
+  }
+}, [isOpen]);
   // Update field
   const updateField = useCallback((field: keyof ProjectDetails, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -96,11 +102,14 @@ export const useProjectModal = ({ projectID, isOpen, onSave }: UseProjectModalPr
 
   // Save and close
   const handleSaveAndClose = useCallback(async () => {
+    if(!hasChanges){  onClose();return;}
     const success = await handleSave();
     if (success) {
+      // Update originalData to current formData to reset hasChanges to false
+      setOriginalData({ ...formData });
       onSave();
     }
-  }, [handleSave, onSave]);
+  }, [handleSave, onSave, onClose, hasChanges, formData]);
 
   // Open contacts modal
   const openContactsModal = useCallback(async () => {
@@ -111,8 +120,10 @@ export const useProjectModal = ({ projectID, isOpen, onSave }: UseProjectModalPr
       newID = await handleSave();
       if (newID === 0) return;
       
-      setFormData(prev => ({ ...prev, projectID: newID }));
-      setOriginalData(prev => prev ? { ...prev, projectID: newID } : null);
+      // Update both formData and originalData with new projectID to keep them in sync
+      const updatedData = { ...formData, projectID: newID };
+      setFormData(updatedData);
+      setOriginalData(updatedData);
     }
 
     // Prepare contacts grid
