@@ -1,7 +1,7 @@
 import type { ConversationData } from './conversation.model';
 
 /**
- * מצב טופס השיחה
+ * Conversation form state
  */
 export interface ConversationFormState {
   conversation: ConversationData;
@@ -12,7 +12,7 @@ export interface ConversationFormState {
 }
 
 /**
- * שגיאות ולידציה בטופס
+ * Form validation errors
  */
 export interface ConversationFormErrors {
   subject: string;
@@ -22,7 +22,7 @@ export interface ConversationFormErrors {
 }
 
 /**
- * יצירת מצב טופס ראשוני
+ * Create initial form state
  */
 export const createInitialFormState = (): ConversationFormErrors => ({
   subject: '',
@@ -32,7 +32,7 @@ export const createInitialFormState = (): ConversationFormErrors => ({
 });
 
 /**
- * איפוס שגיאות הטופס
+ * Reset form errors
  */
 export const resetFormErrors = (errors: ConversationFormErrors): ConversationFormErrors => ({
   ...errors,

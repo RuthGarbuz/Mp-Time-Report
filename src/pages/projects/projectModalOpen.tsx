@@ -10,10 +10,17 @@ interface ProjectModalOpenProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  onBackgroundSave: () => void;
   projectID: number | null;
 }
 
-export default function ProjectModalOpen({ isOpen, onClose, onSave, projectID }: ProjectModalOpenProps) {
+export default function ProjectModalOpen({
+  isOpen,
+  onClose,
+  onSave,
+  onBackgroundSave,
+  projectID,
+}: ProjectModalOpenProps) {
 
   const {
     formData,
@@ -33,6 +40,7 @@ export default function ProjectModalOpen({ isOpen, onClose, onSave, projectID }:
     isOpen,
     onClose,
     onSave,
+    onBackgroundSave,
   });
 const { openModal, closeModal } = useModal();
 

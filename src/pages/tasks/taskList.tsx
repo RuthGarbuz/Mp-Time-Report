@@ -17,6 +17,7 @@ export default function TaskManager() {
     filterState,
     showDeleteModal,
     taskStats,
+    hasMore,
     toggleTask,
     deleteTaskHandler,
     startEdit,
@@ -28,10 +29,16 @@ export default function TaskManager() {
     refreshData,
     setShowDeleteModal,
     setSelectedTaskID,
+    loadMore,
   } = useTasks(openModal, closeModal);
 
   const handleScroll = () => {
-    if (!listRef.current) return;
+    if (!listRef.current || !hasMore) return;
+    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+
+    if (scrollTop + clientHeight >= scrollHeight - 50) {
+      loadMore();
+    }
   };
  const getPriorityColor = (priority: number) => {
     switch (priority) {
@@ -267,6 +274,9 @@ export default function TaskManager() {
                 </div>
               </div>
             ))
+          )}
+          {hasMore && (
+            <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
           )}
         </div>
       </div>

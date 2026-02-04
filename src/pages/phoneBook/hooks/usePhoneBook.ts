@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { getPhoneBookCompanyList } from '../../../services/phoneBookService';
-import { PhoneBookValidator } from '../models/phoneBookValidation';
 import { createInitialFilterState, type PhoneBook, type PhoneBookFilterState } from '../models';
 
 export const usePhoneBook = (openModal: () => void, closeModal: () => void) => {
@@ -28,14 +27,44 @@ export const usePhoneBook = (openModal: () => void, closeModal: () => void) => {
     }
   }, []);
 
-  // Filter contacts
+  // Normalize text for search (same logic pattern as tasks search)
+  const normalizeText = useCallback((text: string): string => {
+    return text.replace(/'/g, "").replace(/[-\s()]/g, "").toLowerCase();
+  }, []);
+
+  // Filter contacts (same behavior pattern as tasks search, but for phone book fields)
   const filteredContacts = useMemo(() => {
-    if (!filterState.searchTerm.trim()) return contacts;
-    
-    return contacts.filter(contact => 
-      PhoneBookValidator.matchesSearch(contact, filterState.searchTerm)
-    );
-  }, [contacts, filterState.searchTerm]);
+    const searchWords = filterState.searchTerm
+      .trim()
+      .split(/\s+/)
+      .filter(word => word.length > 0)
+      .map(word => normalizeText(word));
+
+    return contacts.filter((contact) => {
+      // If no search term, show all contacts
+      if (searchWords.length === 0) return true;
+
+      const searchableText = normalizeText(
+        [
+          contact.firstName || '',
+          contact.lastName || '',
+          contact.company || '',
+          contact.companyPhone || '',
+          contact.mobile || '',
+        ].join(' ')
+      );
+   return searchWords.length === 0 || searchWords.every(word => 
+        searchableText.includes(word)
+      );
+      // Skip contacts with no meaningful content after normalization
+      // if (!searchableText || searchableText.trim().length === 0) {
+      //   return false;
+      // }
+
+      // // Check if all search words are found in the searchable text
+      // return searchWords.every(word => searchableText.includes(word));
+    });
+  }, [contacts, filterState.searchTerm, normalizeText]);
 
   // Visible contacts (for infinite scroll)
   const visibleContacts = useMemo(() => {
@@ -44,14 +73,15 @@ export const usePhoneBook = (openModal: () => void, closeModal: () => void) => {
 
   // Update search term
   const setSearchTerm = useCallback((searchTerm: string) => {
+   // closeModal();
+
     setFilterState(prev => ({ 
       ...prev, 
       searchTerm, 
       visibleCount: 20 // Reset on search
     }));
-    closeModal();
-  }, [closeModal]);
-
+  }, []);
+//closeModal
   // Load more
   const loadMore = useCallback(() => {
     setFilterState(prev => ({

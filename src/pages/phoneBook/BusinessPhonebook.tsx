@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Phone, Plus, Search, X } from 'lucide-react';
+import { Phone,  Search, X } from 'lucide-react';
 import { useModal } from '../ModalContextType';
 import { usePhoneBook } from './hooks/usePhoneBook';
 import { createInitialContact, normalizeForWhatsApp } from './models';
@@ -81,9 +81,14 @@ export default function BusinessPhonebook() {
               </div>
             ) : (
               <>
-                {contacts.map((contact, index) => (
+                {contacts.map((contact, index) => {
+                  // Create unique key: combine id, selectedCompanyId, firstName, lastName, and index
+                  // This ensures uniqueness even when id or selectedCompanyId is 0
+                  const uniqueKey = `contact-${contact.id}-${contact.selectedCompanyId}-${contact.firstName || ''}-${contact.lastName || ''}-${index}`;
+                  
+                  return (
                   <div
-                    key={contact.id || index}
+                    key={uniqueKey}
                     className="backdrop-blur-lg border-b border-white/20 py-6 mx-4 text-white flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors rounded-lg px-2"
                     onClick={() => openEditModal(contact)}
                   >
@@ -145,7 +150,8 @@ export default function BusinessPhonebook() {
                     </div>
 
                   </div>
-                ))}
+                  );
+                })}
                 {hasMore && (
                   <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
                 )}

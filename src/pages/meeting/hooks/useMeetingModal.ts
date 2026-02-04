@@ -171,6 +171,12 @@ export function useMeetingModal({
         calendarPartData: { ...prev.calendarPartData, [field]: value }
       } : prev);
     }
+     if (field === 'title' ) {
+      setErrors(prev => ({ ...prev, ['subject']: '' }));
+    }
+     if (field==='start' || field==='end') {
+      setErrors(prev => ({ ...prev, ['time']: '' }));
+    }
   }, [form]);
 
   const setDateChanged = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {

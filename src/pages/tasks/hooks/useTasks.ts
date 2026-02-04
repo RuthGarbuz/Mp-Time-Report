@@ -11,6 +11,7 @@ const createInitialFilterState = (): FilterState => ({
   activeTab: 'received',
   searchTerm: '',
   filter: 'today',
+  visibleCount: 20,
 });
 
 // Helper function to update filter by date range
@@ -120,17 +121,17 @@ export const useTasks = (openModal: () => void, closeModal: () => void) => {
   // Update date filter
   const setDateFilter = useCallback((filter: 'today' | 'week' | 'all') => {
     const updates = updateFilterByDateRange(filter);
-    setFilterState(prev => ({ ...prev, ...updates }));
+    setFilterState(prev => ({ ...prev, ...updates, visibleCount: 20 }));
   }, []);
 
   // Update active tab
   const setActiveTab = useCallback((activeTab: 'received' | 'sent') => {
-    setFilterState(prev => ({ ...prev, activeTab }));
+    setFilterState(prev => ({ ...prev, activeTab, visibleCount: 20 }));
   }, []);
 
   // Update search term
   const setSearchTerm = useCallback((searchTerm: string) => {
-    setFilterState(prev => ({ ...prev, searchTerm }));
+    setFilterState(prev => ({ ...prev, searchTerm, visibleCount: 20 }));
   }, []);
 
   // Refresh data
@@ -150,8 +151,8 @@ export const useTasks = (openModal: () => void, closeModal: () => void) => {
     return text.replace(/'/g, '').replace(/[-\s()]/g, '').toLowerCase();
   }, []);
 
-  // Filtered tasks
-  const filteredTasks = useMemo(() => {
+  // All filtered tasks
+  const allFilteredTasks = useMemo(() => {
     const searchWords = filterState.searchTerm
       .trim()
       .split(/\s+/)
@@ -168,6 +169,24 @@ export const useTasks = (openModal: () => void, closeModal: () => void) => {
       );
     });
   }, [tasksList, filterState.searchTerm, normalizeText]);
+
+  // Visible filtered tasks (for infinite scroll)
+  const filteredTasks = useMemo(() => {
+    return allFilteredTasks.slice(0, filterState.visibleCount);
+  }, [allFilteredTasks, filterState.visibleCount]);
+
+  // Load more tasks
+  const loadMore = useCallback(() => {
+    setFilterState(prev => ({
+      ...prev,
+      visibleCount: Math.min(prev.visibleCount + 20, allFilteredTasks.length)
+    }));
+  }, [allFilteredTasks.length]);
+
+  // Has more to load
+  const hasMore = useMemo(() => {
+    return filterState.visibleCount < allFilteredTasks.length;
+  }, [filterState.visibleCount, allFilteredTasks.length]);
 
   // Task statistics
   const taskStats = useMemo(() => {
@@ -227,6 +246,7 @@ export const useTasks = (openModal: () => void, closeModal: () => void) => {
     showDeleteModal,
     selectedTaskID,
     taskStats,
+    hasMore,
 
     // Actions
     toggleTask,
@@ -240,5 +260,6 @@ export const useTasks = (openModal: () => void, closeModal: () => void) => {
     refreshData,
     setShowDeleteModal,
     setSelectedTaskID,
+    loadMore,
   };
 };

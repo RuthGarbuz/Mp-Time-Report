@@ -10,6 +10,7 @@ import ProposalModal from './proposalDataModel';
 import ProjectModal from './projectDataModel';
 import FinancialSummaryModal from './dashboardSummary';
 import ProjectAnalysesDashboard from './ProjectDataAnalyses';
+import AutoComplete from '../shared/autoCompleteInput';
 
 
 
@@ -145,28 +146,17 @@ const managerDataMain: React.FC = () => {
 
       <div className="flex justify-center mb-2 ">
         <div className="w-2/3 sm:w-1/2 md:w-1/3 lg:w-1/4">
-          <div className="text-right bg-white border-2 border-purple-300 rounded-xl shadow-sm mb-2">
-            <select
-              dir="rtl"
-              value={selectedOffice.id}
-              onChange={(e) => {
-                const selectedId = Number(e.target.value);
-                const office = offices.find((o) => o.id === selectedId);
-                if (office) {
-                  setSelectedOffice({ id: office.id, name: office.name });
-                }
-              }}
-              className="text-gray-800 w-full  px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              <option value="">בחר משרד...</option>
-              {offices.map(office => (
-                <option
-                  //className=" text-sm text-gray-700 bg-white hover:bg-purple-100" 
-                  key={office.id} value={office.id}>
-                  {office.name}
-                </option>
-              ))}
-            </select>
+          <div className="text-gray-800 text-right bg-white border-2 border-purple-300 rounded-xl shadow-sm mb-2" dir="rtl">
+           <AutoComplete
+                items={offices}
+                selectedItem={offices.find(t => t.id === selectedOffice.id) || null}
+                onSelect={(type) => { setSelectedOffice({ id: type.id, name: type.name });  }}
+                getItemId={(type) => type.id}
+                getItemLabel={(type) => type.name}
+                placeholder="בחר משרד..."
+                height={2}
+              />
+            
           </div>
         </div>
 

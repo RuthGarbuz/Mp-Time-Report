@@ -68,6 +68,7 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
     selectedEmployee,
     
     // Actions
+    updateField,
     handleEditOrAdd,
     handleCancel,
     handleSave,
@@ -226,12 +227,7 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
             </label>
             <textarea
               value={newConversation.subject || ""}
-              onChange={(e) =>
-                setNewConversation((prev: any) => ({ 
-                  ...prev, 
-                  subject: e.target.value 
-                }))
-              }
+              onChange={(e) => updateField('subject', e.target.value)}
               placeholder="תיאור השיחה..."
               rows={3}
               disabled={isReadOnly}
@@ -254,12 +250,7 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
                 <input
                   type="date"
                   value={newConversation.startDate || ""}
-                  onChange={(e) =>
-                    setNewConversation((prev: any) => ({ 
-                      ...prev, 
-                      startDate: e.target.value 
-                    }))
-                  }
+                  onChange={(e) => updateField('startDate', e.target.value)}
                   disabled={isReadOnly}
                   className={inputClass}
                 />
@@ -271,12 +262,7 @@ const ConversationModalOpen: React.FC<ConversationModalProps> = ({
                 <input
                   type="date"
                   value={newConversation.dueDate || ""}
-                  onChange={(e) =>
-                    setNewConversation((prev: any) => ({ 
-                      ...prev, 
-                      dueDate: e.target.value 
-                    }))
-                  }
+                  onChange={(e) => updateField('dueDate', e.target.value)}
                   disabled={isReadOnly}
                   className={inputClass}
                 />

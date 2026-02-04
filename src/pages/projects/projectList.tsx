@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { Briefcase, Plus, Search, X } from 'lucide-react';
+import { Briefcase, Search, X } from 'lucide-react';
 import { useModal } from '../ModalContextType';
 import { useProjects } from './hooks/useProjects';
 import ProjectModalOpen from './projectModalOpen';
@@ -23,6 +23,7 @@ export default function ProjectList() {
     openEditProject,
     closeProjectModal,
     handleProjectSaved,
+    refreshProjects,
     loadMore,
   } = useProjects(openModal, closeModal);
 
@@ -165,6 +166,7 @@ export default function ProjectList() {
             projectID={selectedProject.projectID}
             onClose={closeProjectModal}
             onSave={handleProjectSaved}
+            onBackgroundSave={refreshProjects}
           />
         )}
 
@@ -174,6 +176,7 @@ export default function ProjectList() {
             projectID={0}
             onClose={closeProjectModal}
             onSave={handleProjectSaved}
+            onBackgroundSave={refreshProjects}
           />
         )}
       </div>

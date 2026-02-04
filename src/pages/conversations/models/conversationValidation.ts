@@ -2,8 +2,8 @@ import type { ConversationData } from './conversation.model';
 import type { ConversationFormErrors } from './conversationForm.state';
 
 /**
- * מחלקה לולידציה של שיחות
- * מכילה את כל הלוגיקה של בדיקת תקינות נתונים
+ * Conversation validation class
+ * Contains all data validation logic
  */
 export class ConversationValidator {
   private conversation: ConversationData;
@@ -13,8 +13,8 @@ export class ConversationValidator {
   }
 
   /**
-   * ולידציה מלאה של השיחה
-   * @returns אובייקט שגיאות - אם אין שגיאות, כל השדות יהיו ריקים
+   * Full conversation validation
+   * @returns Error object - if no errors, all fields will be empty
    */
   validate(): ConversationFormErrors {
     const errors: ConversationFormErrors = {
@@ -24,17 +24,17 @@ export class ConversationValidator {
       general: ''
     };
 
-    // בדיקת נושא השיחה
+    // Check conversation subject
     if (!this.conversation.subject || this.conversation.subject.trim() === '') {
       errors.subject = 'נדרש נושא השיחה';
     }
 
-    // בדיקת מקבל
+    // Check recipient
     if (!this.conversation.recipientID || this.conversation.recipientID === 0) {
       errors.recipient = 'נדרש מקבל השיחה';
     }
 
-    // בדיקת תאריכים
+    // Check dates
     if (this.conversation.startDate && this.conversation.dueDate) {
       if (this.conversation.startDate > this.conversation.dueDate) {
         errors.time = 'תאריך/שעה לא תקין';
@@ -45,14 +45,14 @@ export class ConversationValidator {
   }
 
   /**
-   * בדיקה האם יש שגיאות ולידציה
+   * Check if there are validation errors
    */
   hasErrors(errors: ConversationFormErrors): boolean {
     return !!(errors.subject || errors.time || errors.recipient || errors.general);
   }
 
   /**
-   * בדיקה האם יש שינויים בין שיחה מקורית לנוכחית
+   * Check if there are changes between original and current conversation
    */
   static hasChanges(original: ConversationData, current: ConversationData): boolean {
     return (
@@ -66,14 +66,14 @@ export class ConversationValidator {
   }
 
   /**
-   * הכנת השיחה לשמירה
-   * מנקה ערכים מיותרים ומוודא שהפורמט נכון
+   * Prepare conversation for submission
+   * Cleans unnecessary values and ensures correct format
    */
   static prepareForSubmit(conversation: ConversationData): ConversationData {
     return {
       ...conversation,
       subject: conversation.subject.trim(),
-      // ניקוי שדות ריקים
+      // Clean empty fields
       contactName: conversation.contactName?.trim() || '',
       companyName: conversation.companyName?.trim() || ''
     };

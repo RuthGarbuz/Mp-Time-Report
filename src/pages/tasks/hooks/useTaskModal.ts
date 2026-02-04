@@ -94,10 +94,21 @@ export const useTaskModal = ({ initialTask, editingId, onClose }: UseTaskModalPr
   // Update task details
   const updateTaskDetails = useCallback(
     (updates: Partial<Task>) => {
-      setState((prev) => ({
-        ...prev,
-        taskDetails: { ...prev.taskDetails, ...updates },
-      }));
+      setState((prev) => {
+        // Clear errors for updated fields
+        const clearedErrors = { ...prev.errors };
+        Object.keys(updates).forEach((key) => {
+          if (key in clearedErrors) {
+            clearedErrors[key as keyof typeof clearedErrors] = '';
+          }
+        });
+
+        return {
+          ...prev,
+          taskDetails: { ...prev.taskDetails, ...updates },
+          errors: clearedErrors,
+        };
+      });
     },
     []
   );

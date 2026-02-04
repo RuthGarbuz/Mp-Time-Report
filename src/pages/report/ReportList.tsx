@@ -189,29 +189,29 @@ const ReportList = () => {
           </div>
 
           {/* Grid Content */}
-          <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-100">
 
-            {filteredReports?.map((report, index) => (
+            {filteredReports?.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((report, index) => (
 
               <div
-                ref={(el) => {
-                  rowRef.current = el;
-                }}
-                key={report.id}
-                onClick={() => setContextMenuRowId(report.id ?? null)}
-                className={`relative p-2 md:p-3 hover:bg-gray-50 transition-colors duration-200
-    ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
-    flex flex-row items-center justify-between gap-2 text-xs md:text-sm`}
+              ref={(el) => {
+                rowRef.current = el;
+              }}
+              key={report.id}
+              onClick={() => setContextMenuRowId(report.id ?? null)}
+              className={`relative p-2 md:p-3 hover:bg-gray-50 transition-colors duration-200
+        ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
+        flex flex-row items-center justify-between gap-2 text-xs md:text-sm`}
               >
-                {/* Date */}
-                <div className="w-[20%] text-center">
-                  <div className="font-medium text-gray-800">
-                    {formatDateForDisplay(new Date(report.date))}
-                  </div>
-                  <div className="text-xs text-gray-500 hidden md:block">
-                    {new Date(report.date).toLocaleDateString('he-IL', { weekday: 'long' })}
-                  </div>
+              {/* Date */}
+              <div className="w-[20%] text-center">
+                <div className="font-medium text-gray-800">
+                {formatDateForDisplay(new Date(report.date))}
                 </div>
+                <div className="text-xs text-gray-500 hidden md:block">
+                {new Date(report.date).toLocaleDateString('he-IL', { weekday: 'long' })}
+                </div>
+              </div>
 
                 {/* Report Type */}
 

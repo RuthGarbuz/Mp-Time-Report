@@ -127,7 +127,8 @@ export const useHourReportModal = ({
           ...existingReport,
           clockInTime: normalizeTimeFormat(existingReport.clockInTime),
           clockOutTime: normalizeTimeFormat(existingReport.clockOutTime),
-          // Use existing total or fallback to employee default
+          //Use existing total or fallback to employee default
+          
           total: normalizeTimeFormat(existingReport.total || employee?.minutesHoursAmount),
         };
         setReport(normalizedReport);

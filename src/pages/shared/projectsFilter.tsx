@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import type { Project } from "../../interface/projectModel";
 
 
@@ -23,12 +23,36 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
 
   if (!isOpen) return null; // אם המודאל סגור - לא מחזירים כלום
 
-    const [searchProject, setSearchProject] = useState("");
-const filteredProjects = projectsList.filter((p) => {
-  const normalizedName = p.name.toLowerCase().replace(/['"'״׳]/g, '');
-  const normalizedSearch = searchProject.toLowerCase().replace(/['"'״׳]/g, '');
-  return normalizedName.includes(normalizedSearch);
-});
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [searchProject, setSearchProject] = useState("");
+  const [visibleCount, setVisibleCount] = useState(20);
+
+  const filteredProjects = projectsList.filter((p) => {
+    const normalizedName = p.name.toLowerCase().replace(/['"'״׳]/g, '');
+    const normalizedSearch = searchProject.toLowerCase().replace(/['"'״׳]/g, '');
+    return normalizedName.includes(normalizedSearch);
+  });
+
+  const visibleProjects = filteredProjects.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredProjects.length;
+
+  const loadMore = () => {
+    setVisibleCount((prev) => Math.min(prev + 20, filteredProjects.length));
+  };
+
+  const handleScroll = () => {
+    if (!listRef.current || !hasMore) return;
+    const { scrollTop, scrollHeight, clientHeight } = listRef.current;
+
+    if (scrollTop + clientHeight >= scrollHeight - 50) {
+      loadMore();
+    }
+  };
+
+  // Reset visible count when search changes
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [searchProject]);
 
   return (
     <div className="text-gray-800 min-h-40 fixed inset-0 flex items-center justify-center bg-black/50 z-50">
@@ -46,8 +70,12 @@ const filteredProjects = projectsList.filter((p) => {
             />
 
         {/* רשימת פרויקטים */}
-        <div className="min-h-60 max-h-60 overflow-y-auto border-gray-300 rounded-lg">
-          {filteredProjects.map((p) => (
+        <div 
+          ref={listRef}
+          onScroll={handleScroll}
+          className="min-h-60 max-h-60 overflow-y-auto border-gray-300 rounded-lg"
+        >
+          {visibleProjects.map((p) => (
             <div
               key={p.id}
               onClick={() => setSelectedProject(p)}
@@ -62,6 +90,9 @@ const filteredProjects = projectsList.filter((p) => {
               {p.name}
             </div>
           ))}
+          {hasMore && (
+            <div className="text-center text-sm text-gray-500 py-2">טוען עוד...</div>
+          )}
         </div>
 
         {/* כפתורים */}

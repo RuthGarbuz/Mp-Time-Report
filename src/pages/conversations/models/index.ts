@@ -1,4 +1,4 @@
-// ייצוא מרכזי של כל המודלים
+// Central export of all models
 
 // Types & Interfaces
 export type {

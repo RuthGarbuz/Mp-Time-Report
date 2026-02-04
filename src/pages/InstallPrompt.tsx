@@ -138,7 +138,7 @@ const InstallPrompt: React.FC = () => {
         <div className="flex-1">
           <h3 className="font-bold text-lg mb-1">התקן את האפליקציה</h3>
           <p className="text-sm text-white/90 mb-3">
-            קבל חוויה מלאה ללא סרגל כתובת - האפליקציה תפתח כמו אפליקציה רגילה!
+         !קבל חוויה מלאה ללא סרגל כתובת - האפליקציה תפתח כמו אפליקציה רגילה
           </p>
           <button
             onClick={handleInstall}

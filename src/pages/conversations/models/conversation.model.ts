@@ -51,9 +51,9 @@ export interface ConversationLogType {
 }
 
 /**
- * פונקציה ליצירת אובייקט שיחה ראשוני
- * @param organizerID - מזהה השולח
- * @param recipientID - מזהה המקבל (ברירת מחדל)
+ * Function to create an initial conversation object
+ * @param organizerID - Sender ID
+ * @param recipientID - Recipient ID (default value)
  */
 export const createInitialConversation = (organizerID: number, recipientID: number = 0): ConversationData => {
   const today = new Date().toISOString().split('T')[0];
@@ -81,17 +81,17 @@ export const createInitialConversation = (organizerID: number, recipientID: numb
 };
 
 /**
- * פונקציית עזר לנרמול טקסט לחיפוש
- * מסירה גרשיים, רווחים ותווים מיוחדים לשיפור תוצאות חיפוש
+ * Helper function to normalize text for search
+ * Removes quotes, spaces, and special characters to improve search results
  */
 export const normalizeSearchText = (text: string): string => {
   return text.replace(/'/g, '').replace(/[-\s()]/g, '').toLowerCase();
 };
 
 /**
- * פילטור שיחות לפי מונח חיפוש
- * @param conversations - רשימת השיחות
- * @param searchTerm - מונח החיפוש
+ * Filter conversations by search term
+ * @param conversations - List of conversations
+ * @param searchTerm - Search term
  */
 export const filterConversations = (conversations: Conversation[], searchTerm: string): Conversation[] => {
   if (!searchTerm.trim()) return conversations;
@@ -101,7 +101,7 @@ export const filterConversations = (conversations: Conversation[], searchTerm: s
   return conversations.filter((conversation) => {
     const searchableText = normalizeSearchText(conversation.subject || '');
     
-    // בודק שכל המילים מופיעות בטקסט הניתן לחיפוש
+    // Check that all words appear in the searchable text
     return searchWords.every(word => {
       const normalizedWord = normalizeSearchText(word);
       return searchableText.includes(normalizedWord);

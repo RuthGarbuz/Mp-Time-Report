@@ -10,9 +10,16 @@ type UseProjectModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  onBackgroundSave: () => void;
 };
 
-export const useProjectModal = ({ projectID, isOpen, onSave,onClose }: UseProjectModalProps) => {
+export const useProjectModal = ({
+  projectID,
+  isOpen,
+  onSave,
+  onClose,
+  onBackgroundSave,
+}: UseProjectModalProps) => {
   const [formData, setFormData] = useState<ProjectDetails>(createInitialProject());
   const [originalData, setOriginalData] = useState<ProjectDetails | null>(null);
   const [errors, setErrors] = useState({ name: '', projectNum: '', general: '' });
@@ -124,6 +131,9 @@ useEffect(() => {
       const updatedData = { ...formData, projectID: newID };
       setFormData(updatedData);
       setOriginalData(updatedData);
+
+      // Refresh projects list without closing the modal
+      onBackgroundSave();
     }
 
     // Prepare contacts grid
@@ -139,7 +149,7 @@ useEffect(() => {
     setGridContacts(contactGrid);
     setIsContactsOpen(true);
     openModal();
-  }, [formData, handleSave]);
+  }, [formData, handleSave, onBackgroundSave]);
 
   // Close contacts modal
   const closeContactsModal = useCallback(() => {

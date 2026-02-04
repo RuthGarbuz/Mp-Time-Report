@@ -12,7 +12,7 @@ export type PhoneBookValidationResult = {
 };
 
 export class PhoneBookValidator {
-  static validate(contact: PhoneBook, selectedCompanyId: number): PhoneBookValidationResult {
+  static validate(contact: PhoneBook, _selectedCompanyId: number, mode: 'add' | 'update'): PhoneBookValidationResult {
     const errors: PhoneBookValidationErrors = {
       firstName: '',
       company: '',
@@ -22,13 +22,13 @@ export class PhoneBookValidator {
     let isValid = true;
 
     // Validate firstName
-    if (!contact.firstName || contact.firstName.trim() === '') {
+    if ((contact.id!=0||mode==='add') && (!contact.firstName || contact.firstName.trim() === '')) {
       errors.firstName = 'שם פרטי הוא שדה חובה';
       isValid = false;
     }
 
     // Validate company
-    if (!selectedCompanyId && (!contact.company || contact.company.trim() === '')) {
+    if ( (!contact.company || contact.company.trim() === '')) {
       errors.company = 'שם חברה הוא שדה חובה';
       isValid = false;
     }
@@ -43,25 +43,11 @@ export class PhoneBookValidator {
   }
 
   static normalizeText(text: string): string {
-    return text.replace(/'/g, '').replace(/[-\s()]/g, '').toLowerCase();
-  }
-
-  static matchesSearch(contact: PhoneBook, searchTerm: string): boolean {
-    const searchableText = this.normalizeText(
-      [
-        contact.firstName || '',
-        contact.lastName || '',
-        contact.company || '',
-        contact.companyPhone || '',
-        contact.mobile || ''
-      ].join(' ')
-    );
-    
-    const searchWords = searchTerm.trim().split(/\s+/).filter(word => word.length > 0);
-    
-    return searchWords.every(word => {
-      const normalizedWord = this.normalizeText(word);
-      return searchableText.includes(normalizedWord);
-    });
+    // Remove common punctuation, separators, and whitespace so search works well
+    // even when tags/values contain them (e.g. \"name | company\")
+    return text
+      .replace(/['",.\|]/g, '')     // quotes, commas, dots, pipes
+      .replace(/[-\s()]/g, '')      // dashes, spaces, parentheses
+      .toLowerCase();
   }
 }

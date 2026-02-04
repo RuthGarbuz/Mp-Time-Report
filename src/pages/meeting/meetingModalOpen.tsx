@@ -1,328 +1,106 @@
-import { useEffect, useState } from 'react';
+/**
+ * AddMeetingModal Component - Meeting Form Modal
+ * 
+ * Displays a modal for creating and editing calendar meetings with:
+ * - Meeting details (title, date, time, location, link)
+ * - Project and employee assignment
+ * - Recurring meeting configuration
+ * - Status and category selection
+ * - Private meeting option
+ * - Reminder configuration
+ * - Delete operations (single or series)
+ * 
+ * All business logic extracted to useMeetingModal hook
+ * This component handles only UI rendering
+ */
 
 import { X, Calendar, Clock, MapPin, Link2, FileText, Bell, Repeat, Trash2 } from 'lucide-react';
-import type { CalendarDataModal, CalendarEventDto, CalendarPartData, Global } from '../../interface/meetingModel';
-import type { Project } from '../../interface/projectModel';
-import type { SelectEmployeesList } from '../../interface/MaimModel';
-import { getProjectsList } from '../../services/TaskService';
-
-import meetingService from '../../services/meetingService';
-import employeeService from '../../services/employeeService';
+import type { CalendarDataModal } from '../../interface/meetingModel';
 import ConfirmModal from '../shared/confirmDeleteModal';
 import AutoComplete from "../shared/autoCompleteInput";
-
+import { useMeetingModal } from './hooks/useMeetingModal';
 
 interface MeetingModalProps {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
     checkRrecurrenceChild: (recurrenceId?: string) => boolean;
-
     event?: CalendarDataModal;
     isRecurrence?: boolean;
     userID?: number;
 }
 
-export default function AddMeetingModal(
-    {
-        isOpen,
-        setIsOpen,
-        checkRrecurrenceChild,
-
+export default function AddMeetingModal({
+    isOpen,
+    setIsOpen,
+    checkRrecurrenceChild,
+    event,
+    isRecurrence,
+    userID
+}: MeetingModalProps) {
+    
+    // ==========================================================================
+    // Hook - All business logic extracted
+    // ==========================================================================
+    
+    const {
+        // Form state
+        form,
+        errors,
+        isSaving,
+        
+        // Dropdown lists
+        projectsList,
+        citiesList,
+        statuseList,
+        categoryList,
+        employeesList,
+        
+        // Selected items
+        selectedProject,
+        selectedCity,
+        selectedEmployee,
+        
+        // Confirmation dialogs
+        isDeleteAllExceptions,
+        isDeleteConfirm,
+        isDeleteSeriesConfirm,
+        setIsDeleteAllExceptions,
+        setIsDeleteConfirm,
+        setIsDeleteSeriesConfirm,
+        
+        // Form handlers
+        updateForm,
+        setDateChanged,
+        updateHours,
+        handleProjectSelect,
+        handleCitySelect,
+        handleEmployeeSelect,
+        toggleRecurrenceDay,
+        
+        // Submit handlers
+        handleBeforeSubmit,
+        handleSubmit,
+        
+        // Delete handlers
+        handleDeleteClick,
+        deleteSingleOccurrence,
+        deleteWholeSeries,
+        
+        // Helpers
+        getMeetingTitle,
+        formatDate,
+        formatTime,
+        combineDateTime,
+    } = useMeetingModal({
         event,
         isRecurrence,
-        userID
-    }: MeetingModalProps) {
-    let initialForm = event;
-    const [form, setForm] = useState<CalendarDataModal | undefined>(event);
-    const [errors, setErrors] = useState<{ [key: string]: string }>({});
-    const [isSaving, setIsSaving] = useState(false);
-    const [projectsList, setProjectsList] = useState<Project[]>(
-        [{ id: 0, name: 'Loading...', hoursReportMethodID: 0 }]
-    );
-    const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-    const [citiesList, setCitiesList] = useState<Global[]>([]);
-    const [statuseList, setStatuseList] = useState<Global[] | null>(null);
-    const [categoryList, setCategoryList] = useState<Global[] | null>(null);
-    const [employeesList, setEmployeesList] = useState<SelectEmployeesList[]>([]);
-
-    const [isDeleteAllExeptions, setIsDeleteAllExeptions] = useState(false);
-    const [selectedCity, setSelectedCity] = useState<Global | null>(null);
-    const [selectedEmployee, setSelectedEmployee] = useState<SelectEmployeesList | null>(null);
-
-    const [isDeleteConfirm, setIsDeleteConfirm] = useState(false);
-    const [isDeleteSeriesConfirm, setIsDeleteSeriesConfirm] = useState(false);
-
-    const handleDeleteClick = () => {
-        const type = event?.calendarEventDto.type;
-        if (type === 1) {
-            // recurring series
-            setIsDeleteSeriesConfirm(true);
-        } else {
-            // single or exception
-            setIsDeleteConfirm(true);
-        }
-    };
-    const deleteSingleOccurrence = async () => {
-        if (!event) return;
-        const dto = event.calendarEventDto;
-
-        if (dto.type === 0) {
-            // single meeting
-            await meetingService.deleteMeeting(dto, false);
-            setIsOpen(false);
-            return;
-        }
-
-        if (dto.type === 3) {
-            if (event.calendarEventDto.id > 0) {
-                await meetingService.UpdateAppointmentType(event.calendarEventDto.id);
-            }
-            else {
-
-
-                // exception -> change to type=4
-                const updatedEvent: CalendarDataModal = {
-                    ...event,
-                    calendarEventDto: {
-                        ...event.calendarEventDto,
-                        type: 4
-                    }
-                };
-                await meetingService.insertUpdateMeetingsData(updatedEvent, "InsertMeetingDataAsync");
-            }
-            setIsOpen(false);
-            return;
-        }
-
-
-    };
-
-    const deleteWholeSeries = async () => {
-        if (!event) return;
-        await meetingService.deleteMeeting(event.calendarEventDto, true);
-        setIsOpen(false);
-    };
-
-    // helper: merge date with time (same as calendar)
-
-    const handleEmployeeSelect = (emp: SelectEmployeesList) => {
-        updateForm('employeeId', emp.id || userID);
-
-        setSelectedEmployee(emp ? emp : null);
-        //setIsOpenEmployee(false);
-    };
-    // const updateEmployee = () => {
-    //     if (form?.calendarEventDto.employeeId == null || form?.calendarEventDto.employeeId == 0) {
-    //         updateForm('employeeId', userID);
-    //     }
-    // }
-    const handleBeforeSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!hasChanges()) {
-            setIsOpen(false);
-            return;
-        }
-
-        if (form?.calendarEventDto.recurrenceId
-            && form?.calendarEventDto.type === 1) {
-            const hasChild = checkRrecurrenceChild(form?.calendarEventDto.recurrenceId);
-            if (hasChild) {
-                setIsDeleteAllExeptions(true);
-                return;
-            }
-        }
-        handleSubmit();
-    }
-    const hasChanges = () => {
-        return JSON.stringify(form) !== JSON.stringify(initialForm);
-    };
-    // const setOpenProjectList = async () => {
-    //     const projectsData = await getProjectsList();
-    //     if (projectsData) {
-    //         setProjectsList(projectsData as Project[]);
-    //     }
-    //     // setIsOpenProject(true);
-    // }
-
-    useEffect(() => {
-        const init = async () => {
-
-            try {
-                setForm(event);
-                const projectsData = await getProjectsList();
-                if (projectsData) {
-                    setProjectsList(projectsData as Project[]);
-                }
-                const employeeData: SelectEmployeesList[] = await employeeService.getEmployeesList();
-                if (employeeData) {
-                    setEmployeesList(employeeData);
-                }
-                const storedData = localStorage.getItem("meetingDataLists");
-
-                if (storedData) {
-                    const parsedData = JSON.parse(storedData);
-                    setCitiesList(parsedData?.citiesList || null);
-                    setStatuseList(parsedData?.statuseList || null);
-                    setCategoryList(parsedData?.categoryList || null);
-                    return; // ✅ already loaded, no need to fetch again
-                }
-                else {
-                    // Otherwise, fetch from API
-                    const dataList = await meetingService.getMeetingDataLists();
-
-                    // Save in state
-                    setCitiesList(dataList?.citiesList || []);
-                    setStatuseList(dataList?.statuseList || null);
-                    setCategoryList(dataList?.categoryList || null);
-                    // Save to localStorage for next time
-                    localStorage.setItem("meetingDataLists", JSON.stringify(dataList));
-                }
-            } catch (err) {
-                console.error("Error initializing modal:", err);
-            }
-        };
-        if (event) init();
-    }, [event]);
-    useEffect(() => {
-        setSelectedCity(form?.calendarPartData.cityID ? citiesList!.find(c => c.id === form.calendarPartData.cityID) || null : null);
-    }, [citiesList]);
-    useEffect(() => {
-        setSelectedEmployee(form?.calendarEventDto.employeeId ? employeesList!.find(e => e.id === form.calendarEventDto.employeeId) || null : userID ? employeesList!.find(e => e.id === userID) || null : null);
-    }, [employeesList]);
-    useEffect(() => {
-        setSelectedProject(form?.calendarPartData.projectID ? projectsList!.find(p => p.id === form.calendarPartData.projectID) || null : null);
-    }, [projectsList]);
-    const formatDate = (dateStr: string) => {
-        if (!dateStr) return "";
-        const d = new Date(dateStr); // קורא UTC → הופך ל־LOCAL אוטומטית
-        const year = d.getFullYear();
-        const month = String(d.getMonth() + 1).padStart(2, "0");
-        const day = String(d.getDate()).padStart(2, "0");
-
-        return `${year}-${month}-${day}`;
-    };
-
-    // helper: Converts Date to "HH:mm"
-    const formatTime = (dateStr: string) => {
-        if (!dateStr) return "";
-
-        const d = new Date(dateStr); // UTC → ישראל
-
-        const hours = String(d.getHours()).padStart(2, "0");
-        const minutes = String(d.getMinutes()).padStart(2, "0");
-
-        return `${hours}:${minutes}`;
-    };
-
-    // helper: Combine date + time into ISO string
-    const combineDateTime = (dateStr: string, timeStr: string) => {
-        if (!dateStr || !timeStr) return '';
-        return `${dateStr}T${timeStr}:00`;
-    };
-    const handleProjectSelect = (project: Project) => {
-        setSelectedProject(project);
-        setForm((prev: any) => ({
-            ...prev,
-            calendarPartData: {
-                ...prev.calendarPartData,
-                projectID: project.id,
-                projectName: project.name
-            }
-        }));
-    }
-
-
-
-    const validateForm = () => {
-        const newErrors: { [key: string]: string } = {};
-
-        if (!form?.calendarEventDto.title.trim()) {
-            newErrors.subject = 'נושא הפגישה הוא שדה חובה';
-        }
-
-        if (!form?.calendarEventDto.start) {
-            newErrors.date = 'תאריך הפגישה הוא שדה חובה';
-        }
-        if (!form?.calendarEventDto.allDay && form?.calendarEventDto.start && form?.calendarEventDto.end) {
-            // לחלץ את השעה מה־ISO string
-            const startTime = new Date(form.calendarEventDto.start).toTimeString().slice(0, 5); // "10:30"
-            const endTime = new Date(form.calendarEventDto.end).toTimeString().slice(0, 5);     // "17:00"
-
-            // לבנות זמני השוואה
-            const start = new Date(`2000-01-01T${startTime}`);
-            const end = new Date(`2000-01-01T${endTime}`);
-
-            const diffMs = end.getTime() - start.getTime();
-
-            const fiveMinutes = 5 * 60 * 1000;
-
-            if (diffMs < fiveMinutes) {
-                newErrors.time = 'שעת הסיום חייבת להיות לפחות 5 דקות אחרי שעת ההתחלה';
-            }
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSubmit = async () => {
-        if (isSaving) return;
-
-        setIsSaving(true);
-        let isInserted = false;
-
-        if (validateForm()) {
-            let data: any
-            if (form?.calendarEventDto.id && form.calendarEventDto.id > 0 && form.calendarEventDto.type !== 4) {
-                if (form.calendarEventDto.type === 3 && isRecurrence) {
-                    isInserted = true;
-                } else {
-                    isInserted = false;
-                }
-            } else {
-                isInserted = true;
-            }
-            data = isInserted ?
-                await meetingService.insertUpdateMeetingsData(form!, "InsertMeetingDataAsync") :
-                await meetingService.insertUpdateMeetingsData(form!, "UpdateMeetingDataAsync");
-            if (!data) {
-                alert('הפגישה נכשלה בהוספה!');
-            }
-            setIsOpen(false);
-            // setIsOpen(false);
-        }
-        setIsSaving(false);
-
-    };
-    const updateForm = (field: keyof CalendarEventDto | keyof CalendarPartData, value: any) => {
-        if (!form) return;
-
-        if (field in form.calendarEventDto) {
-            setForm(prev => prev ? {
-                ...prev,
-                calendarEventDto: { ...prev.calendarEventDto, [field]: value }
-            } : prev);
-        } else if (field in form.calendarPartData) {
-            setForm(prev => prev ? {
-                ...prev,
-                calendarPartData: { ...prev.calendarPartData, [field]: value }
-            } : prev);
-        }
-    };
-
-
-    const toggleRecurrenceDay = (day: string) => setForm(prev => prev ? ({
-        ...prev,
-        calendarEventDto: {
-            ...prev.calendarEventDto,
-            rRule: {
-                ...prev.calendarEventDto.rRule,
-                byweekdays: prev.calendarEventDto.rRule?.byweekdays?.includes(day)
-                    ? prev.calendarEventDto.rRule.byweekdays.filter(d => d !== day)
-                    : [...prev.calendarEventDto.rRule?.byweekdays || [], day],
-            } as CalendarEventDto['rRule']
-        }
-    }) : prev);
-
+        userID,
+        isOpen,
+        setIsOpen,
+        checkRrecurrenceChild
+    });
+    
+    
     const weekDays = [
         { value: 'SU', label: 'א' },
         { value: 'MO', label: 'ב' },
@@ -332,48 +110,12 @@ export default function AddMeetingModal(
         { value: 'FR', label: 'ו' },
         { value: 'SA', label: 'ש' }
     ];
-    const getMeetingTitle = () => {
-        if (form?.calendarEventDto.type === 3) return `פגישה חריגה - ${form.calendarEventDto.title}`;
-        if (form?.calendarEventDto.type === 1) return `פגישה מחזורית - ${form.calendarEventDto.title}`;
-        if (form?.calendarEventDto.title === "") return `פגישה חדשה `;
-        return `פגישה - ${form?.calendarEventDto.title}`;
-    };
+    
+    // ==========================================================================
+    // Render
+    // ==========================================================================
+    
     if (!isOpen) return null;
-
-    function setDateChanged(e: React.ChangeEvent<HTMLInputElement>) {
-        const newDate = e.target.value;
-        if (newDate == "") return;
-        const timePart = formatTime(form?.calendarEventDto.start || new Date().toISOString());
-        updateForm('start', combineDateTime(newDate, timePart));
-        const timeEndPart = formatTime(form?.calendarEventDto.end || new Date().toISOString());
-        updateForm('end', combineDateTime(newDate, timeEndPart));
-        if (form?.calendarEventDto.type == 1) {
-            const timeRulePart = formatTime(form?.calendarEventDto.rRule?.dtStart || form?.calendarEventDto.start || new Date().toISOString());
-
-            updateForm('rRule', { ...form?.calendarEventDto.rRule, dtStart: combineDateTime(newDate, timeRulePart) })
-        }
-    }
-    const updateHours = (isFullDay: boolean) => {
-        if (!isFullDay) {
-            updateForm('start', combineDateTime(formatDate(form?.calendarEventDto.start || new Date().toISOString()), "08:00"));
-            updateForm('end', combineDateTime(formatDate(form?.calendarEventDto.start || new Date().toISOString()), "08:30"));
-        }
-        else {
-            updateForm('start', formatDate(form?.calendarEventDto.start || new Date().toISOString()));
-            updateForm('end', formatDate(form?.calendarEventDto.start || new Date().toISOString()));
-        }
-    }
-
-    const handleCitySelect = (city: Global) => {
-        setSelectedCity(city);
-        setForm((prev) => prev ? ({
-            ...prev,
-            calendarPartData: {
-                ...prev.calendarPartData,
-                cityID: city.id ?? 0,
-            }
-        }) : prev);
-    };
     return (
 
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" dir="rtl">
@@ -947,27 +689,28 @@ export default function AddMeetingModal(
                         </button>
                         <button
                             onClick={(e) => { /* updateEmployee(); */ handleBeforeSubmit(e); }}
+                            disabled={isSaving}
                             className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg font-medium hover:from-purple-700 hover:to-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            שמור פגישה
+                            {isSaving ? 'שומר...' : 'שמור פגישה'}
                         </button>
                     </div>
                 </div>
             </div>
             {/* מודאל */}
 
-            {isDeleteAllExeptions && (
+            {isDeleteAllExceptions && (
                 <ConfirmModal
                     message="שינוי פגישה מחזורית ימחק את כל החריגות שלה. האם אתה בטוח שברצונך להמשיך?"
                     okText="כן"
                     cancelText="לא"
                     onOk={async () => {
-                        handleSubmit();
-                        setIsDeleteAllExeptions(false);
+                        await handleSubmit();
+                        setIsDeleteAllExceptions(false);
                     }}
                     onCancel={() => {
-                        setIsDeleteAllExeptions(false)
-                        setIsOpen(false)
+                        setIsDeleteAllExceptions(false);
+                        setIsOpen(false);
                     }}
                 />
             )}

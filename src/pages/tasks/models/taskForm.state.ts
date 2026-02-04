@@ -11,6 +11,7 @@ export interface FilterState  {
   activeTab: 'received' | 'sent';
   searchTerm: string;
   filter: string;
+  visibleCount: number;
 };
 export const createInitialFormState = (task: Task): TaskFormState => ({
   editingId: 0,

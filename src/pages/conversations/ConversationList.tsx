@@ -20,11 +20,11 @@ const ConversationList: React.FC = () => {
     employee,
     conversations,
     searchTerm,
-    filteredCount,
     showAddModal,
     showDeleteModal,
     conversationData,
     listRef,
+    hasMore,
 
     // Actions
     setSearchTerm,
@@ -204,8 +204,8 @@ const ConversationList: React.FC = () => {
             ))}
 
             {/* "Loading more..." message */}
-            {conversations.length < filteredCount && (
-              <div className="text-center text-sm text-gray-500 py-4">Loading more...</div>
+            {hasMore && (
+              <div className="text-center text-sm text-gray-500 py-4">טוען עוד...</div>
             )}
           </div>
         </div>

@@ -134,7 +134,7 @@ export const usePhoneBookModal = ({
 
   // Validate
   const validate = useCallback((): boolean => {
-    const validation = PhoneBookValidator.validate(editData, editData.selectedCompanyId);
+    const validation = PhoneBookValidator.validate(editData, editData.selectedCompanyId,mode);
     
     if (!validation.isValid) {
       setErrors(prev => ({ ...prev, ...validation.errors }));
@@ -145,9 +145,22 @@ export const usePhoneBookModal = ({
     return true;
   }, [editData]);
 
-  // Save company data
-  const saveCompanyData = useCallback(async (): Promise<boolean> => {
-    if (isAddingCompany && editData.company) {
+  // Save company data - returns the company ID (or null if no company operation)
+  const saveCompanyData = useCallback(async (): Promise<number | null> => {
+    if (editData.selectedCompanyId) {
+      // Use existing company
+      const selectedCompany = companiesList.find(c => c.id === editData.selectedCompanyId);
+      if (selectedCompany) {
+        setEditData(prev => ({
+          ...prev,
+          company: selectedCompany.name || '',
+          companyAddress: selectedCompany.address || '',
+          companyPhone: selectedCompany.phoneNum || '',
+        }));
+      }
+      return editData.selectedCompanyId;
+    }
+   else if (isAddingCompany && editData.company) {
       // Add new company
       const newCompany: Company = {
         id: Date.now(),
@@ -160,23 +173,12 @@ export const usePhoneBookModal = ({
       const newCompanyID = await addCompany(newCompany);
       if (newCompanyID && newCompanyID > 0) {
         setEditData(prev => ({ ...prev, selectedCompanyId: newCompanyID }));
-        return true;
+        return newCompanyID;
       }
-      return false;
-    } else if (editData.selectedCompanyId) {
-      // Use existing company
-      const selectedCompany = companiesList.find(c => c.id === editData.selectedCompanyId);
-      if (selectedCompany) {
-        setEditData(prev => ({
-          ...prev,
-          company: selectedCompany.name || '',
-          companyAddress: selectedCompany.address || '',
-          companyPhone: selectedCompany.phoneNum || '',
-        }));
-      }
-    }
+      return null;
+    }  
     
-    return true;
+    return null;
   }, [isAddingCompany, editData, companiesList]);
 
   // Handle save
@@ -185,30 +187,61 @@ export const usePhoneBookModal = ({
 
     setIsSaving(true);
     try {
-      // Save company first if needed
-      const companySaved = await saveCompanyData();
-      if (!companySaved) {
+      // Save company first if needed - get the company ID directly
+      const companyID = await saveCompanyData();
+      if (companyID === null && isAddingCompany && editData.company) {
+        // Company save failed
         setErrors(prev => ({ ...prev, general: 'שגיאה בשמירת פרטי החברה' }));
         return;
       }
 
+      // Use the company ID from saveCompanyData if available, otherwise use editData
+      const finalCompanyID = companyID ?? editData.selectedCompanyId;
+      
+      // Create contact data with the correct company ID
+      const contactData: PhoneBook = {
+        ...editData,
+        selectedCompanyId: finalCompanyID
+      };
+     // let updatCompany;
       let success;
+      // if(mode==='update'&&(contactData.id===undefined||contactData.id===0)&&contactData.firstName===''){
+      //    if (isAddingCompany && editData.company && finalCompanyID) {
+      //     const companyData: Company = {
+      //       id: finalCompanyID,
+      //       name: editData.company,
+      //       address: editData.companyAddress ?? '',
+      //       phoneNum: editData.companyPhone ?? '',
+      //       cityID: editData.companyCityID
+      //     };
+      //     updatCompany= await updateCompany(companyData);
+      //     success = await addPhoneBookContact(contactData);
+      //    }
+      // }
       if (mode === 'add') {
-        success = await addPhoneBookContact(editData);
+        success = await addPhoneBookContact(contactData);
       } else {
+      
         // Update company if editing
-        if (isAddingCompany && editData.company) {
+        if (isAddingCompany && editData.company && finalCompanyID) {
           const companyData: Company = {
-            id: editData.selectedCompanyId,
+            id: finalCompanyID,
             name: editData.company,
             address: editData.companyAddress ?? '',
             phoneNum: editData.companyPhone ?? '',
             cityID: editData.companyCityID
           };
-          await updateCompany(companyData);
+      await updateCompany(companyData);
         }
-        
-        success = await updatePhoneBookContact(editData);
+        if(contactData.id===undefined||contactData.id===0){
+          if(contactData.firstName!=''){
+           success = await addPhoneBookContact(contactData);
+          }
+          else success=true;
+        }
+        else{
+        success = await updatePhoneBookContact(contactData);
+        }
       }
 
       if (success) {

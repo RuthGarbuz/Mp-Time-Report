@@ -12,6 +12,7 @@ import { TimeType } from "../enum";
 import type { TimeRecord } from "../interface/HourReportModal";
 import type { Employee } from "../interface/TimeHourModel";
 import authService from "./authService";
+import EmployeeService from "./employeeService";
 
 
 // type Employee = {
@@ -22,128 +23,162 @@ import authService from "./authService";
 //   [key: string]: any;
 // };
 
+// API endpoint paths for time record actions
+const TIME_RECORD_ENDPOINTS = {
+  GET_TIME_RECORD_DATA: "/timeRecords/GetTimeRecordDataAsync",
+  INSERT_OR_UPDATE_BASE: "/TimeRecords", // used with dynamic function name
+  DELETE_TIME_RECORD: "/TimeRecords/DeleteTimeRecordDataAsync",
+} as const;
+
+// Helpers
+const getAuthenticatedUser = () => {
+  const user = authService.getCurrentUser();
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+  return user;
+};
+
+const getAuthenticatedEmployee = () => {
+  const employee = authService.getCurrentEmployee();
+  if (!employee) {
+    throw new Error("Employee not authenticated");
+  }
+  return employee;
+};
+
+const buildEndpoint = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
+
+const buildPostOptions = (body: unknown) => ({
+  method: "POST" as const,
+  body: JSON.stringify(body),
+});
+
 class TimeRecordService {
-  private storageKey = 'timeRecords';
-  private employeeKey = 'employee';
-async getTimeRecordsData(date:Date):Promise<TimeRecord[] | null>{
-  try{
-      const user = authService.getCurrentUser();
-          if (!user) throw new Error('User not authenticated');
-    
-     const requestBody = {
+  private storageKey = "timeRecords";
+  private employeeKey = "employee";
+
+  async getTimeRecordsData(date: Date): Promise<TimeRecord[] | null> {
+    try {
+      const user = getAuthenticatedUser();
+
+      const requestBody = {
         timeHourFromDate: date,
         employeeID: user.id,
         database: user.dataBase,
       };
-const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
-      const endpoint = `${dynamicBaseUrl}/timeRecords/GetTimeRecordDataAsync`; // Make sure this is correct
 
+      const endpoint = buildEndpoint(user.urlConnection, TIME_RECORD_ENDPOINTS.GET_TIME_RECORD_DATA);
 
-      const response = await authService.makeAuthenticatedRequest(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-      });
+      const response = await authService.makeAuthenticatedRequest(
+        endpoint,
+        buildPostOptions(requestBody)
+      );
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || 'Failed to get employee data');
+        throw new Error(error || "Failed to get employee data");
       }
       const data: TimeRecord[] = await response.json();
-      
-      return data
-  
+
+      return data;
     } catch (error) {
-      console.error('Get employee error:', error);
+      console.error("Get employee error:", error);
       throw error;
     }
   }
-   combineDateAndTime = (date: Date, timeStr: string): string => {
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  const combined = new Date(date);
-  combined.setHours(hours);
-  combined.setMinutes(minutes);
-  combined.setSeconds(0);
-  combined.setMilliseconds(0);
-  return combined.toISOString();
-};
-async insertTimeRecord(timeRecords:TimeRecord,functionName:string){
-try{
- const user = authService.getCurrentUser();
-    if (!user) throw new Error('User not authenticated');
 
-    const employee = authService.getCurrentEmployee();
-    if (!employee) throw new Error('Employee not authenticated');
+  combineDateAndTime = (date: Date, timeStr: string): string => {
+    const [hours, minutes] = timeStr.split(":").map(Number);
+    const combined = new Date(date);
+    combined.setHours(hours);
+    combined.setMinutes(minutes);
+    combined.setSeconds(0);
+    combined.setMilliseconds(0);
+    return combined.toISOString();
+  };
 
- const location = localStorage.getItem('location') || '';
-    const requestBody = {
+  async insertTimeRecord(timeRecords: TimeRecord, functionName: string) {
+    try {
+      const user = getAuthenticatedUser();
+      getAuthenticatedEmployee(); // validates employee is present
 
-      database: user.dataBase,
-      id: timeRecords.id || 0,
-      employeeID: user.id,
-      dateTime: timeRecords.date, 
-      startTime: timeRecords.clockInTime,
-      endTime: timeRecords.clockOutTime,
-      dayPart:null,
-      description: timeRecords.notes || null,
-      timeHourReportsTypeID: timeRecords.typeID,
-      timeHourReportMethodID: 3,
-      location:location,
+      // Resolve location live (same approach as ReportTime), not from localStorage
+      let location = "";
+      try {
+        location = await EmployeeService.getUserLocation();
+      } catch {
+        // Fallback (matches ReportTime's intent)
+        location = "תל אביב";
+      }
+      const requestBody = {
+        database: user.dataBase,
+        id: timeRecords.id || 0,
+        employeeID: user.id,
+        dateTime: timeRecords.date,
+        startTime: timeRecords.clockInTime,
+        endTime: timeRecords.clockOutTime,
+        dayPart: null,
+        description: timeRecords.notes || null,
+        timeHourReportsTypeID: timeRecords.typeID,
+        timeHourReportMethodID: 3,
+        location: location,
       };
-        const dynamicBaseUrl = user.urlConnection;
-        const endpoint = `${dynamicBaseUrl}/TimeRecords/${functionName}`; // Make sure this is correct
- 
-        const response = await authService.makeAuthenticatedRequest(endpoint, {
-          method: 'POST',
-          body: JSON.stringify(requestBody),
-        });
-    
-        if (!response.ok) {
-          const error = await response.text();
-          throw new Error(error || 'Failed to InsertTimeRecord');
-        }
-    
-        const data = await response.json();
-        return {
-          success: true,
-          message: 'InsertTimeRecord successful',
-          data: data,
-        };
-}
-catch (error) {
-      console.error('Error InsertTimeRecord data:', error);
+
+      const endpoint = buildEndpoint(
+        user.urlConnection,
+        `${TIME_RECORD_ENDPOINTS.INSERT_OR_UPDATE_BASE}/${functionName}`
+      );
+
+      const response = await authService.makeAuthenticatedRequest(
+        endpoint,
+        buildPostOptions(requestBody)
+      );
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Failed to InsertTimeRecord");
+      }
+
+      const data = await response.json();
+      return {
+        success: true,
+        message: "InsertTimeRecord successful",
+        data: data,
+      };
+    } catch (error) {
+      console.error("Error InsertTimeRecord data:", error);
       return null;
     }
-}
-
-async deleteTimeRecord(TimeRecordID: number): Promise<boolean> {
-  try {
-     const user = authService.getCurrentUser();
-    if (!user) throw new Error("User not authenticated");
-
-    const dynamicBaseUrl = user.urlConnection;
-    const endpoint = `${dynamicBaseUrl}/TimeRecords/DeleteTimeRecordDataAsync`; 
-    const requestBody = {
-      Database: user.dataBase,
-      ID:TimeRecordID
-    };
-
-    const response = await authService.makeAuthenticatedRequest(endpoint, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to Delete Task");
-    }
-const data = await response.json();
-if(data===false) throw new Error("Failed to Delete task");
-    return true;
- } 
- catch (error) {
-    console.error("Error Deleteing task:", error);
-    return false;
   }
-}
+
+  async deleteTimeRecord(TimeRecordID: number): Promise<boolean> {
+    try {
+      const user = getAuthenticatedUser();
+
+      const requestBody = {
+        Database: user.dataBase,
+        ID: TimeRecordID,
+      };
+
+      const endpoint = buildEndpoint(user.urlConnection, TIME_RECORD_ENDPOINTS.DELETE_TIME_RECORD);
+
+      const response = await authService.makeAuthenticatedRequest(
+        endpoint,
+        buildPostOptions(requestBody)
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to Delete Task");
+      }
+      const data = await response.json();
+      if (data === false) throw new Error("Failed to Delete task");
+      return true;
+    } catch (error) {
+      console.error("Error Deleteing task:", error);
+      return false;
+    }
+  }
   // Get employee data from localStorage
   getEmployee(): Employee | null {
     try {
@@ -157,7 +192,7 @@ if(data===false) throw new Error("Failed to Delete task");
       }
       return employee;
     } catch (error) {
-      console.error('Error getting employee data:', error);
+      console.error("Error getting employee data:", error);
       return null;
     }
   }
@@ -171,7 +206,7 @@ if(data===false) throw new Error("Failed to Delete task");
       const data = localStorage.getItem(this.storageKey);
       return data ? JSON.parse(data) : [];
     } catch (error) {
-      console.error('Error getting time records:', error);
+      console.error("Error getting time records:", error);
       return [];
     }
   }
@@ -190,12 +225,12 @@ if(data===false) throw new Error("Failed to Delete task");
       const start = new Date(startDate);
       const end = new Date(endDate);
 
-      return records.filter(record => {
+      return records.filter((record) => {
         const recordDate = new Date(record.date);
         return recordDate >= start && recordDate <= end;
       });
     } catch (error) {
-      console.error('Error getting records by date range:', error);
+      console.error("Error getting records by date range:", error);
       return [];
     }
   }
@@ -215,7 +250,7 @@ if(data===false) throw new Error("Failed to Delete task");
 
       return this.getTimeRecordsByDateRange(startOfWeek, endOfWeek);
     } catch (error) {
-      console.error('Error getting current week records:', error);
+      console.error("Error getting current week records:", error);
       return [];
     }
   }
@@ -227,8 +262,8 @@ if(data===false) throw new Error("Failed to Delete task");
     }
 
     try {
-      const [clockInTimeHour, clockInTimeMin] = clockInTime.split(':').map(Number);
-      const [clockOutTimeHour, clockOutTimeMin] = clockOutTime.split(':').map(Number);
+      const [clockInTimeHour, clockInTimeMin] = clockInTime.split(":").map(Number);
+      const [clockOutTimeHour, clockOutTimeMin] = clockOutTime.split(":").map(Number);
 
       const clockInTimeMinutes = clockInTimeHour * 60 + clockInTimeMin;
       const clockOutTimeMinutes = clockOutTimeHour * 60 + clockOutTimeMin;
@@ -241,8 +276,8 @@ if(data===false) throw new Error("Failed to Delete task");
 
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     } catch (error) {
-      console.error('Error calculating total hours:', error);
-      return '00:00';
+      console.error("Error calculating total hours:", error);
+      return "00:00";
     }
   }
 
@@ -260,37 +295,39 @@ if(data===false) throw new Error("Failed to Delete task");
       let workDays = 0;
       let vacationDays = 0;
 
-      weekRecords.forEach(record => {
+      weekRecords.forEach((record) => {
         if (record.type === TimeType.Vacation) {
           vacationDays++;
-        } else if (record.total && record.total !== '00:00') {
+        } else if (record.total && record.total !== "00:00") {
           workDays++;
-          const [hours, minutes] = record.total.split(':').map(Number);
+          const [hours, minutes] = record.total.split(":").map(Number);
           totalMinutes += hours * 60 + minutes;
         }
       });
 
       const totalHours = Math.floor(totalMinutes / 60);
       const remainingMinutes = totalMinutes % 60;
-      const totalHoursFormatted = `${String(totalHours).padStart(2, '0')}:${String(remainingMinutes).padStart(2, '0')}`;
+      const totalHoursFormatted = `${String(totalHours).padStart(2, "0")}:${String(
+        remainingMinutes
+      ).padStart(2, "0")}`;
 
-      const averageHours = workDays > 0 ? (totalMinutes / workDays / 60).toFixed(2) : '0.00';
+      const averageHours = workDays > 0 ? (totalMinutes / workDays / 60).toFixed(2) : "0.00";
 
       return {
         totalHours: totalHoursFormatted,
         workDays,
         vacationDays,
         averageHours: parseFloat(averageHours),
-        totalMinutes
+        totalMinutes,
       };
     } catch (error) {
-      console.error('Error calculating weekly stats:', error);
+      console.error("Error calculating weekly stats:", error);
       return {
-        totalHours: '00:00',
+        totalHours: "00:00",
         workDays: 0,
         vacationDays: 0,
         averageHours: 0,
-        totalMinutes: 0
+        totalMinutes: 0,
       };
     }
   }

@@ -1,61 +1,91 @@
-import authService from './authService';
+import authService from "./authService";
+
+// API endpoint paths for employee-related actions
+const EMPLOYEE_ENDPOINTS = {
+  GET_EMPLOYEE_DATA: "/employees/GetEmployeeDataAsync",
+  CLOCK_IN: "/employees/ClockInAsync",
+  CLOCK_OUT: "/employees/clockOutAsync",
+  GET_EMPLOYEES: "/employees/GetEmployees",
+} as const;
+
+// Helpers
+const getAuthenticatedUser = () => {
+  const user = authService.getCurrentUser();
+  if (!user) {
+    throw new Error("User not authenticated");
+  }
+  return user;
+};
+
+const getAuthenticatedEmployee = () => {
+  const employee = authService.getCurrentEmployee();
+  if (!employee) {
+    throw new Error("employee not authenticated");
+  }
+  return employee;
+};
+
+const buildEndpoint = (baseUrl: string, path: string): string => `${baseUrl}${path}`;
+
+const buildPostOptions = (body: unknown) => ({
+  method: "POST" as const,
+  body: JSON.stringify(body),
+});
 
 class EmployeeService {
-  async getEmployee(){
+  async getEmployee() {
     try {
-    
-      const user = authService.getCurrentUser();
-      if (!user) throw new Error('User not authenticated');
+      const user = getAuthenticatedUser();
 
-      const date = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      const date = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
       const requestBody = {
-        date:date,
+        date: date,
         id: user.id,
-        database: user.dataBase
+        database: user.dataBase,
       };
-      const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
-      const endpoint = `${dynamicBaseUrl}/employees/GetEmployeeDataAsync`; // Make sure this is correct
 
+      const endpoint = buildEndpoint(user.urlConnection, EMPLOYEE_ENDPOINTS.GET_EMPLOYEE_DATA);
 
-      const response = await authService.makeAuthenticatedRequest(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-      });
+      const response = await authService.makeAuthenticatedRequest(
+        endpoint,
+        buildPostOptions(requestBody)
+      );
 
       if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || 'Failed to get employee data');
+        throw new Error(error || "Failed to get employee data");
       }
+
       const data = await response.json();
-      const employeeData={
+      const employeeData = {
         id: data.id,
         name: data.name,
         image: data.pictureBase64,
         isActive: data.isActive,
         jobScope: data.jobScope,
         expiresAt: data.expiration,
-        timeHourReportID:data.timeHourReportID,
-        minutesHoursAmount:data.minutesHoursAmount??0,
-        editPermision:true,
-        startTime:data.startTime,
-        endTime:data.endTime,
-        totalSecondsReported:data.totalSecondsReported
+        timeHourReportID: data.timeHourReportID,
+        minutesHoursAmount: data.minutesHoursAmount ?? 0,
+        editPermision: true,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        totalSecondsReported: data.totalSecondsReported,
+      };
 
-}
       // Store employee info in localStorage
-      localStorage.setItem('employee', JSON.stringify(employeeData));
+      localStorage.setItem("employee", JSON.stringify(employeeData));
       localStorage.setItem("timeHourReportsTypes", JSON.stringify(data.timeHourReportsTypes));
       return {
         success: true,
-        message: 'Employee fetched successfully',
-        data: employeeData ,
+        message: "Employee fetched successfully",
+        data: employeeData,
       };
     } catch (error) {
-      console.error('Get employee error:', error);
+      console.error("Get employee error:", error);
       throw error;
     }
   }
-async  getUserLocation(): Promise<string> {
+  async getUserLocation(): Promise<string> {
   const getPosition = (): Promise<GeolocationPosition> =>
     new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
@@ -63,7 +93,7 @@ async  getUserLocation(): Promise<string> {
         return;
       }
 
-      const timeoutId = setTimeout(() => reject(new Error('זמן בקשת המיקום עבר')), 10000);
+      const timeoutId = setTimeout(() => reject(new Error('זמן בקשת המיקום עבר')), 100000);
 
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -74,15 +104,18 @@ async  getUserLocation(): Promise<string> {
           clearTimeout(timeoutId);
           reject(error);
         },
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true,
+          // timeout: 10000,
+          maximumAge: 0
+         }
       );
     });
 
   try {
     const position = await getPosition();
     const { latitude, longitude } = position.coords;
-// const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://nominatim.openstreetmap.org';
-// const response = await fetch(`${BASE_URL}/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=he`);
+    // const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://nominatim.openstreetmap.org';
+    // const response = await fetch(`${BASE_URL}/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=he`);
     const response = await fetch(
       `/nominatim/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=he`
     );
@@ -92,166 +125,166 @@ async  getUserLocation(): Promise<string> {
     const data = await response.json();
 
     const address = data.address || {};
-
+const displayName = data.display_name || "";
+const neighbourhood =
+  address.neighbourhood ||
+  address.quarter ||
+  address.city_district ||
+  "";
     // מנסים להחזיר כתובת מדויקת ככל האפשר
-    const houseNumber = address.house_number || '';
-    const road = address.road || address.street || address.pedestrian || '';
-    const suburb = address.suburb || '';
-    const city = address.city || address.town || address.village || address.locality || '';
-    const state = address.state || '';
-    const country = address.country || '';
+    const houseNumber = address.house_number || "";
+    const road = address.road || address.street || address.pedestrian || "";
+    const suburb = address.suburb || "";
+    const city = address.city || address.town || address.village || address.locality || "";
+    const state = address.state || "";
+    const country = address.country || "";
 
     // בונים מחרוזת עם fallback חכם
-    let locationStr = '';
-    if (houseNumber && road) {
-      locationStr = `${road} ${houseNumber}`;
-    } else if (road) {
-      locationStr = road;
-    } else if (suburb) {
-      locationStr = suburb;
-    } else if (city) {
-      locationStr = city;
-    } else {
-      locationStr = 'מיקום לא ידוע';
-    }
-
+    let locationStr = "";
+if (road && houseNumber) {
+  locationStr = `${road} ${houseNumber}`;
+} else if (road && neighbourhood) {
+  locationStr = `${road}, ${neighbourhood}`;
+} else if (neighbourhood) {
+  locationStr = neighbourhood;
+} else if (suburb) {
+  locationStr = suburb;
+} else if (city) {
+  locationStr = city;
+} else if (displayName) {
+  locationStr = displayName;
+} else {
+  locationStr = "מיקום לא ידוע";
+}
+const accuracy = position.coords.accuracy;
+if (accuracy > 1000) {
+  console.warn("דיוק מיקום נמוך:", accuracy);
+}
     // מוסיפים עיר ומדינה בסוף אם יש
     if (city && city !== locationStr) locationStr += `, ${city}`;
     if (state) locationStr += `, ${state}`;
     if (country) locationStr += `, ${country}`;
 
     return locationStr;
-
   } catch (err) {
-    console.error('שגיאה בקבלת מיקום:', err);
-    return 'מיקום לא זמין';
+    console.error("שגיאה בקבלת מיקום:", err);
+    return "מיקום לא זמין";
   }
-}
+  }
 
   async clockIn() {
     try {
-      const user = authService.getCurrentUser();
-      if (!user) throw new Error('User not authenticated');
-  
-      const employee = authService.getCurrentEmployee();
-      if (!employee) throw new Error('employee not authenticated');
+      const user = getAuthenticatedUser();
+      const employee = getAuthenticatedEmployee();
 
       const now = new Date();
-      const date = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-     // const time = now.toTimeString().split(' ')[0]; // Format: HH:MM:SS
-      const location = localStorage.getItem('location') || '';
+      const date = now.toISOString().split("T")[0]; // Format: YYYY-MM-DD
+      // const time = now.toTimeString().split(' ')[0]; // Format: HH:MM:SS
+      const location = localStorage.getItem("location") || "";
       const requestBody = {
         date: date,
-        timeHourReportID:employee.timeHourReportID,
+        timeHourReportID: employee.timeHourReportID,
         location: location,
         id: user.id,
         database: user.dataBase,
-        type: 'clockIn' // או כל פרמטר נוסף שהשרת מצפה לו
+        type: "clockIn", // או כל פרמטר נוסף שהשרת מצפה לו
       };
 
-      const dynamicBaseUrl = user.urlConnection;
-      const endpoint = `${dynamicBaseUrl}/employees/ClockInAsync`; // endpoint מתאים לכניסה
+      const endpoint = buildEndpoint(user.urlConnection, EMPLOYEE_ENDPOINTS.CLOCK_IN);
 
-      const response = await authService.makeAuthenticatedRequest(endpoint, {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-      });
+      const response = await authService.makeAuthenticatedRequest(
+        endpoint,
+        buildPostOptions(requestBody)
+      );
 
-   if (!response.ok) {
+      if (!response.ok) {
         const error = await response.text();
-        throw new Error(error || 'Failed to get employee data');
+        throw new Error(error || "Failed to get employee data");
       }
       await this.getEmployee();
       const data = await response.json();
 
       return {
         success: true,
-        message: 'Employee fetched successfully',
+        message: "Employee fetched successfully",
         data: data,
       };
     } catch (error) {
-      console.error('Get employee error:', error);
+      console.error("Get employee error:", error);
       throw error;
     }
   }
-async clockOut() {
-  try {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error('User not authenticated');
 
-    const employee = authService.getCurrentEmployee();
-    if (!employee) throw new Error('Employee not authenticated');
+  async clockOut() {
+    try {
+      const user = getAuthenticatedUser();
+      const employee = authService.getCurrentEmployee();
+      if (!employee) throw new Error("Employee not authenticated");
 
-    const now = new Date();
-    const date = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    
-//
+      const now = new Date();
+      const date = now.toISOString().split("T")[0]; // Format: YYYY-MM-DD
 
-const location = await this.getUserLocation();
-    // ⬇️ Get latest location from geolocation
-   
+      const location = await this.getUserLocation();
+      // ⬇️ Get latest location from geolocation
 
-    const requestBody = {
-      date: date,
-      timeHourReportID: employee.timeHourReportID,
-      location: location,
-      id: user.id,
-      database: user.dataBase,
-      type: 'clockOut',
-    };
+      const requestBody = {
+        date: date,
+        timeHourReportID: employee.timeHourReportID,
+        location: location,
+        id: user.id,
+        database: user.dataBase,
+        type: "clockOut",
+      };
 
-    const dynamicBaseUrl = user.urlConnection;
-    const endpoint = `${dynamicBaseUrl}/employees/clockOutAsync`;
+      const endpoint = buildEndpoint(user.urlConnection, EMPLOYEE_ENDPOINTS.CLOCK_OUT);
 
-    const response = await authService.makeAuthenticatedRequest(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(requestBody),
-    });
+      const response = await authService.makeAuthenticatedRequest(
+        endpoint,
+        buildPostOptions(requestBody)
+      );
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || 'Failed to clock out');
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error || "Failed to clock out");
+      }
+      await this.getEmployee();
+
+      const data = await response.json();
+      return {
+        success: true,
+        message: "Clock-out successful",
+        data: data,
+      };
+    } catch (error) {
+      console.error("Clock out error:", error);
+      throw error;
     }
-    await this.getEmployee();
-
-    const data = await response.json();
-    return {
-      success: true,
-      message: 'Clock-out successful',
-      data: data,
-    };
-  } catch (error) {
-    console.error('Clock out error:', error);
-    throw error;
   }
-}
 
-async getEmployeesList(){ 
-  try {
-    const user = authService.getCurrentUser();
-    if (!user) throw new Error("User not authenticated");
-    const requestBody = {
-      database: user.dataBase
-    };
+  async getEmployeesList() {
+    try {
+      const user = getAuthenticatedUser();
+      const requestBody = {
+        database: user.dataBase,
+      };
 
-    const dynamicBaseUrl = user.urlConnection; // ← Use this instead of static URL
-    const endpoint = `${dynamicBaseUrl}/employees/GetEmployees`; // Make sure this is correct
+      const endpoint = buildEndpoint(user.urlConnection, EMPLOYEE_ENDPOINTS.GET_EMPLOYEES);
 
-    const response = await authService.makeAuthenticatedRequest(endpoint, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-    });
+      const response = await authService.makeAuthenticatedRequest(
+        endpoint,
+        buildPostOptions(requestBody)
+      );
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch employees list");
+      if (!response.ok) {
+        throw new Error("Failed to fetch employees list");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching employees list:", error);
+      return null;
     }
-
-    const data= await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching employees list:", error);
-    return null
-  } 
-}
+  }
 }
 export default new EmployeeService();

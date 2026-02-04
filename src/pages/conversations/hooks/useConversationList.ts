@@ -101,15 +101,29 @@ export const useConversationList = () => {
    * Loads more items when reaching the end of the list
    */
   const handleScroll = useCallback(() => {
-    if (!listRef.current) return;
+    if (!listRef.current || visibleCount >= filteredConversations.length) return;
     
     const { scrollTop, scrollHeight, clientHeight } = listRef.current;
     
     // Check if we're close to the end (50px before)
     if (scrollTop + clientHeight >= scrollHeight - 50) {
-      setVisibleCount((prev) => Math.min(prev + 20, filteredConversations.length));
+      loadMore();
     }
+  }, [visibleCount, filteredConversations.length]);
+
+  /**
+   * Load more conversations
+   */
+  const loadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + 20, filteredConversations.length));
   }, [filteredConversations.length]);
+
+  /**
+   * Has more conversations to load
+   */
+  const hasMore = useMemo(() => {
+    return visibleCount < filteredConversations.length;
+  }, [visibleCount, filteredConversations.length]);
 
   /**
    * Open new conversation modal or edit existing conversation
@@ -225,10 +239,12 @@ export const useConversationList = () => {
     selectedConversationID,
     conversationData,
     listRef,
+    hasMore,
 
     // Actions
     setSearchTerm,
     handleScroll,
+    loadMore,
     openConversationModal,
     closeConversationModal,
     saveConversation,

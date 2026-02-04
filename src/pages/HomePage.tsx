@@ -117,74 +117,7 @@ useEffect(() => {
   const handleTouchEnd = () => {
     setActiveItem(null);
   };
-  // function toLocalISOString(date: Date) {
-  //   const y = date.getFullYear();
-  //   const m = String(date.getMonth() + 1).padStart(2, '0');
-  //   const d = String(date.getDate()).padStart(2, '0');
-  //   const h = String(date.getHours()).padStart(2, '0');
-  //   const min = String(date.getMinutes()).padStart(2, '0');
-  //   const s = String(date.getSeconds()).padStart(2, '0');
-  //   return `${y}-${m}-${d}T${h}:${min}:${s}`;
-  // }
-  // const openMeeting = () => {
-
-  //   const clickedDate = new Date();
-  //   clickedDate.setHours(8, 0, 0, 0);
-  //   const endDate = new Date(clickedDate);
-  //   endDate.setMinutes(30);
-  //   const newEvent: CalendarDataModal = {
-
-  //     calendarEventDto: {
-  //       id: 0, // generate temporary unique id
-  //       parentId: null,
-  //       title: "",
-  //       start: toLocalISOString(clickedDate),
-  //       end: toLocalISOString(endDate),
-  //       rRule: null,
-  //       exDate: null,
-  //       allDay: false,
-  //       indexInSeries: null,
-  //       type: 0, // 0 = regular meeting (you can change)
-  //       recurrenceXml: null,
-  //       employeeId: employee ? employee.id : 0,
-  //     },
-  //     calendarPartData: {
-  //       cityID: null,
-  //       projectID: null,
-  //       projectName: null,
-  //       statusID: null,
-  //       categoryID: null,
-  //       description: "",
-  //       hasReminder: false,
-  //       reminderTime: null,
-  //       location: "",
-  //       meetingLink: "",
-  //       isPrivate: false,
-
-  //     },
-  //   };
-  //   setSelectedEvent(newEvent);
-
-  // }
-  // const functionToFix = (): any => {
-  //   return false;
-  // }
-  // const openPhoneBook = () => {
-
-  //   let newContact: PhoneBook = {
-  //     id: 0,
-  //     firstName: '',
-  //     lastName: '',
-  //     company: '',
-  //     companyAddress: '',
-  //     companyPhone: '',
-  //     mobile: '',
-  //     email: '',
-  //     selectedCompanyId: 0,
-  //     companyCityID: 0
-  //   }
-  //   setNewContact(newContact);
-  // }
+ 
   const handleLogout = () => {
     authService.logout();
     if (onLogout) {

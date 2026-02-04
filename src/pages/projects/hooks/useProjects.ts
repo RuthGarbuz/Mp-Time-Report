@@ -64,6 +64,10 @@ export const useProjects = (openModal: () => void, closeModal: () => void) => {
     
   }, [closeProjectModal, loadProjects]);
 
+  const refreshProjects = useCallback(() => {
+    loadProjects();
+  }, [loadProjects]);
+
   const loadMore = useCallback(() => {
     setVisibleCount(prev => Math.min(prev + 20, filteredProjects.length));
   }, [filteredProjects.length]);
@@ -97,6 +101,7 @@ export const useProjects = (openModal: () => void, closeModal: () => void) => {
     openEditProject,
     closeProjectModal,
     handleProjectSaved,
+    refreshProjects,
     loadMore,
   };
 };

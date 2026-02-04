@@ -130,13 +130,13 @@ export default function HourReportModalOpen({
           </div>
 
           {/* Date Display */}
-          <div>
+           <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">תאריך</label>
           <input
             type="date"
-            value={currentDay.toISOString().split("T")[0]}
-            disabled
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+            value={formReport.date ? new Date(formReport.date).toLocaleDateString('en-CA') : new Date(currentDay).toLocaleDateString('en-CA')}
+            onChange={(e) => updateReportField('date', e.target.value)}
+             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           </div>
 
